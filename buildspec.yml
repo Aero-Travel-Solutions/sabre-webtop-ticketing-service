@@ -1,0 +1,28 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+      dotnet: 3.1
+    commands:
+      - echo install started...
+      - npm install
+      - echo install finished.
+  pre_build:
+    commands:
+      - echo pre_build started...
+      - npm install -g serverless
+      - echo pre_build finished.
+      - apt -qq -y install zip
+  build:
+    commands:
+      - echo build started...
+      - dotnet restore
+      - dotnet tool install -g Amazon.Lambda.Tools --framework netcoreapp3.1
+      - dotnet lambda package --configuration Release --framework netcoreapp3.1 --output-package bin/Release/netcoreapp3.1/sabreautorefund.zip
+      - serverless package --package artifacts --stage $STAGE --appversion $(date +%Y.%m.%d).$CODEBUILD_BUILD_NUMBER
+      - serverless deploy --package artifacts/ --stage $STAGE --appversion $(date +%Y.%m.%d).$CODEBUILD_BUILD_NUMBER
+      - echo build finished.
+artifacts:
+  files:
+    - "**/*"

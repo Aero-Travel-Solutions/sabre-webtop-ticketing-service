@@ -1,0 +1,9 @@
+{
+  "session_id": "06cffd0f0180d1a4ae57d7944b9d24f6a9fa96df36476ffeec3d762adb8c5d5c",
+  "refund_tickets": [{
+  "pcc": "60B5",
+  "document_number": "2359475993174",
+  "waiver": null,
+  "price_type":1 
+}]
+}

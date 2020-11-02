@@ -1,0 +1,52 @@
+service: sabreautorefund
+
+provider:
+  name: aws
+  runtime: dotnetcore3.1
+  stage: ${opt:stage,'dev'}
+  region: ${opt:region, 'ap-southeast-2'}  
+  environment:
+    APP_VERSION: ${opt:appversion, '0.0.0.0'}
+    SABRE_URL: ${self:custom.sabre_soap_uri.${self:provider.stage}}
+    ENVIRONMENT: ${self:provider.stage}
+  tracing:
+    lambda: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+      Resource: "*"   
+
+package:
+  individually: true
+  exclude:
+    - buildspec.yml
+    - build.sh
+
+custom: 
+  stages:
+    - dev
+    - stg
+    - prod 
+  sabre_soap_uri:
+    dev: ${ssm:/dev/sabre-soap/uri}
+    stg: ${ssm:/stg/sabre-soap/uri}
+    prod: ${ssm:/prod/sabre-soap/uri} 
+  
+functions:
+  AssessRefund:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::SearchPNR
+    timeout: 30
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabreautorefund.zip     
+  ProcessRefund:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::ManualBuild
+    timeout: 30
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabreautorefund.zip
+  ValidateTickets:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::IssueTickets
+    timeout: 30
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabreautorefund.zip

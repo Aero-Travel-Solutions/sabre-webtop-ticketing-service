@@ -1,0 +1,33 @@
+{    
+    "fareCalculation": "SYD QF BNE92.33AUD92.33END/-",
+    "sectors": [
+        {
+            "SectorNo": 1,
+            "From": "SYD",
+            "To": "BNE",
+            "Carrier": "QF",
+            "Flight": "0500",
+            "Class": "E",
+            "DepartureDate": "2020-12-02",
+            "DepartureTime": "06:05",
+            "Status": "HK",
+            "Equipment": "73H",
+            "Flown": false,
+            "IsArunk": false,
+            "Unconfirmed": false,
+            "Mileage": 466,
+            "SecureFlightDataRequired": false,
+            "ArrivalDate": "2020-12-02",
+            "ArrivalTime": "06:35",
+            "OperatingCarrier": "QF",
+            "OperatingCarrierFlightNo": "0500",
+            "Cabin": "Y",
+            "AirlineRecordLocator": "P8T68J",
+            "CodeShare": false,
+            "MarriageGroup": "",
+            "FlightDuration": "01.30",
+            "SeatMapSectorKey": "eyJTZWN0b3JObyI6MSwiT3JpZ2luIjoiU1lEIiwiRGVzdGluYXRpb24iOiJCTkUiLCJEZXBhcnR1cmVEYXRlIjoiMjAyMC0xMi0wMlQwNjowNTowMCIsIkFycml2YWxEYXRlIjoiMjAyMC0xMi0wMlQwNjozNTowMCIsIk9wZXJhdGluZ0NhcnJpZXIiOnsiQ2FycmllckNvZGUiOiJRRiIsIkZsaWdodE5vIjoiMDUwMCJ9LCJNYXJrZXRpbmdDYXJyaWVyIjp7IkNhcnJpZXJDb2RlIjoiUUYiLCJGbGlnaHRObyI6IjA1MDAifSwiQm9va2luZ0NsYXNzIjoiRSIsIkNhYmluIjoiWSIsIkFpcmxpbmVSZWNvcmRMb2NhdG9yIjoiUDhUNjhKIn0=",
+            "Ticketed": false
+        }
+    ]
+}

@@ -1,0 +1,113 @@
+﻿using System.Linq;
+using System.Collections.Generic;
+using System;
+using System.Text.RegularExpressions;
+using System.Text;
+
+namespace SabreWebtopTicketingService.Common
+{
+    public static class Extensions
+    {
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T> source)
+        {
+            return source == null || !source.Any();
+        }
+
+        public static string[] SplitOn(this string text, string pattern)
+        {
+            return text.Split(new string[] { pattern }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public static string MaskNumber(this string text)
+        {
+            return text.Substring(0, 4) + text.Last(4).PadLeft(text.Length - 4, 'X');
+        }
+
+        public static string LastMatch(this string text, string pattern, string defaultValue = null)
+        {
+            var match = Regex.Match(text, pattern);
+
+            if (match.Success)
+            {
+                return match.Groups.Cast<Group>().Where(w => !string.IsNullOrEmpty(w.Value)).Last().Value;
+            }
+
+            return defaultValue;
+        }
+
+        public static string Last(this string source, int tail_length)
+        {
+            if (tail_length >= source.Length)
+                return source;
+            return source.Substring(source.Length - tail_length);
+        }
+
+        public static string EncodeBase64(this string text)
+        {
+            if (text == null)
+            {
+                return null;
+            }
+
+            byte[] textAsBytes = Encoding.ASCII.GetBytes(text);
+            return Convert.ToBase64String(textAsBytes);
+        }
+
+        public static bool IsMatch(this string text, string pattern)
+        {
+            if (string.IsNullOrEmpty(text)) { return false; }
+
+            // return true if any regex match text
+            return Regex.IsMatch(text, pattern, RegexOptions.CultureInvariant);
+        }
+
+        public static List<string> AllMatches(this string text, string pattern)
+        {
+            var matches = Regex.Matches(text, pattern);
+
+            if (!matches.IsNullOrEmpty())
+            {
+                return matches.Select(s => s.Groups[0].Value).ToList();
+            }
+            return new List<string>();
+        }
+
+        public static string ReplaceAllSabreSpecialChar(this string seed, string replacementstring = "")
+        {
+            Dictionary<string, string> replacablestrings = new Dictionary<string, string>()
+            {
+                {"Â\u0087", "‡" },
+                {"\u0087", "‡" }
+            };
+
+            return replacablestrings.
+                    Aggregate(seed, (current, value) =>
+                        current.Replace(value.Key, value.Value));
+        }
+
+        public static string RegexReplace(this string seed, string pattern, string replacementstring = "")
+        {
+            return Regex.Replace(seed, pattern, replacementstring);
+        }
+
+        public static string GetSabreDatetime(this DateTime dt)
+        {
+            return dt.ToString("yyyy-MM-dd");
+        }
+
+        public static string GetISODateString(this DateTime dt, string format = "")
+        {
+            return string.IsNullOrEmpty(format) ? dt.ToString("yyyy-MM-dd") : dt.ToString(format);
+        }
+
+        public static string GetISOTimeString(this DateTime dt)
+        {
+            return dt.ToString("HH:mm");
+        }
+
+        public static string GetISODateTime(this DateTime dt, string format = "")
+        {
+            return string.IsNullOrEmpty(format) ? dt.ToString("yyyy-MM-ddTHH:mm") : dt.ToString(format);
+        }
+    }
+}

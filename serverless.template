@@ -1,0 +1,37 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Transform" : "AWS::Serverless-2016-10-31",
+  "Description" : "Starting template for an AWS Serverless Application.",
+  "Parameters" : {
+  },
+  "Resources" : {
+    "DefaultFunction" : {
+      "Type" : "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "<ASSEMBLY-NAME>::<TYPE-FULL-NAME>::<METHOD-NAME>",
+        "Runtime": "dotnetcore2.1",
+        "CodeUri": "",
+        "Description": "Default function",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": null,
+        "Policies": [ "AWSLambdaFullAccess" ],
+        "Events": {
+          "ProxyResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/{proxy+}",
+              "Method": "ANY"
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs" : {
+    "ApiURL" : {
+        "Description" : "API endpoint URL for Prod environment",
+        "Value" : { "Fn::Sub" : "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/" }
+    }
+  }
+}
