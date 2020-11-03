@@ -24,22 +24,6 @@ namespace SabreWebtopTicketingService.Models
         public object stack { get; set; }
     }
 
-    public class LambdaQuoteResponseBody
-    {
-        public string session_id { get; set; }
-        public string context_id { get; set; }
-        public List<AutoRefundQuoteResponse> data { get; set; }
-        public List<RefundError> error { get; set; }
-    }
-
-    public class LambdaProcessRefundResponseBody
-    {
-        public string session_id { get; set; }
-        public string context_id { get; set; }
-        public List<AutoRefundProcessResponse> data { get; set; }
-        public List<RefundError> error { get; set; }
-    }
-
     public class ValidateTicketResponseBody
     {
         public string session_id { get; set; }

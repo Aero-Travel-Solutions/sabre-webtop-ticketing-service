@@ -18,6 +18,49 @@ namespace SabreWebtopTicketingService.Common
             return text.Split(new string[] { pattern }, StringSplitOptions.RemoveEmptyEntries);
         }
 
+        public static string MaskLog(this string text)
+        {
+            // mask credit card numbers
+            if (text == null) return null;
+
+            return new Regex(@"(\s*\d){13,16}").Replace(text, m => GetReplaceString(m.Value.Trim()));
+        }
+
+        public static string GetReplaceString(string text)
+        {
+            // replace all digits except last 4
+            var result = "";
+
+            // check is valid card
+            try
+            {
+                CreditCardOperations.GetCreditCardType(text.LastMatch(@"\d+"));
+            }
+            catch (Exception)
+            {
+                return text;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (!char.IsDigit(text[i]) || i >= text.Length - 4)
+                {
+                    result += text[i];
+                }
+                else
+                {
+                    result += 'X';
+                }
+            }
+
+            return result;
+        }
+
+        public static string ReplaceAll(this string seed, string[] replacablestrings, string replacementstring = "")
+        {
+            return replacablestrings.Aggregate(seed, (s1, s2) => s1.Replace(s2, replacementstring));
+        }
+
         public static string MaskNumber(this string text)
         {
             return text.Substring(0, 4) + text.Last(4).PadLeft(text.Length - 4, 'X');

@@ -1,15 +1,27 @@
 ﻿using Amazon.Runtime.Internal.Util;
+using SabreWebtopTicketingService.Common;
+using SabreWebtopTicketingService.Interface;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SabreWebtopTicketingService.Services
 {
     public class SabreGDS
     {
+        private readonly string url;
+        private readonly SessionCreateService _sessionCreateService;
+        private readonly IgnoreTransactionService _ignoreTransactionService;
+        private readonly ChangeContextService _changeContextService;
+        private readonly DisplayTicketService _displayTicket;
+        private readonly ConsolidatorPccDataSource _consolidatorPccDataSource;
+        private readonly TicketingPccDataSource _ticketingPccDataSource;
+        private readonly SabreCrypticCommandService _sabreCommandService;
+        private readonly IGetTurnaroundPointDataSource _getTurnaroundPointDataSource;
+        private readonly Microsoft.Extensions.Logging.ILogger _logger;
+        private readonly DbCache _dbCache;
+
         public SabreGDS(
             SessionCreateService sessionCreateService,
-            ILogger logger,
+            Microsoft.Extensions.Logging.ILogger logger,
             DbCache dbCache,
             ConsolidatorPccDataSource consolidatorPccDataSource,
             TicketingPccDataSource ticketingPccDataSource,
@@ -17,7 +29,6 @@ namespace SabreWebtopTicketingService.Services
             ChangeContextService changeContextService,
             DisplayTicketService displayTicket,
             SabreCrypticCommandService sabreCommandService,
-            IRefundControlDataSource refundControlDataSource,
             IGetTurnaroundPointDataSource getTurnaroundPointDataSource)
         {
             url = Constants.GetSoapUrl();
@@ -30,7 +41,6 @@ namespace SabreWebtopTicketingService.Services
             _changeContextService = changeContextService;
             _displayTicket = displayTicket;
             _sabreCommandService = sabreCommandService;
-            _refundControlDataSource = refundControlDataSource;
             _getTurnaroundPointDataSource = getTurnaroundPointDataSource;
         }
     }

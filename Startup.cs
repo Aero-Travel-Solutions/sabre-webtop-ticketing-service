@@ -27,7 +27,6 @@ namespace SabreWebtopTicketingService
             services.AddAWSService<IAmazonDynamoDB>();
             services.AddLogging();
 
-            services.AddScoped<SabreAutoRefundService>();
             services.AddScoped<SessionCreateService>();           
             services.AddScoped<SessionRefreshService>();
             services.AddScoped<IgnoreTransactionService>();
@@ -40,7 +39,6 @@ namespace SabreWebtopTicketingService
             services.AddScoped<AmazonLambdaClient>();
             services.AddScoped<LambdaHelper>();
             services.AddScoped<SessionDataSource>();
-            services.AddScoped<IRefundControlDataSource, RefundControlDataSource>();
             services.AddScoped<IGetTurnaroundPointDataSource, GetTurnaroundPointDataSource>();
             services.AddSingleton<DbCache>();
             services.AddSingleton<ILogger, Logger>();

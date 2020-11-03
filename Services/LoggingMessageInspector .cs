@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using SabreWebtopTicketingService.Common;
 using System;
 using System.IO;
 using System.ServiceModel;
@@ -29,7 +30,7 @@ namespace SabreWebtopTicketingService.Services
                 var document = GetDocument(buffer.CreateMessage());
                 if (Logger == null)
                 {
-                    Console.WriteLine(document.OuterXml);
+                    Console.WriteLine(document.OuterXml.MaskLog());
                 }
                 else
                 {
@@ -47,7 +48,7 @@ namespace SabreWebtopTicketingService.Services
                 var document = GetDocument(buffer.CreateMessage());
                 if (Logger == null)
                 {
-                    Console.WriteLine(document.OuterXml);
+                    Console.WriteLine(document.OuterXml.MaskLog());
                 }
                 else
                 {
