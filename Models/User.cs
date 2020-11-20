@@ -20,7 +20,7 @@ namespace SabreWebtopTicketingService.Models
         public string Email { get; set; }
 
         [JsonPropertyName("agent")]
-        public Agent Agent { get; set; }
+        public ADBAgent Agent { get; set; }
 
         [JsonPropertyName("consolidator")]
         public Consolidator Consolidator { get; set; }

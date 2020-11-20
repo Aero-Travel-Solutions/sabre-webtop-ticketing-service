@@ -4,35 +4,32 @@ using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
 using System.Threading.Tasks;
-using Aeronology.CustomException;
-using Aeronology.DTO;
-using Aeronology.DTO.Interfaces;
-using Aeronology.Infrastructure;
-using Aeronology.Sabre.SabreGDSObjects;
-using Aeronology.Utilities;
 using Microsoft.Extensions.Logging;
+using SabreWebtopTicketingService.Common;
+using SabreWebtopTicketingService.CustomException;
+using SabreWebtopTicketingService.Models;
 using TripSearch;
 
-namespace Aeronology.Sabre.SabreServices
+namespace SabreWebtopTicketingService.Services
 {
     public class TripSearchService: ConnectionStubs
     {
-        private readonly ISessionDataSource sessionData;
+        private readonly SessionDataSource sessionData;
 
-        private readonly ILogger<GetReservationService> logger;
+        private readonly ILogger<TripSearchService> logger;
 
         private readonly string url;
 
         public TripSearchService(
-            ISessionDataSource sessionData,
-            ILogger<GetReservationService> logger)
+            SessionDataSource sessionData,
+            ILogger<TripSearchService> logger)
         {
             this.sessionData = sessionData;
             this.logger = logger;
             url = Constants.GetSoapUrl();
         }
 
-        public async Task<List<SabreSearchPNRResponse>> SearchPNR(SearchPNRRequest request, string token, DTO.Models.Pcc pcc, List<string> agentpccs, string ticketingpcc = "")
+        public async Task<List<SabreSearchPNRResponse>> SearchPNR(SearchPNRRequest request, string token, Models.Pcc pcc, List<string> agentpccs, string ticketingpcc = "")
         {
             EnableTLS();
 
@@ -360,7 +357,7 @@ namespace Aeronology.Sabre.SabreServices
             };
         }
 
-        internal async Task<List<SabreManageFlightItem>> GetManageFlightDate(SearchPNRRequest request, string token, DTO.Models.Pcc pcc, List<string> agentpccs)
+        internal async Task<List<SabreManageFlightItem>> GetManageFlightDate(SearchPNRRequest request, string token, Models.Pcc pcc, List<string> agentpccs)
         {
             EnableTLS();
 

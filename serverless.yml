@@ -16,6 +16,9 @@ provider:
       Action:
         - xray:PutTraceSegments
         - xray:PutTelemetryRecords
+        - dynamodb:*
+        - lambda:*
+        - sqs:*
       Resource: "*"   
 
 package:

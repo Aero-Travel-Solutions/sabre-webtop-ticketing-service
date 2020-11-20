@@ -40,6 +40,7 @@ namespace SabreWebtopTicketingService
             services.AddScoped<LambdaHelper>();
             services.AddScoped<SessionDataSource>();
             services.AddScoped<IGetTurnaroundPointDataSource, GetTurnaroundPointDataSource>();
+            services.AddScoped<ICommissionDataService, CommissionDataService>();
             services.AddSingleton<DbCache>();
             services.AddSingleton<ILogger, Logger>();
             return services.BuildServiceProvider();

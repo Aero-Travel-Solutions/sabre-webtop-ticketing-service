@@ -19,7 +19,7 @@ namespace SabreWebtopTicketingService.Models
         public string FareCalculation { get; set; }
         public string TourCode { get; set; }
         public List<string> Endosements { get; set; }
-        public List<RefundError> ValidityErrors { get; set; }
+        public List<WebtopError> ValidityErrors { get; set; }
         public List<FormOfPayment> Payment { get; internal set; }
         public bool Exchanged { get; internal set; }
         public decimal? CommissionAmount { get; internal set; }

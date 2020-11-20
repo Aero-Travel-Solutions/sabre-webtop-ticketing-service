@@ -52,7 +52,7 @@ namespace SabreWebtopTicketingService.Services
 
                 SabreSession sabreSession = new SabreSession()
                 {
-                    SabreSessionID = token
+                    SessionID = token
                 };
                 return sabreSession;
             }            

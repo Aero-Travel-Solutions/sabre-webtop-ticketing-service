@@ -7,33 +7,28 @@ using System.Reflection;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using Aeronology.CustomException;
-using Aeronology.DTO;
-using Aeronology.DTO.Interfaces;
-using Aeronology.DTO.Models;
-using Aeronology.Infrastructure;
-using Aeronology.Utilities;
 using EnhancedAirBook;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using SabreWebtopTicketingService.Common;
+using SabreWebtopTicketingService.CustomException;
+using SabreWebtopTicketingService.Models;
 
-namespace Aeronology.Sabre.SabreServices
+namespace SabreWebtopTicketingService.Services
 {
     public class EnhancedAirBookService : ConnectionStubs
     {
-        private readonly ISessionDataSource sessionData;
+        private readonly SessionDataSource sessionData;
 
-        private readonly ILogger<GetReservationService> logger;
+        private readonly ILogger<EnhancedAirBookService> logger;
 
         private readonly string url;
 
         public EnhancedAirBookService(
-            ISessionDataSource sessionData,
-            ILogger<GetReservationService> logger)
+            SessionDataSource sessionData,
+            ILogger<EnhancedAirBookService> logger)
         {
             this.sessionData = sessionData;
             this.logger = logger;
-            url = Constants.GetSoapUrl();
         }
 
         public async Task<List<Quote>> PricePNRForTicketing(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc)
@@ -860,7 +855,7 @@ namespace Aeronology.Sabre.SabreServices
                         ArrivalCityCode = validpqs[index].Departure.ArrivalAirportCode,
                         DepartureDate = pnr.Sectors.First(f => f.SectorNo == s).DepartureDate,
                         FareBasis = validpqs[index].FareBasis.Code,
-                        Baggageallowance = SabreSharedService.GetBaggageDiscription(validpqs[index].FreeBaggageAllowance)
+                        Baggageallowance = SabreSharedServices.GetBaggageDiscription(validpqs[index].FreeBaggageAllowance)
                     }).
                     ToList();
         }

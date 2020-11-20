@@ -66,6 +66,18 @@ namespace SabreWebtopTicketingService.Common
             return text.Substring(0, 4) + text.Last(4).PadLeft(text.Length - 4, 'X');
         }
 
+        public static string FirstMatch(this string text, string pattern, string defaultValue = null)
+        {
+            var match = Regex.Match(text, pattern);
+
+            if (match.Success)
+            {
+                return match.Groups.Cast<Group>().First().Value;
+            }
+
+            return defaultValue;
+        }
+
         public static string LastMatch(this string text, string pattern, string defaultValue = null)
         {
             var match = Regex.Match(text, pattern);
@@ -133,24 +145,22 @@ namespace SabreWebtopTicketingService.Common
             return Regex.Replace(seed, pattern, replacementstring);
         }
 
-        public static string GetSabreDatetime(this DateTime dt)
+        public static List<string> SplitOnRegex(this string text, params string[] patterns)
         {
-            return dt.ToString("yyyy-MM-dd");
+            List<string> results = new List<string>();
+            foreach (string pattern in patterns)
+            {
+                results.AddRange(SplitOnRegex(pattern));
+            }
+            return results;
         }
 
-        public static string GetISODateString(this DateTime dt, string format = "")
+        public static string Mask(this string text)
         {
-            return string.IsNullOrEmpty(format) ? dt.ToString("yyyy-MM-dd") : dt.ToString(format);
-        }
+            // mask credit card numbers
+            if (text == null) return null;
 
-        public static string GetISOTimeString(this DateTime dt)
-        {
-            return dt.ToString("HH:mm");
-        }
-
-        public static string GetISODateTime(this DateTime dt, string format = "")
-        {
-            return string.IsNullOrEmpty(format) ? dt.ToString("yyyy-MM-ddTHH:mm") : dt.ToString(format);
+            return new Regex(@"(TP|VI|DC|AX|CA|JC|JV|CKS\*)(\s*\d){13,16}").Replace(text, m => GetReplaceString(m.Value.Trim()));
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml.Linq;
 
 namespace SabreWebtopTicketingService.Services
 {
@@ -18,6 +19,15 @@ namespace SabreWebtopTicketingService.Services
         public const string IgnoreTransactionVersion = "2.0.0";
         public const string TKT_ElectronicDocumentVersion = "1.0.0";
         public const string SabreCommandVersion = "1.8.1";
+        public const string TripSearchVersion = "4.4.0";
+        public const string GetReservationPriceQuoteVersion = "3.2.0";
+
+        //REST
+        public const string EnhancedIssueTicketVersion = "1.2.1";
+        public const string EnhancedAirBookVersion = "3.10.0";
+
+        public const string EXPIRED_SESSION_CODE = "USG_INVALID_SESSION";
+        public const string SABRE_SESSION_LIMIT = "SABRE_SESSION_LIMIT";
 
         public static string GetSoapUrl()
         {
@@ -26,6 +36,8 @@ namespace SabreWebtopTicketingService.Services
             //PROD
             return Environment.GetEnvironmentVariable("SABRE_SOAP_URI") ?? "https://webservices.havail.sabre.com";
         }
+
+        public static XElement xml { get; set; }
     }
 
 }

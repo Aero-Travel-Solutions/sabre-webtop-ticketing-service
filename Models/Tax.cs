@@ -9,5 +9,6 @@ namespace SabreWebtopTicketingService.Models
         public string Code { get; set; }
         public decimal Amount { get; set; }
         public bool Paid { get; set; } = false;
+        public bool Fuel { get; set; }
     }
 }

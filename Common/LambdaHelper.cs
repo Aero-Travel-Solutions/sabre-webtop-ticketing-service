@@ -77,6 +77,7 @@ namespace SabreWebtopTicketingService.Common
 
         [JsonPropertyName("error")]
         public Error Error { get; set; }
+        public int StatusCode { get; internal set; }
     }
 
     public class Error

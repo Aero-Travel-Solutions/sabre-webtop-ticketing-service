@@ -1,43 +1,19 @@
+﻿using SabreWebtopTicketingService.Models;
 using System.Text.Json.Serialization;
 
 namespace SabreWebtopTicketingService.Models
 {
-    public class Agent
+    public class Agent : User
     {
-        [JsonPropertyName("agent_id")]
-        public string AgentId { get; set; }
-        
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("logo")]
-        public string Logo { get; set; }
-
-        [JsonPropertyName("consolidator_id")]
-        public string ConsolidatorId { get; set; }
-
-        [JsonPropertyName("consolidator")]
-        public Consolidator Consolidator { get; set; }
-
-        [JsonPropertyName("contacts")]
-        public Contact[] Contacts { get; set; }
-
-        [JsonPropertyName("permissions")]
-        public Permission Permission { get; set; }
-
-        [JsonPropertyName("account_details")]
-        public AccountDetails AccounDetails { get; set; }
-
-        [JsonPropertyName("finance_details")]
-        public FinanceDetails FinanceDetails { get; set; }
+        [JsonPropertyName("pcc_list")]
+        public AgentPcc[] PccList { get; set; }
 
         [JsonPropertyName("ticketing_queue")]
         public string TicketingQueue { get; set; }
-
-        [JsonPropertyName("address")]
-        public Address Address { get; set; }
-
-        [JsonPropertyName("customer_no")]
+        public string TicketingPcc { get; set; }
+        public string AgentPCC { get; set; }
+        public Currency CreditLimit { get; set; }
         public string CustomerNo { get; set; }
+        public Address Address { get; set; }
     }
 }

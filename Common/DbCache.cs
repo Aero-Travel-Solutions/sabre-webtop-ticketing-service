@@ -70,7 +70,7 @@ namespace SabreWebtopTicketingService.Common
                 if (doc is { })
                 {
                     //update                    
-                    doc["sabre_session_id"] = sabreSession.SabreSessionID;
+                    doc["sabre_session_id"] = sabreSession.SessionID;
                     doc["expiry"] = DateTimeOffset.Now.AddMinutes(19).ToUnixTimeSeconds();
                     var result = await table.UpdateItemAsync(doc);
                     if (result is { })
@@ -84,7 +84,7 @@ namespace SabreWebtopTicketingService.Common
                     var newDoc = new Document();
                     newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(19).ToUnixTimeSeconds();
                     newDoc["cache_key"] = cacheKey;
-                    newDoc["sabre_session_id"] = sabreSession.SabreSessionID;
+                    newDoc["sabre_session_id"] = sabreSession.SessionID;
 
                     var result = await table.PutItemAsync(newDoc);
                     if (result is { })

@@ -38,5 +38,10 @@ namespace SabreWebtopTicketingService.Common
             var result = await lambda.Invoke<TicketingPcc[]>($"{PFX_ADB}-ticketing-pcc-list", new { consolidator_id }, sessionID);
             return new TicketingPccList { PccList = result };
         }
+
+        public async Task<PlateRuleTicketingPccResponse> GetTicketingPccFromRules(PlateRuleTicketingPccRequest request, string sessionID)
+        {
+            return await lambda.Invoke<PlateRuleTicketingPccResponse>($"{PFX_ADB}-plate-rule-retrieve-ticketing-pcc", request, sessionID);
+        }
     }
 }

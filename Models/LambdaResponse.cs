@@ -17,18 +17,18 @@ namespace SabreWebtopTicketingService.Models
         public string contentType { get; set; }
     }
 
-    public class RefundError
+    public class WebtopError
     {
         public string code { get; set; }
         public string message { get; set; }
         public object stack { get; set; }
     }
 
-    public class ValidateTicketResponseBody
+    public class LambdaResponseBody
     {
         public string session_id { get; set; }
         public string context_id { get; set; }
-        public bool data { get; set; }
-        public List<RefundError> error { get; set; }
+        public SearchPNRResponse data { get; set; }
+        public List<WebtopError> error { get; set; }
     }
 }

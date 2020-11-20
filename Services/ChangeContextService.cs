@@ -46,7 +46,7 @@ namespace SabreWebtopTicketingService.Services
                 var result = await client.
                                     ContextChangeRQAsync(
                                         CreateMessageHeader(pcc.PccCode),
-                                        GetSecurityToken(token.SabreSessionID),
+                                        GetSecurityToken(token.SessionID),
                                         GetContextChangeRQ(emulatetopcc));
                 client.Close();
 
@@ -88,7 +88,7 @@ namespace SabreWebtopTicketingService.Services
                     //insert new session
                     accessKey = $"{emulatetopcc}-{ticketnumber}";
                     accessKey = accessKey.EncodeBase64();
-                    await _dbCache.InsertSabreSession(token.SabreSessionID, accessKey);
+                    await _dbCache.InsertSabreSession(token.SessionID, accessKey);
                 }
             }
             catch (TimeoutException timeProblem)
