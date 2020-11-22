@@ -1,5 +1,6 @@
 ﻿using Amazon.Runtime.Internal.Util;
 using GetReservation;
+using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json;
 using Polly;
 using SabreWebtopTicketingService.Common;
@@ -34,8 +35,10 @@ namespace SabreWebtopTicketingService.Services
         private readonly IGetTurnaroundPointDataSource _getTurnaroundPointDataSource;
         private readonly ICommissionDataService _commissionDataService;
         private readonly ILogger logger;
+        private readonly ICacheDataSource cache;
         private readonly DbCache _dbCache;
         private readonly IAsyncPolicy retryPolicy;
+        private readonly IDataProtector dataProtector;
 
         public Pcc pcc { get; set; }
         public Agent agent { get; set; }
@@ -44,6 +47,7 @@ namespace SabreWebtopTicketingService.Services
             SessionCreateService sessionCreateService,
             ILogger logger,
             DbCache dbCache,
+            ICacheDataSource cache,
             ConsolidatorPccDataSource consolidatorPccDataSource,
             TicketingPccDataSource ticketingPccDataSource,
             IgnoreTransactionService ignoreTransactionService,
@@ -55,7 +59,8 @@ namespace SabreWebtopTicketingService.Services
             GetReservationService getReservationService,
             IGetTurnaroundPointDataSource getTurnaroundPointDataSource,
             ICommissionDataService commissionDataService,
-            ExpiredTokenRetryPolicy expiredTokenRetryPolicy)
+            ExpiredTokenRetryPolicy expiredTokenRetryPolicy,
+            IDataProtectionProvider dataProtectionProvider)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -73,6 +78,8 @@ namespace SabreWebtopTicketingService.Services
             _getTurnaroundPointDataSource = getTurnaroundPointDataSource;
             _commissionDataService = commissionDataService;
             retryPolicy = expiredTokenRetryPolicy.ExpiredTokenPolicy;
+            dataProtector = dataProtectionProvider.CreateProtector("CCDataProtector"); 
+            this.cache = cache;
         }
 
         public async Task<SearchPNRResponse> SearchPNR(SearchPNRRequest request)
