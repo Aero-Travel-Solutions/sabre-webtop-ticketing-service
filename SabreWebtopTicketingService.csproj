@@ -9,12 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include=".lambda-test-tool\SavedRequests\Multiple Ticket Auto refund assessment.json" />
-    <Content Include=".lambda-test-tool\SavedRequests\Single Ticket Auto refund assessment.json" />
-    <Content Include=".lambda-test-tool\SavedRequests\test.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.0.1" />
     <PackageReference Include="AWSSDK.Lambda" Version="3.5.0.12" />

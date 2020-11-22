@@ -38,18 +38,8 @@ custom:
     prod: ${ssm:/prod/sabre-soap/uri} 
   
 functions:
-  AssessRefund:
+  SearchPNR:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::SearchPNR
-    timeout: 30
+    timeout: 120
     package:
-      artifact: bin/Release/netcoreapp3.1/sabreautorefund.zip     
-  ProcessRefund:
-    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::ManualBuild
-    timeout: 30
-    package:
-      artifact: bin/Release/netcoreapp3.1/sabreautorefund.zip
-  ValidateTickets:
-    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::IssueTickets
-    timeout: 30
-    package:
-      artifact: bin/Release/netcoreapp3.1/sabreautorefund.zip
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip     

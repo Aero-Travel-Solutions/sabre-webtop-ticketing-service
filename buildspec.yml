@@ -19,7 +19,7 @@ phases:
       - echo build started...
       - dotnet restore
       - dotnet tool install -g Amazon.Lambda.Tools --framework netcoreapp3.1
-      - dotnet lambda package --configuration Release --framework netcoreapp3.1 --output-package bin/Release/netcoreapp3.1/sabreautorefund.zip
+      - dotnet lambda package --configuration Release --framework netcoreapp3.1 --output-package bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
       - serverless package --package artifacts --stage $STAGE --appversion $(date +%Y.%m.%d).$CODEBUILD_BUILD_NUMBER
       - serverless deploy --package artifacts/ --stage $STAGE --appversion $(date +%Y.%m.%d).$CODEBUILD_BUILD_NUMBER
       - echo build finished.

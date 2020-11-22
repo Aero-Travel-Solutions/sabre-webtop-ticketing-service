@@ -35,7 +35,7 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> SearchPNR(SearchPNRRequest rq)
         {
-            logger.LogInformation("*****AssessRefund invoked *****");
+            logger.LogInformation("*****SearchPNR invoked *****");
             logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
