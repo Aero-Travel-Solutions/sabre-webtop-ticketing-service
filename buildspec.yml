@@ -39,7 +39,7 @@ custom:
   
 functions:
   SearchPNR:
-    handler: CsharpHandlers::SabreAeroRefundService.Handler::SearchPNR
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::SearchPNR
     timeout: 30
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip     
