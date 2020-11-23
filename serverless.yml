@@ -19,6 +19,7 @@ provider:
         - dynamodb:*
         - lambda:*
         - sqs:*
+        - cloudformation:*
       Resource: "*"   
 
 package:
