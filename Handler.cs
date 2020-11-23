@@ -46,7 +46,7 @@ namespace SabreWebtopTicketingService
                 }
             };
 
-            string contextid = $"1W-{rq.SearchText}-{rq.SessionIdD}-{Guid.NewGuid()}";
+            string contextid = "";
 
             if (rq == null || string.IsNullOrEmpty(rq.SessionIdD) || string.IsNullOrEmpty(rq.GDSCode) || string.IsNullOrEmpty(rq.SearchText))
             {
@@ -81,6 +81,7 @@ namespace SabreWebtopTicketingService
             }
             else
             {
+                contextid = $"1W-{rq.SearchText}-{rq.SessionIdD}-{Guid.NewGuid()}";
                 SearchPNRResponse result = await sabreGDS.SearchPNR(rq);
                 lambdaResponse.statusCode = result.Errors.IsNullOrEmpty() ? 200 : 500;
                 lambdaResponse.body = JsonConvert.
