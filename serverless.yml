@@ -1,4 +1,4 @@
-service: sabreautorefund
+service: sabrewebtopticketing
 
 provider:
   name: aws
