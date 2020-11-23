@@ -20,6 +20,7 @@ provider:
         - lambda:*
         - sqs:*
         - cloudformation:*
+        - cloudformation:DescribeStacks
       Resource: "*"   
 
 package:
