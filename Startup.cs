@@ -37,7 +37,8 @@ namespace SabreWebtopTicketingService
 
             //In memory cache
             services.AddMemoryCache();
-
+            services.AddDistributedMemoryCache();
+           
             //Redis cache
             var cacheHost = Environment.GetEnvironmentVariable(Constants.CACHE_HOST) ?? "localhost:6379";
             var redis = ConnectionMultiplexer.Connect(cacheHost);
