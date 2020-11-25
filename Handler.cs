@@ -4,15 +4,11 @@ using SabreWebtopTicketingService.Services;
 using Amazon.Lambda.Core;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
-using Amazon.XRay.Recorder.Core;
-using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using SabreWebtopTicketingService.CustomException;
 
 [assembly:LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 namespace SabreWebtopTicketingService

@@ -58,7 +58,6 @@ namespace SabreWebtopTicketingService.Services
             ChangeContextService changeContextService,
             DisplayTicketService displayTicket,
             SabreCrypticCommandService sabreCommandService,
-            TripSearchService tripSearchService,
             SessionCloseService sessionCloseService,
             GetReservationService getReservationService,
             EnhancedAirBookService enhancedAirBookService,
@@ -79,7 +78,6 @@ namespace SabreWebtopTicketingService.Services
             _changeContextService = changeContextService;
             _displayTicket = displayTicket;
             _sabreCommandService = sabreCommandService;
-            _tripSearchService = tripSearchService;
             _sessionCloseService = sessionCloseService;
             _getReservationService = getReservationService;
             _enhancedAirBookService = enhancedAirBookService;

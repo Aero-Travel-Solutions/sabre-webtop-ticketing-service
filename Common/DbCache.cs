@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using SabreWebtopTicketingService.Services;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
-using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using SabreWebtopTicketingService.Models;
 
 namespace SabreWebtopTicketingService.Common
