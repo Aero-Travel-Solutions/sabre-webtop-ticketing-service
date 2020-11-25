@@ -17,7 +17,7 @@ namespace SabreWebtopTicketingService.Common
         {
             this.lambda = lambda;
             this.session = session;
-            PFX_ADB = $"agent-database-{System.Environment.GetEnvironmentVariable("ENVIRONMENT")}";
+            PFX_ADB = $"agent-database-{System.Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}";
         }
 
         public async Task<AgentPccList> RetrieveAgentPccs(string agent_id, string sessionID)

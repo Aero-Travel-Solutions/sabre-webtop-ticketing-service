@@ -129,10 +129,10 @@ namespace SabreWebtopTicketingService.Services
             SabreSession sabreSession = null;
             user = await session.GetSessionUser(request.SessionID);
             pcc = _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID).GetAwaiter().GetResult();
-            Agent agent = await getAgentData(
-                                    request.SessionID,
-                                    user,
-                                    pcc.PccCode);
+            //Agent agent = await getAgentData(
+            //                        request.SessionID,
+            //                        user,
+            //                        pcc.PccCode);
 
 
 
@@ -218,9 +218,9 @@ namespace SabreWebtopTicketingService.Services
             Parallel.
                 Invoke(
                     //Post retrieval actions
-                    () => pnr = ParseSabrePNR(response, sessionid, includeQuotes, includeexpiredquote),
+                    () => pnr = ParseSabrePNR(response, sessionid, includeQuotes, includeexpiredquote)
                     //Retrieve agencies
-                    () => agents = GetAgents(sessionid, bookingpcc)
+                    //() => agents = GetAgents(sessionid, bookingpcc)
                 );
 
             if(!agents.IsNullOrEmpty() && agents.Count > 1)
