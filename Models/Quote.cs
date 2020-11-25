@@ -37,8 +37,8 @@ namespace SabreWebtopTicketingService.Models
         public string ROE => FareCalculation.LastMatch(@"ROE\s*([\d\.]+)", "1");
         public List<SpecificPenalty> SpecificPenalties { get; set; }
         public bool Expired { get; set; }
-        public List<string> Warnings { get; set; }
-        public List<string> Errors {get;set;}
+        public List<WebtopWarning> Warnings { get; set; }
+        public List<WebtopError> Errors {get;set;}
         public int SectorCount { get; set; }
         public string Route { get; set; }
         public string IssueTicketQuoteKey { get; set; }

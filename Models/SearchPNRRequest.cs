@@ -7,7 +7,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class SearchPNRRequest
     {
-        public string SessionIdD { get; set; }        
+        public string SessionID { get; set; }        
         public string GDSCode { get; set; }
         public string SearchText { get; set; }
     }

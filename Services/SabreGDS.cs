@@ -32,14 +32,18 @@ namespace SabreWebtopTicketingService.Services
         private readonly TripSearchService _tripSearchService;
         private readonly SessionCloseService _sessionCloseService;
         private readonly GetReservationService _getReservationService;
+        private readonly EnhancedAirBookService _enhancedAirBookService;
         private readonly IGetTurnaroundPointDataSource _getTurnaroundPointDataSource;
         private readonly ICommissionDataService _commissionDataService;
+        private readonly IAgentPccDataSource _agentPccDataSource;
         private readonly ILogger logger;
         private readonly ICacheDataSource cache;
         private readonly DbCache _dbCache;
         private readonly IAsyncPolicy retryPolicy;
         private readonly IDataProtector dataProtector;
+        private readonly SessionDataSource session;
 
+        public User user { get; set; }
         public Pcc pcc { get; set; }
         public Agent agent { get; set; }
 
@@ -57,10 +61,13 @@ namespace SabreWebtopTicketingService.Services
             TripSearchService tripSearchService,
             SessionCloseService sessionCloseService,
             GetReservationService getReservationService,
+            EnhancedAirBookService enhancedAirBookService,
             IGetTurnaroundPointDataSource getTurnaroundPointDataSource,
             ICommissionDataService commissionDataService,
             ExpiredTokenRetryPolicy expiredTokenRetryPolicy,
-            IDataProtectionProvider dataProtectionProvider)
+            IDataProtectionProvider dataProtectionProvider,
+            IAgentPccDataSource agentPccDataSource,
+            SessionDataSource session)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -75,28 +82,65 @@ namespace SabreWebtopTicketingService.Services
             _tripSearchService = tripSearchService;
             _sessionCloseService = sessionCloseService;
             _getReservationService = getReservationService;
+            _enhancedAirBookService = enhancedAirBookService;
             _getTurnaroundPointDataSource = getTurnaroundPointDataSource;
             _commissionDataService = commissionDataService;
             retryPolicy = expiredTokenRetryPolicy.ExpiredTokenPolicy;
-            dataProtector = dataProtectionProvider.CreateProtector("CCDataProtector"); 
+            dataProtector = dataProtectionProvider.CreateProtector("CCDataProtector");
+            _agentPccDataSource = agentPccDataSource;
             this.cache = cache;
+            this.session = session;
         }
 
-        public async Task<SearchPNRResponse> SearchPNR(SearchPNRRequest request)
+        private async Task<Agent> getAgentData(string sessionid, User user, string webservicepcc)
+        {
+            if (user == null)
+            {
+                throw new ExpiredSessionException(sessionid, "USER_NOT_FOUND", "User not found");
+            }
+
+            Agent agent = new Agent()
+            {
+                Agent = user.Agent,
+                AgentId = user.AgentId,
+                ConsolidatorId = user.ConsolidatorId,
+                Consolidator = user.Consolidator,
+                Permissions = user.Permissions,
+                Roles = user.Roles,
+                Email = user.Email,
+                FullName = user.FullName,
+                Name = user.Name,
+                CreditLimit = user.Agent.AccounDetails?.CreditLimit
+            };
+
+            var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(user.ConsolidatorId, user.AgentId, sessionid);
+
+            agent.TicketingQueue = webservicepcc == "0M4J" ? "30" : "";
+            agent.PccList = (await _agentPccDataSource.RetrieveAgentPccs(user.AgentId, sessionid)).PccList;
+            agent.CustomerNo = agentDetails?.CustomerNo;
+            agent.Address = agentDetails?.Address;
+            user.Agent.CustomerNo = agent.CustomerNo;
+            return agent;
+        }
+
+        public async Task<SearchPNRResponse> SearchPNR(SearchPNRRequest request, string contextID)
         {
             string token = "";
             PNR pnr = new PNR();
             List<SabreSearchPNRResponse> res = new List<SabreSearchPNRResponse>();
-            List<string> agentpccs = new List<string>();
-            string ticketingpcc = GetTicketingPCC(agent == null ? "" : agent.TicketingPcc, pcc.PccCode);
             SabreSession sabreSession = null;
+            user = await session.GetSessionUser(request.SessionID);
+            pcc = _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID).GetAwaiter().GetResult();
+            Agent agent = await getAgentData(
+                                    request.SessionID,
+                                    user,
+                                    pcc.PccCode);
+
+
 
             try
             {
                 var sw = Stopwatch.StartNew();
-
-                //Get agent pccs
-                agentpccs = agent?.PccList?.Select(s => s.PccCode).ToList() ?? new List<string> { "9SNJ" };//agent.PccList.Select(s=> s.PccCode).ToList();
 
                 //Obtain session
                 sabreSession = await _sessionCreateService.
@@ -105,74 +149,25 @@ namespace SabreWebtopTicketingService.Services
                 //ignore session
                 await _sabreCommandService.ExecuteCommand(sabreSession.SessionID, pcc, "I");
 
-                //Context Change
-                await _changeContextService.ContextChange(sabreSession, pcc, ticketingpcc);
-
                 token = sabreSession.SessionID;
 
-                if (request.SearchText.Length == 6 && request.SearchText.IsMatch(@"\w{6}"))
+                //Retrieve PNR if only one match found
+                try
                 {
-                    //Retrieve PNR if only one match found
-                    try
-                    {
-                        pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SearchText, true, true, true, false, ticketingpcc));
+                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SearchText, true, true, true, false));
 
-                        logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
-
-                        return new SearchPNRResponse() { PNR = pnr };
-                    }
-                    catch (GDSException)
-                    {
-                        //if(ex.Message.StartsWith("PNR Restricted, caused by [PNR Restricted, code: 500324, severity: MODERATE]"))
-                        //{
-                        //    throw new GDSException("3000030", "PNR Restricted");
-                        //}
-                        //If search base on reloc failed we need to try and search it as name
-                    }
-                }
-
-                if (agentpccs.IsNullOrEmpty()) { throw new AeronologyException("50000033", "Agent PCCs not found."); }
-
-                //Search for PNRs
-                res = await retryPolicy.ExecuteAsync(() => _tripSearchService.SearchPNR(request, token, pcc, agentpccs, ticketingpcc));
-
-                if (res == null)
-                {
-                    throw new AeronologyException("50000017", "No record found for the given search request. Please ensure the correct record locator is entered and adequate branch access is granted before retrying.");
-                }
-
-
-                if (res.Count == 1)
-                {
-                    //Retrieve PNR if one PNR found
-                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, res.First().Locator, true, true, true, false, ticketingpcc));
-
-                    logger.LogInformation($"Response parsing and validation @ SearchPNR elapsed {sw.ElapsedMilliseconds} ms");
+                    logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
 
                     return new SearchPNRResponse() { PNR = pnr };
                 }
-
-                logger.LogInformation($"Response parsing @ SearchPNR elapsed {sw.ElapsedMilliseconds} ms");
-
-
-                return new SearchPNRResponse()
+                catch (GDSException gdsex)
                 {
-                    PNROptions = res.
-                                    OrderBy(o => o.FirstDepartureDate).
-                                    Select(s => new SearchPNRResponseOption()
-                                    {
-                                        Locator = s.Locator,
-                                        PassengerNames = s.PassengerNames,
-                                        DepartureDate = s.FirstDepartureDateString,
-                                        ArrivalDate = s.LastArrivalDate
-                                    }).
-                                    ToList()
-                };
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex.Message);
-                throw;
+                    if (gdsex.Message.StartsWith("PNR Restricted, caused by [PNR Restricted, code: 500324, severity: MODERATE]"))
+                    {
+                        throw new GDSException("PNR_RESTRICTED", "PNR Restricted");
+                    }
+                    throw (gdsex);
+                }
             }
             finally
             {
@@ -210,20 +205,39 @@ namespace SabreWebtopTicketingService.Services
             var cardAccessKey = $"{ticketingpcc}-{locator}-card".EncodeBase64();
 
             //get reservation
-            var response = await _getReservationService.RetrievePNR(locator, sessionid, pcc, ticketingpcc);
+            GetReservationRS response = await _getReservationService.RetrievePNR(locator, sessionid, pcc, ticketingpcc);
 
-            //Post retrieval actions
-            var result = ParseSabrePNR(response, sessionid, includeQuotes, includeexpiredquote);
+            //booking pcc
+            string bookingpcc = ((ReservationPNRB)response.Item).POS.Source.PseudoCityCode;
+
+            PNR pnr = null;
+            List<PNRAgent> agents = new List<PNRAgent>();
+
+            CancellationToken ct = new CancellationToken();
+
+            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            Parallel.
+                Invoke(
+                    //Post retrieval actions
+                    () => pnr = ParseSabrePNR(response, sessionid, includeQuotes, includeexpiredquote),
+                    //Retrieve agencies
+                    () => agents = GetAgents(sessionid, bookingpcc)
+                );
+
+            if(!agents.IsNullOrEmpty() && agents.Count > 1)
+            {
+                pnr.Agents = agents;
+            }
 
             if (withpnrvalidation)
             {
-                //PNR validation
-                result.InvokePostPNRRetrivalActions();
+                    //PNR validation
+                    pnr.InvokePostPNRRetrivalActions();
             }
 
-
             //Save PNR in cache
-            await cache.Set(pnrAccessKey, result, 15);
+            await cache.Set(pnrAccessKey, pnr, 15);
 
             if (getStoredCards)
             {
@@ -235,7 +249,242 @@ namespace SabreWebtopTicketingService.Services
                 await cache.Set(cardAccessKey, storedCreditCard, 15);
             }
 
+            return pnr;
+        }
+
+        public async Task<List<Quote>> GetQuote(GetQuoteRQ request, string contextID)
+        {
+            request.Validate();
+
+            SabreSession token = null;
+
+            PNR pnr = null;
+            string sessionID = request.SessionID;
+            List<StoredCreditCard> storedCreditCards = null;
+            string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
+            var pnrAccessKey = $"{ticketingpcc}-{request.Locator}-pnr".EncodeBase64();
+
+            //Obtain session (if found from cache, else directly from sabre)
+            token = await _sessionCreateService.CreateStatefulSessionToken(pcc);
+
+            //Check to see if the session is from cache and usable
+            if (token.StoredSesson && !token.Expired)
+            {
+                var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
+
+                //Try get PNR in cache               
+                pnr = await cache.Get<PNR>(pnrAccessKey);
+
+                if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
+                {
+                    //Try get stored cards
+                    storedCreditCards = await cache.Get<List<StoredCreditCard>>(cardAccessKey);
+                    if (!storedCreditCards.IsNullOrEmpty())
+                    {
+                        storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
+                        GetStoredCardDetails(request, null, storedCreditCards);
+                    }
+                }
+            }
+
+            if (pnr == null)
+            {
+                if ((ticketingpcc != pcc.PccCode) ||
+                    (token.StoredSesson &&
+                     !token.Expired &&
+                     (string.IsNullOrEmpty(token.CurrentPCC) ? token.ConsolidatorPCC : token.CurrentPCC) != ticketingpcc))
+                {
+                    //ignore session
+                    await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+                    //Context Change
+                    await _changeContextService.ContextChange(token, pcc, ticketingpcc, request.Locator);
+                }
+
+                //Retrieve PNR
+                GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
+
+                //Parse PNR++
+                pnr = ParseSabrePNR(result, token.SessionID);
+
+                //Get stored card data
+                var maskedcards = request.
+                                    SelectedPassengers.
+                                    Where(q =>
+                                        q.FormOfPayment.PaymentType == PaymentType.CC &&
+                                        q.FormOfPayment.CardNumber.Contains("XXX"));
+                if (maskedcards.Count() > 0 &&
+                    (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
+                {
+                    GetStoredCardDetails(request, result);
+                }
+            }
+
+            if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+
+            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+
+            //Price Air Itinerary
+            var quotes = await _enhancedAirBookService.PricePNR(request, token.SessionID, pcc, pnr, ticketingpcc);
+
+            //Check for pax type differences
+            quotes.
+                Where(w => !w.DifferentPaxType.IsNullOrEmpty()).
+                ToList().
+                ForEach(f =>
+                    f.Errors = new List<WebtopError>()
+                    {
+                        new WebtopError()
+                        {
+                            code = "DIFF_PAX_TYPE",
+                            message = $"No fare found for passenger type used \"{string.Join(",", f.DifferentPaxType)}\"." +
+                                            $"Please consider amending the passenger type in Sabre to ADT before trying again."
+                        }
+                    });
+
+            if (!quotes.IsNullOrEmpty())
+            {
+                //update pnr in cache
+                pnr.Quotes = new List<Quote>();
+                pnr.Quotes.AddRange(quotes);
+
+                //Save PNR in cache
+                await cache.Set(pnrAccessKey, pnr, 15);
+            }
+
+            //redislpay price quotes
+            await RedisplayGeneratedQuotes(token.SessionID, quotes);
+
+            //ignore session
+            await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+            //workout fuel surcharge taxcode
+            GetFuelSurcharge(quotes);
+
+            //Calculate Commission
+            CalculateCommission(quotes, pnr, ticketingpcc, sessionID);
+
+            //Agent Price
+            quotes.
+                ForEach(f => f.AgentPrice = f.QuotePassenger.FormOfPayment == null ?
+                                            f.DefaultPriceItAmount - f.Commission :
+                                            //Cash Only
+                                            f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                f.DefaultPriceItAmount - f.Commission :
+                                                //Part Cash part credit
+                                                f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && f.QuotePassenger.FormOfPayment.CreditAmount < f.TotalFare ?
+                                                    f.TotalFare - f.QuotePassenger.FormOfPayment.CreditAmount + f.Fee + (f.FeeGST ?? 0.00M) - f.Commission :
+                                                    //Credit only
+                                                    f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
+
+            //Generate the IssueTicketQuoteKey
+            quotes.
+                ForEach(quote =>
+                {
+                    quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID).GetAwaiter().GetResult();
+                    quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote);
+                    quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
+                });
+
+            if (token.IsLimitReached)
+            {
+                await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+            }
+
+            return quotes;
+        }
+
+        private void GetStoredCardDetails(GetQuoteRQ request, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
+        {
+            //if stored card been used extract card info
+
+            //1. Extract stored cards from PNR
+            var storedcards = storedCreditCards ?? GetStoredCards(res);
+
+            foreach (var item in request.SelectedPassengers.Where(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
+            {
+                //2. Match masked cards and extract card details
+                var value = storedcards.
+                                FirstOrDefault(f =>
+                                    f.MaskedCardNumber == item.FormOfPayment.CardNumber);
+
+                if (value == null)
+                {
+                    throw new AeronologyException("50000050", "Card data not found.");
+                }
+
+                item.FormOfPayment.PaymentType = PaymentType.CC;
+                item.FormOfPayment.CardNumber = value.CreditCard;
+                item.FormOfPayment.ExpiryDate = item.FormOfPayment.ExpiryDate;
+            }
+        }
+
+
+        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
+        {
+            string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
+            List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
+            if (applicabledpqres.Any(w => w.PQNo != -1))
+            {
+                applicabledpqres.
+                    Where(w => w.PQNo != -1).
+                    ToList().
+                    ForEach(f => quotes.
+                                    Where(q => q.QuotePassenger.PaxType == f.PassengerType ||
+                                               (q.QuotePassenger.PaxType.StartsWith("C") && q.QuotePassenger.PaxType.Substring(0, 1) == f.PassengerType.Substring(0, 1))).
+                                    ToList().
+                                    ForEach(qf =>
+                                    {
+                                        qf.QuoteNo = f.PQNo;
+                                        qf.BspCommissionRate = f.BSPCommission;
+                                        qf.TourCode = f.TourCode;
+                                    }));
+            }
+        }
+
+        private List<PQTextResp> ParsePQText(string pqtext)
+        {
+            List<PQTextResp> result = new List<PQTextResp>();
+            List<string> diffquotes = pqtext.SplitOnRegex(@"(PQ\s\d+)").Skip(1).ToList();
+            for (int i = 0; i < diffquotes.Count(); i += 2)
+            {
+                var bsprate = diffquotes[i + 1].
+                                   LastMatch(@"COMM\sPCT\s*(\d+)", "");
+
+                string pricecommandline = diffquotes[i + 1].SplitOn("BASE FARE").First().Trim().Replace("\n", "");
+                string paxtype = pricecommandline.LastMatch(@"ÂP([ACI][D\dN][T\dNF])Â");
+                if (string.IsNullOrEmpty(paxtype))
+                {
+                    paxtype = diffquotes[i + 1].LastMatch(@"\s+INPUT\s+PTC\s*-\s*(.*)");
+                }
+
+                result.
+                Add(new PQTextResp()
+                {
+                    PQNo = int.Parse(diffquotes[i].LastMatch(@"PQ\s(\d+)", "-1")),
+                    PassengerType = paxtype,
+                    TourCode = diffquotes[i + 1].
+                                LastMatch(@"TOUR\sCODE-(\w*)") ?? "",
+                    BSPCommission = string.IsNullOrEmpty(bsprate) ?
+                                    default(decimal?) :
+                                    decimal.Parse(bsprate)
+                });
+            }
             return result;
+        }
+
+
+        private List<PNRAgent> GetAgents(string sessionid, string bookingpcc)
+        {
+            List<Agent> agents = _agentPccDataSource.RetrieveAgents(user?.ConsolidatorId, sessionid).GetAwaiter().GetResult();
+            return agents.
+                    Where(w => w.AgentPCC.Contains(bookingpcc)).
+                    Select(agt => new PNRAgent()
+                    {
+                        AgentId = agt.AgentId,
+                        Name = agt.Name
+                    }).
+                    ToList();
         }
 
         private PNR ParseSabrePNR(GetReservationRS result, string token, bool includeQuotes = false, bool includeexpiredquote = false)
@@ -257,6 +506,7 @@ namespace SabreWebtopTicketingService.Services
                                             "HHmm ddMMM",
                                             System.Globalization.CultureInfo.InvariantCulture);
             }
+
             PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote);
 
             pnr.LastQuoteNumber = pnr.Quotes.IsNullOrEmpty() ? 0 : pnr.Quotes.OrderBy(l => l.QuoteNo).Last().QuoteNo;
@@ -586,18 +836,7 @@ namespace SabreWebtopTicketingService.Services
                                     pcc.PccCode,
                                     sessionID);
             }
-            catch (AeronologyException ex)
-            {
-                quotes.ForEach(f =>
-                {
-                    if (f.Errors.IsNullOrEmpty())
-                    {
-                        f.Errors = new List<string>();
-                    }
-
-                    f.Errors.Add(ex.Message);
-                });
-            }
+            catch { } //Errors will not be thrown as we need file -ares with errors to be displayed
 
             var ApplySupressITFlag = notourcode && quotes.Any(a => !string.IsNullOrEmpty(a.TourCode));
 
@@ -716,7 +955,7 @@ namespace SabreWebtopTicketingService.Services
                     CountryOfSale = !string.IsNullOrEmpty(agent?.Consolidator?.CountryCode) ?
                                         agent.Consolidator.CountryCode :
                                         "AU",
-                    AgentIata = agent?.Agent?.FinanceDetails?.IataNumber,
+                    AgentIata = user?.Agent?.FinanceDetails?.IataNumber??"",
                     BspCommission = quote.BspCommissionRate,
                     FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                         "CREDIT_CARD" :
@@ -742,9 +981,14 @@ namespace SabreWebtopTicketingService.Services
 
                 if (!(calculateCommissionResponse.PlatingCarrierBspRate.HasValue || (calculateCommissionResponse.PlatingCarrierAgentFee != null && calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue)))
                 {
-                    quote.Errors = new List<string>()
+                    quote.Errors = new List<WebtopError>()
                     {
-                        $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found. Please contact the consolidator\\ticket office for more information."
+                        new WebtopError()
+                        {
+                            code = "COMM_REC_NOT_FOUND",
+                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found." +
+                                                $" Please contact the consolidator\\ticket office for more information."
+                        }
                     };
                     return;
                 }
@@ -1114,5 +1358,13 @@ namespace SabreWebtopTicketingService.Services
         public int SectorNo { get; set; }
         public string DepartureDate { get; set; }
         public bool Void { get; set; }
+    }
+
+    internal class PQTextResp
+    {
+        public int PQNo { get; set; }
+        public string PassengerType { get; set; }
+        public decimal? BSPCommission { get; set; }
+        public string TourCode { get; set; }
     }
 }
