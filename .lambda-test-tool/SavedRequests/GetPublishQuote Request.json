@@ -1,0 +1,37 @@
+{
+   "SessionID":"28bf7c965707963e6f8f8d60d733d7698369359a132de60b15cffc66c71d288b",
+   "gdsCode":"1W",
+   "locator":"XFBLMM",
+   "selectedPassengers":[
+      {
+         "nameNumber":"1.1",
+         "passengerName":"CHUNG/HENRY MR",
+         "paxType":"ADT",
+         "formOfPayment":{
+            "paymentType":0
+         }
+      },
+      {
+         "nameNumber":"1.2",
+         "passengerName":"CHUNG/JULIAN MSTR",
+         "paxType":"ADT",
+         "formOfPayment":{
+            "paymentType":0
+         }
+      },
+      {
+         "nameNumber":"2.1",
+         "passengerName":"CHUNG/MICHELLE MISS",
+         "paxType":"INF",
+         "formOfPayment":{
+            "paymentType":0
+         }
+      }
+   ],
+   "selectedSectors":[
+      1,
+      2,
+      3,
+      4
+   ]
+}

@@ -8,6 +8,7 @@ namespace SabreWebtopTicketingService.Models
     public class GetQuoteRQ
     {
         public string SessionID { get; set; }
+        public string AgentID { get; set; }
         public string GDSCode { get; set; }
         public string Locator { get; set; }
         public string AccessKey { get; set; }
