@@ -39,12 +39,12 @@ custom:
     prod: ${ssm:/prod/sabre-soap/uri} 
   
 functions:
-  SabreSearchPNR:
+  SearchPNR:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::SearchPNR
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
-  SabreGetPublishQuote:
+  GetPublishQuote:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::GetPublishQuote
     timeout: 120
     package:
