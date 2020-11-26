@@ -12,10 +12,9 @@ phases:
     commands:
       - echo pre_build started...
       - npm install -g serverless
+      - npm install -g --unsafe-perm serverless
       - echo pre_build finished.
       - apt -qq -y install zip
-      - npm install -g serverless
--     - npm install -g --unsafe-perm serverless
   build:
     commands:
       - echo build started...
