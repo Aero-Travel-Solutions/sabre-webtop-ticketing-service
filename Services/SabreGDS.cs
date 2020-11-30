@@ -37,7 +37,6 @@ namespace SabreWebtopTicketingService.Services
         private readonly ICommissionDataService _commissionDataService;
         private readonly IAgentPccDataSource _agentPccDataSource;
         private readonly ILogger logger;
-        private readonly ICacheDataSource cache;
         private readonly DbCache _dbCache;
         private readonly IAsyncPolicy retryPolicy;
         private readonly IDataProtector dataProtector;
@@ -51,7 +50,6 @@ namespace SabreWebtopTicketingService.Services
             SessionCreateService sessionCreateService,
             ILogger logger,
             DbCache dbCache,
-            ICacheDataSource cache,
             ConsolidatorPccDataSource consolidatorPccDataSource,
             TicketingPccDataSource ticketingPccDataSource,
             IgnoreTransactionService ignoreTransactionService,
@@ -86,7 +84,6 @@ namespace SabreWebtopTicketingService.Services
             retryPolicy = expiredTokenRetryPolicy.ExpiredTokenPolicy;
             dataProtector = dataProtectionProvider.CreateProtector("CCDataProtector");
             _agentPccDataSource = agentPccDataSource;
-            this.cache = cache;
             this.session = session;
         }
 
@@ -224,7 +221,7 @@ namespace SabreWebtopTicketingService.Services
             }
 
             //Save PNR in cache
-            await cache.Set(pnrAccessKey, pnr, 15);
+            await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
 
             if (getStoredCards)
             {
@@ -233,7 +230,7 @@ namespace SabreWebtopTicketingService.Services
                 //Encrypt card number
                 storedCreditCard.ForEach(c => c.CreditCard = dataProtector.Protect(c.CreditCard));
 
-                await cache.Set(cardAccessKey, storedCreditCard, 15);
+                await _dbCache.InsertStoreCC(cardAccessKey, storedCreditCard, 15);
             }
 
             return pnr;
@@ -268,12 +265,12 @@ namespace SabreWebtopTicketingService.Services
                 var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
-                pnr = await cache.Get<PNR>(pnrAccessKey);
+                pnr = await _dbCache.Get<PNR>(pnrAccessKey);
 
                 if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await cache.Get<List<StoredCreditCard>>(cardAccessKey);
+                    storedCreditCards = await _dbCache.Get<List<StoredCreditCard>>(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -348,7 +345,7 @@ namespace SabreWebtopTicketingService.Services
                     pnr.Quotes.AddRange(quotes);
 
                     //Save PNR in cache
-                    await cache.Set(pnrAccessKey, pnr, 15);
+                    await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
                 }
 
                 //redislpay price quotes
@@ -390,17 +387,19 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"EnhancedAirBookService return {gdsex}");
                 
                 //ignore session
-                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
 
                 //workout plating carrier
                 string platingcarrier = GetManualPlatingCarrier(pnr, request);
                 logger.LogInformation($"Plating carrier {platingcarrier}.");
 
                 //Generate bestbuy command
-                string commnd = GetBestbuyCommand(request, platingcarrier);
+                string command = GetBestbuyCommand(request, platingcarrier);
 
                 //sabre best buy
-                string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+                string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
+
+                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr);
             }
 
             if (token.IsLimitReached)
@@ -408,6 +407,14 @@ namespace SabreWebtopTicketingService.Services
                 await _sessionCloseService.SabreSignout(token.SessionID, pcc);
             }
 
+            return quotes;
+        }
+
+        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr)
+        {
+            List<Quote> quotes = new List<Quote>();
+
+            SabreBestBuyQuote bestbuyquote = new SabreBestBuyQuote(bestbuyresponse);
             return quotes;
         }
 

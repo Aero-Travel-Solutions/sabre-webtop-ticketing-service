@@ -29,6 +29,7 @@ namespace SabreWebtopTicketingService.Services
         {
             this.sessionData = sessionData;
             this.logger = logger;
+            url = Constants.GetSoapUrl();
         }
 
         public async Task<List<Quote>> PricePNRForTicketing(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc)

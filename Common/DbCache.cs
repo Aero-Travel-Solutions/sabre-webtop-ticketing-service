@@ -5,6 +5,7 @@ using SabreWebtopTicketingService.Services;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using SabreWebtopTicketingService.Models;
+using System.Collections.Generic;
 
 namespace SabreWebtopTicketingService.Common
 {
@@ -20,7 +21,35 @@ namespace SabreWebtopTicketingService.Common
             table = Table.LoadTable(dynamoDbClient, CACHE_DB);
             _sessionRefreshService = sessionRefreshService;
             _logger = logger;
-            //AWSSDKHandler.RegisterXRayForAllServices();
+        }
+
+        public async Task<T> Get<T>(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+                return default;
+
+            try
+            {
+                _logger.LogInformation($"### DB cache get('{key}') ###");
+
+                var doc = await table.GetItemAsync(key);
+
+                if (doc == null)
+                {
+                    _logger.LogInformation($"### DB cache get('{key}') => empty ###");
+                    return default;
+                }
+
+                string jsonrs = doc.ToJson();
+
+                return JsonSerializer.Deserialize<T>(jsonrs);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"### DB cache get('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
+                return default;
+            }
         }
 
         public async Task<SabreSession> GetSession(string key, Pcc pcc)
@@ -123,6 +152,40 @@ namespace SabreWebtopTicketingService.Common
                 {
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        public async Task<bool> InsertPNR(string cacheKey, PNR pnr, int expiryinmins)
+        {
+            //insert
+            var newDoc = new Document();
+            newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(expiryinmins).ToUnixTimeSeconds();
+            newDoc["cache_key"] = cacheKey;
+            newDoc["pnr"] = JsonSerializer.Serialize(pnr);
+
+            var result = await table.PutItemAsync(newDoc);
+            if (result is { })
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public async Task<bool> InsertStoreCC(string cacheKey, List<StoredCreditCard> ccs, int expiryinmins)
+        {
+            //insert
+            var newDoc = new Document();
+            newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(expiryinmins).ToUnixTimeSeconds();
+            newDoc["cache_key"] = cacheKey;
+            newDoc["pnr"] = JsonSerializer.Serialize(ccs);
+
+            var result = await table.PutItemAsync(newDoc);
+            if (result is { })
+            {
+                return true;
             }
 
             return false;

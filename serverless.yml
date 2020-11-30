@@ -9,6 +9,7 @@ provider:
     APP_VERSION: ${opt:appversion, '0.0.0.0'}
     SABRE_URL: ${self:custom.sabre_soap_uri.${self:provider.stage}}
     ENVIRONMENT: ${self:provider.stage}
+    CACHE_HOST: ${self:custom.redis_uri.${self:provider.stage}}
   tracing:
     lambda: true
   iamRoleStatements:
@@ -37,6 +38,10 @@ custom:
     dev: ${ssm:/dev/sabre-soap/uri}
     stg: ${ssm:/stg/sabre-soap/uri}
     prod: ${ssm:/prod/sabre-soap/uri} 
+  redis_uri:
+    dev: ${ssm:/dev/redis-cache/url}
+    stg: ${ssm:/stg/redis-cache/url}
+    prod: ${ssm:/prod/redis-cache/url} 
   
 functions:
   SearchPNR:

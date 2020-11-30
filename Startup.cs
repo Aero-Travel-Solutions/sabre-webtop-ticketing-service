@@ -40,14 +40,14 @@ namespace SabreWebtopTicketingService
             services.AddDistributedMemoryCache();
            
             //Redis cache
-            var cacheHost = Environment.GetEnvironmentVariable(Constants.CACHE_HOST) ?? "localhost:6379";
-            var redis = ConnectionMultiplexer.Connect(cacheHost);
-            services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
+            //var cacheHost = Environment.GetEnvironmentVariable(Constants.CACHE_HOST) ?? "localhost:6379";
+            //var redis = ConnectionMultiplexer.Connect(cacheHost);
+            //services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
 
             //Add data protection
             services
                 .AddDataProtection()
-                .PersistKeysToStackExchangeRedis(redis)
+                //.PersistKeysToStackExchangeRedis(redis)
                 .UseCryptographicAlgorithms(
                     new AuthenticatedEncryptorConfiguration()
                     {
@@ -84,7 +84,7 @@ namespace SabreWebtopTicketingService
             services.AddSingleton<ExpiredTokenRetryPolicy>();
             services.AddSingleton<GetOrderSquenceRetryPolicy>();
 
-            services.AddSingleton<ICacheDataSource, RedisClient>();
+            //services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<DbCache>();
             services.AddSingleton<ILogger, Logger>();
 
