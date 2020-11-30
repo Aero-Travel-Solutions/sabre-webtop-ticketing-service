@@ -38,8 +38,6 @@ namespace SabreWebtopTicketingService.Services
         }
 
         public static XElement xml { get; set; }
-
-        public const string CACHE_HOST = "CACHE_HOST";
     }
 
 }
