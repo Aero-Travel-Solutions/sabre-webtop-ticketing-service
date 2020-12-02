@@ -138,7 +138,7 @@ namespace SabreWebtopTicketingService.Services
                 //Retrieve PNR if only one match found
                 try
                 {
-                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SearchText, true, true, true, false));
+                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, true, true, true, false));
 
                     logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
 
@@ -183,13 +183,13 @@ namespace SabreWebtopTicketingService.Services
             return ticketingpcc;
         }
 
-        public async Task<PNR> GetPNR(string sessionid, string locator, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
+        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
         {
             var pnrAccessKey = $"{ticketingpcc}-{locator}-pnr".EncodeBase64();
             var cardAccessKey = $"{ticketingpcc}-{locator}-card".EncodeBase64();
 
             //get reservation
-            GetReservationRS response = await _getReservationService.RetrievePNR(locator, sessionid, pcc, ticketingpcc);
+            GetReservationRS response = await _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc);
 
             //booking pcc
             string bookingpcc = ((ReservationPNRB)response.Item).POS.Source.PseudoCityCode;
@@ -204,9 +204,9 @@ namespace SabreWebtopTicketingService.Services
             Parallel.
                 Invoke(
                     //Post retrieval actions
-                    () => pnr = ParseSabrePNR(response, sessionid, includeQuotes, includeexpiredquote)
+                    () => pnr = ParseSabrePNR(response, sabresessionid, sessionid, includeQuotes, includeexpiredquote),
                     //Retrieve agencies
-                    //() => agents = GetAgents(sessionid, bookingpcc)
+                    () => agents = GetAgents(sessionid, bookingpcc)
                 );
 
             if(!agents.IsNullOrEmpty() && agents.Count > 1)
@@ -297,7 +297,7 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                 //Parse PNR++
-                pnr = ParseSabrePNR(result, token.SessionID);
+                pnr = ParseSabrePNR(result, token.SessionID, sessionID);
 
                 //Get stored card data
                 var maskedcards = request.
@@ -532,7 +532,7 @@ namespace SabreWebtopTicketingService.Services
                     ToList();
         }
 
-        private PNR ParseSabrePNR(GetReservationRS result, string token, bool includeQuotes = false, bool includeexpiredquote = false)
+        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, bool includeQuotes = false, bool includeexpiredquote = false)
         {
             DateTime? pcclocaldatetime = null;
             SabrePNR sabrepnr = new SabrePNR(result);
@@ -552,7 +552,7 @@ namespace SabreWebtopTicketingService.Services
                                             System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote);
+            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid);
 
             pnr.LastQuoteNumber = pnr.Quotes.IsNullOrEmpty() ? 0 : pnr.Quotes.OrderBy(l => l.QuoteNo).Last().QuoteNo;
             return pnr;
@@ -579,7 +579,7 @@ namespace SabreWebtopTicketingService.Services
                         ToList();
         }
 
-        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes)
+        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid)
         {
             List<PNRSector> secs = GetSectors(sabrepnr.AirSectors, sabrepnr.ArunkSectors);
             List<PNRPassengers> paxs = GetPassengers(sabrepnr.Passengers);
@@ -637,7 +637,7 @@ namespace SabreWebtopTicketingService.Services
             if (includeQuotes)
             {
                 //Quote
-                pnr.Quotes = GetQuotes(sabrepnr.PriceQuote, pnr, includeexpiredquotes, pcclocaldatetime.Value, token);
+                pnr.Quotes = GetQuotes(sabrepnr.PriceQuote, pnr, includeexpiredquotes, pcclocaldatetime.Value, token, sessionid);
             }
 
             //adding quote form of payments to stored cards
@@ -782,7 +782,7 @@ namespace SabreWebtopTicketingService.Services
             return secs.OrderBy(o => o.SectorNo).ToList();
         }
 
-        private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sessionID)
+        private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sabresessionID, string sessionid)
         {
             if (sabrequotes == null) { return new List<Quote>(); }
 
@@ -879,7 +879,7 @@ namespace SabreWebtopTicketingService.Services
                                         ToList(),
                                     pnr,
                                     pcc.PccCode,
-                                    sessionID);
+                                    sessionid);
             }
             catch { } //Errors will not be thrown as we need file -ares with errors to be displayed
 
@@ -909,7 +909,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (!issuablequotes.IsNullOrEmpty())
             {
-                GetTicketingPCCExpiaryIssueTicketKey(pnr, issuablequotes, ApplySupressITFlag, sessionID);
+                GetTicketingPCCExpiaryIssueTicketKey(pnr, issuablequotes, ApplySupressITFlag, sessionid);
             }
 
             //Remove quotes that have invalid sector information and sort by paxtype
