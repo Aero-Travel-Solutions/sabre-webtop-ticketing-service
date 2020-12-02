@@ -39,5 +39,11 @@ namespace SabreWebtopTicketingService.Models
         {
             gdsresponse = res;
         }
+
+        public string PaxType { get; set; }
+
+        public List<Tax> Taxes { get; set; }
+
+
     }
 }

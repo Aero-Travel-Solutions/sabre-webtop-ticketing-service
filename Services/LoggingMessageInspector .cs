@@ -31,6 +31,8 @@ namespace SabreWebtopTicketingService.Services
                 if (Logger == null)
                 {
                     Console.WriteLine(document.OuterXml.MaskLog());
+                    XmlNodeList nodelist = document.GetElementsByTagName("PriceQuoteInfo");
+                    Constants.xml = nodelist.Count > 0 ? XElement.Parse(nodelist[0].OuterXml) : null;
                 }
                 else
                 {
