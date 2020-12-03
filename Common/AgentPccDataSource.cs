@@ -33,9 +33,9 @@ namespace SabreWebtopTicketingService.Common
             return result;
         }
 
-        public async Task<List<Agent>> RetrieveAgents(string consolidator_id, string sessionID)
+        public async Task<List<DataAgent>> RetrieveAgents(string consolidator_id, string sessionID)
         {
-            var result = await lambda.Invoke<List<Agent>>($"{PFX_ADB}-agent-pcc-list-by-consolidator", new { consolidator_id }, sessionID);
+            var result = await lambda.Invoke<List<DataAgent>>($"{PFX_ADB}-agent-pcc-list-by-consolidator", new { consolidator_id }, sessionID);
             return result;
         }
     }

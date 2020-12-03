@@ -209,7 +209,7 @@ namespace SabreWebtopTicketingService.Services
                     () => agents = GetAgents(sessionid, bookingpcc)
                 );
 
-            if(!agents.IsNullOrEmpty() && agents.Count > 1)
+            if(!agents.IsNullOrEmpty())
             {
                 pnr.Agents = agents;
             }
@@ -521,13 +521,14 @@ namespace SabreWebtopTicketingService.Services
 
         private List<PNRAgent> GetAgents(string sessionid, string bookingpcc)
         {
-            List<Agent> agents = _agentPccDataSource.RetrieveAgents(user?.ConsolidatorId, sessionid).GetAwaiter().GetResult();
+            List<DataAgent> agents = _agentPccDataSource.RetrieveAgents(user?.ConsolidatorId, sessionid).GetAwaiter().GetResult();
             return agents.
-                    Where(w => w.AgentPCC.Contains(bookingpcc)).
+                    Where(w => w.pcc_code == bookingpcc).
+                    DistinctBy(d=> d.agent_id).
                     Select(agt => new PNRAgent()
                     {
-                        AgentId = agt.AgentId,
-                        Name = agt.Name
+                        AgentId = agt.agent_id,
+                        Name = agt.name
                     }).
                     ToList();
         }

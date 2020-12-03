@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -87,5 +89,25 @@ namespace SabreWebtopTicketingService.Common
 
         [JsonPropertyName("stack")]
         public string Stack { get; set; }
+    }
+
+    public class DataAgent
+    {
+        public string agent_id { get; set; }
+        public List<string> opt_in { get; set; }
+        public string gds_code { get; set; }
+        public DateTime modified_date { get; set; }
+        public string consolidator_id { get; set; }
+        public string created_by { get; set; }
+        public DateTime created_date { get; set; }
+        public string sort_key { get; set; }
+        public bool is_default { get; set; }
+        public string modified_by { get; set; }
+        public string name { get; set; }
+        public string data_type { get; set; }
+        public string hash_key { get; set; }
+        public string pcc_code { get; set; }
+        public string description { get; set; }
+        public string country_code { get; set; }
     }
 }
