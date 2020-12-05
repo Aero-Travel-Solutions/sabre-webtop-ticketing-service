@@ -163,9 +163,14 @@ namespace SabreWebtopTicketingService.Common
             List<string> results = new List<string>();
             foreach (string pattern in patterns)
             {
-                results.AddRange(SplitOnRegex(pattern));
+                results.AddRange(SplitOnRegex(text, pattern));  
             }
             return results;
+        }
+
+        public static string[] SplitOnRegex(this string text, string pattern)
+        {
+            return Regex.Split(text, pattern, RegexOptions.Multiline);
         }
 
         public static string Mask(this string text)

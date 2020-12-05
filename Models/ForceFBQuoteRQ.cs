@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SabreWebtopTicketingService.Models
 {
-    public class GetQuoteRQ: IQuoteRequest
+    public class ForceFBQuoteRQ: IQuoteRequest
     {
         public string SessionID { get; set; }
         public string AgentID { get; set; }
@@ -19,15 +19,17 @@ namespace SabreWebtopTicketingService.Models
         public bool AlternativePricing { get; set; }
     }
 
-    public class SelectedQuoteSector : IQuoteSector
+    public class SelectedSector: IQuoteSector
     {
         public int SectorNo { get; set; }
+        public string FareBasis { get; set; }
+        public string TicketDesignator { get; set; }
     }
 
     //Fluent Validation
-    public class GetQuoteRQValidator : AbstractValidator<GetQuoteRQ>
+    public class ForceFBQuoteRQValidator : AbstractValidator<GetQuoteRQ>
     {
-        public GetQuoteRQValidator()
+        public ForceFBQuoteRQValidator()
         {
             RuleFor(x => x.Locator).NotNull().NotEmpty().Length(6).WithMessage("Locator not found or not in valid format").WithErrorCode("10000001");
             RuleFor(x => x.GDSCode).NotNull().Length(2).Matches(@"^\d[A-Z]").WithMessage("GDS Code not found or not in valid format").WithErrorCode("10000002");

@@ -50,6 +50,7 @@ namespace SabreWebtopTicketingService.Models
         [JsonIgnore]
         public List<string> DifferentPaxType { get; set; }
         public string TicketingPCC { get; set; }
+        public string PricingHint { get; set; }
 
         //Commision and fees
         public string ContextID { get; set; }

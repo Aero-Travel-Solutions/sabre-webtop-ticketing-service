@@ -382,10 +382,10 @@ namespace SabreWebtopTicketingService.Services
                         quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
                     });
             }
-            catch(GDSException gdsex)
+            catch (GDSException gdsex)
             {
                 logger.LogInformation($"EnhancedAirBookService return {gdsex}");
-                
+
                 //ignore session
                 await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
 
@@ -395,27 +395,240 @@ namespace SabreWebtopTicketingService.Services
 
                 //Generate bestbuy command
                 string command = GetBestbuyCommand(request, platingcarrier);
+                logger.LogInformation($"Sabre bestbuy command: {command}.");
 
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
-                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr);
+                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
             }
-
-            if (token.IsLimitReached)
+            finally
             {
-                await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+                if (token.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+                }
             }
 
             return quotes;
         }
 
-        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr)
+        public async Task<List<Quote>> ForceFBQuote(ForceFBQuoteRQ request, string contextID)
+        {
+            request.Validate();
+
+            SabreSession token = null;
+
+            PNR pnr = null;
+            string sessionID = request.SessionID;
+            user = await session.GetSessionUser(sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+            Agent agent = await getAgentData(
+                                    request.SessionID,
+                                    user.ConsolidatorId,
+                                    request.AgentID,
+                                    pcc.PccCode);
+
+            List<StoredCreditCard> storedCreditCards = null;
+            string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
+            var pnrAccessKey = $"{ticketingpcc}-{request.Locator}-pnr".EncodeBase64();
+
+            //Obtain session (if found from cache, else directly from sabre)
+            token = await _sessionCreateService.CreateStatefulSessionToken(pcc);
+
+            //Check to see if the session is from cache and usable
+            if (token.StoredSesson && !token.Expired)
+            {
+                var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
+
+                //Try get PNR in cache               
+                pnr = await _dbCache.Get<PNR>(pnrAccessKey);
+
+                if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
+                {
+                    //Try get stored cards
+                    storedCreditCards = await _dbCache.Get<List<StoredCreditCard>>(cardAccessKey);
+                    if (!storedCreditCards.IsNullOrEmpty())
+                    {
+                        storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
+                        GetStoredCardDetails(request, null, storedCreditCards);
+                    }
+                }
+            }
+
+            if (pnr == null)
+            {
+                if ((ticketingpcc != pcc.PccCode) ||
+                    (token.StoredSesson &&
+                     !token.Expired &&
+                     (string.IsNullOrEmpty(token.CurrentPCC) ? token.ConsolidatorPCC : token.CurrentPCC) != ticketingpcc))
+                {
+                    //ignore session
+                    await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+                    //Context Change
+                    await _changeContextService.ContextChange(token, pcc, ticketingpcc, request.Locator);
+                }
+
+                //Retrieve PNR
+                GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
+
+                //Parse PNR++
+                pnr = ParseSabrePNR(result, token.SessionID, sessionID);
+
+                //Get stored card data
+                var maskedcards = request.
+                                    SelectedPassengers.
+                                    Where(q =>
+                                        q.FormOfPayment.PaymentType == PaymentType.CC &&
+                                        q.FormOfPayment.CardNumber.Contains("XXX"));
+                if (maskedcards.Count() > 0 &&
+                    (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
+                {
+                    GetStoredCardDetails(request, result);
+                }
+            }
+
+            if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+
+            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+
+            //published quote
+            List<Quote> quotes = new List<Quote>();
+
+            try
+            {
+                quotes = await _enhancedAirBookService.ForceFarebasis(request, token.SessionID, pcc, pnr, ticketingpcc);
+
+                //Check for pax type differences
+                quotes.
+                    Where(w => !w.DifferentPaxType.IsNullOrEmpty()).
+                    ToList().
+                    ForEach(f =>
+                        f.Errors = new List<WebtopError>()
+                        {
+                        new WebtopError()
+                        {
+                            code = "DIFF_PAX_TYPE",
+                            message = $"No fare found for passenger type used \"{string.Join(",", f.DifferentPaxType)}\"." +
+                                            $"Please consider amending the passenger type in Sabre to ADT before trying again."
+                        }
+                        });
+
+                if (!quotes.IsNullOrEmpty())
+                {
+                    //update pnr in cache
+                    pnr.Quotes = new List<Quote>();
+                    pnr.Quotes.AddRange(quotes);
+
+                    //Save PNR in cache
+                    await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
+                }
+
+                //redislpay price quotes
+                await RedisplayGeneratedQuotes(token.SessionID, quotes);
+
+                //ignore session
+                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+                //workout fuel surcharge taxcode
+                GetFuelSurcharge(quotes);
+
+                //Calculate Commission
+                CalculateCommission(quotes, pnr, ticketingpcc, sessionID);
+
+                //Agent Price
+                quotes.
+                    ForEach(f => f.AgentPrice = f.QuotePassenger.FormOfPayment == null ?
+                                                f.DefaultPriceItAmount - f.Commission :
+                                                //Cash Only
+                                                f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                    f.DefaultPriceItAmount - f.Commission :
+                                                    //Part Cash part credit
+                                                    f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && f.QuotePassenger.FormOfPayment.CreditAmount < f.TotalFare ?
+                                                        f.TotalFare - f.QuotePassenger.FormOfPayment.CreditAmount + f.Fee + (f.FeeGST ?? 0.00M) - f.Commission :
+                                                        //Credit only
+                                                        f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
+
+                //Generate the IssueTicketQuoteKey
+                quotes.
+                    ForEach(quote =>
+                    {
+                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID).GetAwaiter().GetResult();
+                        quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote);
+                        quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
+                    });
+            }
+            finally
+            {
+                if (token.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+                }
+            }
+
+            return quotes;
+        }
+
+        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier)
         {
             List<Quote> quotes = new List<Quote>();
 
             SabreBestBuyQuote bestbuyquote = new SabreBestBuyQuote(bestbuyresponse);
+
+            int index = 0;
+            quotes = (from pax in request.SelectedPassengers
+                      let s = bestbuyquote.BestBuyItems.FirstOrDefault(f => f.PaxType == pax.PaxType)
+                      select new Quote()
+                      {
+                          QuoteNo = index++,
+                          Taxes = s == null ? new List<Tax>(): s.Taxes,
+                          PricingHint = s == null ? "" : s.PriceHint,
+                          PriceCode = request.PriceCode,
+                          QuotePassenger = pax,
+                          QuoteSectors = (from selsec in request.SelectedSectors
+                                         let pnrsec = pnr.Sectors.First(f=> f.SectorNo == selsec.SectorNo)
+                                         select new QuoteSector()
+                                         {
+                                             PQSectorNo = selsec.SectorNo,
+                                             Arunk = pnrsec.From == "ARUNK",
+                                             DepartureCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.From,
+                                             ArrivalCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.To,
+                                             DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate
+                                         }).
+                                         ToList(),
+                          ValidatingCarrier = platingcarrier,
+                          SectorCount = request.SelectedSectors.Count,
+                          Route = GetRoute(pnr.Sectors.Where(w=> request.SelectedSectors.Select(s=> s.SectorNo).Contains(w.SectorNo)).ToList()),
+                      }).
+                      ToList();
             return quotes;
+        }
+
+        private string GetRoute(List<PNRSector> tktcoupons)
+        {
+            string route = "";
+            for (int i = 0; i < tktcoupons.Count(); i++)
+            {
+                if (i == 0)
+                {
+                    route += tktcoupons[i].From;
+                    route += "-" + tktcoupons[i].To;
+                    continue;
+                }
+
+                if (i < tktcoupons.Count()
+                    && tktcoupons[i - 1].To != tktcoupons[i].From)
+                {
+                    route += "//";
+                    route += tktcoupons[i].From;
+                    route += "-" + tktcoupons[i].To;
+                    continue;
+                }
+
+                route += "-" + tktcoupons[i].To;
+            }
+            return route;
         }
 
         private string GetBestbuyCommand(GetQuoteRQ request, string platingcarrier)
@@ -433,13 +646,13 @@ namespace SabreWebtopTicketingService.Services
         {
             string platingcarrier = pnr.
                                       Sectors.
-                                      First(f => f.SectorNo == request.SelectedSectors.OrderBy(o => o).First()).
+                                      First(f => f.SectorNo == request.SelectedSectors.Select(s=>s.SectorNo).OrderBy(o => o).First()).
                                       Carrier;               
 
             return platingcarrier;
         }
 
-        private void GetStoredCardDetails(GetQuoteRQ request, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
+        private void GetStoredCardDetails(IQuoteRequest request, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
 

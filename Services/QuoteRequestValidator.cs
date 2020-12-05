@@ -19,5 +19,18 @@ namespace SabreWebtopTicketingService.Services
                 throw new AeronologyException("NO_SEG_SELECT", "No sectors selected");
             }
         }
+
+        public static void Validate(this ForceFBQuoteRQ forcefbRQ)
+        {
+            if (forcefbRQ.SelectedPassengers.IsNullOrEmpty())
+            {
+                throw new AeronologyException("NO_PAX_SELECT", "No passengers selected");
+            }
+
+            if (forcefbRQ.SelectedSectors.IsNullOrEmpty())
+            {
+                throw new AeronologyException("NO_SEG_SELECT", "No sectors selected");
+            }
+        }
     }
 }

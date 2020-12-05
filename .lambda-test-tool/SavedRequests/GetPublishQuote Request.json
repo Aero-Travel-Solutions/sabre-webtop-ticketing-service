@@ -1,37 +1,3 @@
 {
-   "SessionID":"4a8801000cfca9c3e7d772b62111d1944876d511a68d944832d52bbb49939fff",
-   "gdsCode":"1W",
-   "locator":"XFBLMM",
-   "selectedPassengers":[
-      {
-         "nameNumber":"1.1",
-         "passengerName":"CHUNG/HENRY MR",
-         "paxType":"ADT",
-         "formOfPayment":{
-            "paymentType":0
-         }
-      },
-      {
-         "nameNumber":"1.2",
-         "passengerName":"CHUNG/JULIAN MSTR",
-         "paxType":"ADT",
-         "formOfPayment":{
-            "paymentType":0
-         }
-      },
-      {
-         "nameNumber":"2.1",
-         "passengerName":"CHUNG/MICHELLE MISS",
-         "paxType":"INF",
-         "formOfPayment":{
-            "paymentType":0
-         }
-      }
-   ],
-   "selectedSectors":[
-      1,
-      2,
-      3,
-      4
-   ]
-}
+   "SessionID":"6f480aedd7a9f76ef2c43679057a667251502ee0ce9c2369b706217b46fda17a",
+  "platform":0,"gdsCode":"1W","locator":"KNOVZE","selectedPassengers":[{"nameNumber":"1.1","passengerName":"WILSON/DONNA MISS","paxType":"ADT","formOfPayment":{"paymentType":0}}],"selectedSectors":[1,2,3,4]}

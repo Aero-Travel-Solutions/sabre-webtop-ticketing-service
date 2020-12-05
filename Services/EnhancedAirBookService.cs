@@ -11,6 +11,7 @@ using EnhancedAirBook;
 using Microsoft.Extensions.Logging;
 using SabreWebtopTicketingService.Common;
 using SabreWebtopTicketingService.CustomException;
+using SabreWebtopTicketingService.Interface;
 using SabreWebtopTicketingService.Models;
 
 namespace SabreWebtopTicketingService.Services
@@ -163,7 +164,7 @@ namespace SabreWebtopTicketingService.Services
                                         {
                                             SegmentSelect = quoteRequest.
                                                                 SelectedSectors.
-                                                                Where(w=> pnr.Sectors.First(f=> f.SectorNo == w).From != "SURFACE").
+                                                                Where(w=> pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "SURFACE").
                                                                 Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                 {
                                                                     Number = s.ToString()
@@ -256,7 +257,7 @@ namespace SabreWebtopTicketingService.Services
             return res;
         }
 
-        private static EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] GetPaxTypeData(GetQuoteRQ quoteRequest, PNR pnr)
+        private static EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] GetPaxTypeData(IQuoteRequest quoteRequest, PNR pnr)
         {
             DateTime FirstDepartureDate = GetFirstDepartureDate(pnr);
 
@@ -397,6 +398,121 @@ namespace SabreWebtopTicketingService.Services
             };
         }
 
+        private EnhancedAirBookRQ CreatePriceByForceFBRequest(ForceFBQuoteRQ quoteRequest, PNR pnr)
+        {
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest, pnr);
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
+                            quoteRequest.
+                                SelectedPassengers.
+                                Select(pax => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
+                                {
+                                    NameNumber = pax.NameNumber
+                                }).
+                                ToArray();
+
+            return new EnhancedAirBookRQ()
+            {
+                version = Constants.EnhancedAirBookVersion,
+                PreProcessing = new EnhancedAirBookRQPreProcessing()
+                {
+                    IgnoreBeforeSpecified = true,
+                    IgnoreBefore = true,
+                    UniqueID = new EnhancedAirBookRQPreProcessingUniqueID()
+                    {
+                        ID = quoteRequest.Locator
+                    }
+                },
+                PostProcessing = new EnhancedAirBookRQPostProcessing()
+                {
+                    IgnoreAfterSpecified = true,
+                    IgnoreAfter = false,
+                    RedisplayReservation = new EnhancedAirBookRQPostProcessingRedisplayReservation()
+                    {
+                        WaitInterval = "100"
+                    }
+                },
+                OTA_AirPriceRQ = new EnhancedAirBookRQOTA_AirPriceRQ[]
+                {
+                        new EnhancedAirBookRQOTA_AirPriceRQ()
+                        {
+                            PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
+                            {
+                                AlternativePricingSpecified = quoteRequest.AlternativePricing,
+                                AlternativePricing = quoteRequest.AlternativePricing,
+                                OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
+                                {
+                                    PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
+                                    {
+                                        //RoundTheWorldSpecified = true,
+                                        //RoundTheWorld = quoteRequest.SelectedSectors.Count() >=3 ? true: false,
+                                        PassengerType = passengerTypes,
+                                        NameSelect = nameselect,
+                                        //Sector Selection
+                                        ItineraryOptions = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptions()
+                                        {
+                                            SegmentSelect = quoteRequest.
+                                                                SelectedSectors.
+                                                                Where(w=> pnr.Sectors.First(f=> f.SectorNo == w.SectorNo).From != "SURFACE").
+                                                                Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
+                                                                {
+                                                                    Number = s.ToString()
+                                                                }).
+                                                                ToArray()
+                                        },
+                                        //Enable Specific Penalty
+                                        SpecificPenalty = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
+                                        {
+                                            AdditionalInfoSpecified = true,
+                                            AdditionalInfo = true
+                                        },
+                                        Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
+                                                    null:
+                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
+                                                    {
+                                                        //Removed Force flag as this will stop Sabre returning and fare if the price code is not applicable
+                                                        //Force = "true",
+                                                        Code = new string[]
+                                                        {
+                                                            quoteRequest.PriceCode
+                                                        }
+                                                    },
+                                        CommandPricing = quoteRequest.
+                                                            SelectedSectors.
+                                                            Select(sec => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricing()
+                                                            {
+                                                                FareBasis = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricingFareBasis()
+                                                                {
+                                                                    Code = ((SelectedSector)sec).FareBasis,
+                                                                    TicketDesignator = ((SelectedSector)sec).TicketDesignator
+                                                                }
+                                                            }).
+                                                            ToArray()
+                                    },
+                                    FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
+                                    MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
+                                                     !string.IsNullOrEmpty(quoteRequest.SelectedPassengers.First().FormOfPayment.BCode) ?
+                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiers()
+                                                     {
+                                                         Endorsements = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiersEndorsements()
+                                                         {
+                                                             Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
+                                                         }
+                                                     }:
+                                                     null
+                                }
+                            }
+                        }
+                }
+            };
+        }
+
+        internal async Task<List<Quote>> ForceFarebasis(ForceFBQuoteRQ request, string sessionID, Pcc pcc, PNR pnr, string ticketingpcc)
+        {
+            var response = await ExecForceFarebasis(request, sessionID, pcc, pnr, ticketingpcc);
+
+            return ParseSabreQuote(response.OTA_AirPriceRS, request, pnr);
+        }
+
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
         {
             EnhancedAirBookPortTypeClient client = null;
@@ -502,7 +618,112 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, GetQuoteRQ quoterq, PNR pnr, List<pnrquotedata> pqnos = null)
+        internal async Task<EnhancedAirBookRS> ExecForceFarebasis(ForceFBQuoteRQ request, string sessionID, Pcc pcc, PNR pnr, string ticketingpcc)
+        {
+            EnhancedAirBookPortTypeClient client = null;
+
+            try
+            {
+                EnableTLS();
+
+                client = new EnhancedAirBookPortTypeClient(GetBasicHttpBinding(), new EndpointAddress(url));
+
+                //Attach client credentials
+                client.ClientCredentials.UserName.UserName = pcc.Username;
+                client.ClientCredentials.UserName.Password = pcc.Password;
+
+                MethodInfo method = typeof(XmlSerializer).
+                                        GetMethod(
+                                            "set_Mode",
+                                            BindingFlags.Public |
+                                            BindingFlags.NonPublic |
+                                            BindingFlags.Static);
+
+                method.Invoke(null, new object[] { 1 });
+
+                logger.LogInformation($"{nameof(PricePNR)} {request}");
+                var sw = Stopwatch.StartNew();
+                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
+                var result = await client.
+                                        EnhancedAirBookRQAsync(
+                                                CreateHeader(pcc.PccCode, ticketingpcc),
+                                                new Security { BinarySecurityToken = sessionID },
+                                                CreatePriceByForceFBRequest(request, pnr));
+                sw.Stop();
+
+                if (result == null || result.EnhancedAirBookRS.ApplicationResults.status != CompletionCodes.Complete)
+                {
+                    var messages = result.
+                                    EnhancedAirBookRS.
+                                    ApplicationResults.
+                                    Error.
+                                    SelectMany(s => s.SystemSpecificResults).
+                                    SelectMany(s => s.Message);
+
+                    throw new GDSException(
+                                string.Join(Environment.NewLine, messages.Select(s => s.code.LastMatch(@"^(\d+)$").Trim()).Distinct()),
+                                string.Join(Environment.NewLine, messages.Select(s => s.Value).Distinct()));
+                }
+
+                //if quoting failed you still get the status as Complete
+                //However under warning you will be presented with error
+                if (result.EnhancedAirBookRS.ApplicationResults.Warning != null)
+                {
+                    var messages = result.
+                                    EnhancedAirBookRS.
+                                    ApplicationResults.
+                                    Warning.
+                                    SelectMany(s => s.SystemSpecificResults).
+                                    SelectMany(s => s.Message);
+
+                    //ETG price quote warning bypass
+                    if (messages.Select(s => s.Value).ToList().Contains("REPRICE - NO CORPORATE NEGOTIATED FARES EXIST") &&
+                        result.EnhancedAirBookRS.OTA_AirPriceRS != null &&
+                        !result.EnhancedAirBookRS.OTA_AirPriceRS.SelectMany(s => s.PriceQuote.PricedItinerary.AirItineraryPricingInfo).IsNullOrEmpty())
+                    {
+                        return result.EnhancedAirBookRS;
+                    }
+
+                    string code = string.Join(Environment.NewLine, messages.Select(s => s.code.LastMatch(@"^(\d+)$")).Where(w => !string.IsNullOrEmpty(w)).Distinct());
+                    if (string.IsNullOrEmpty(code)) { code = Guid.NewGuid().ToString(); }
+
+                    throw new GDSException(
+                                code,
+                                string.Join(Environment.NewLine, messages.Select(s => s.Value).Distinct()));
+                }
+
+                await client.CloseAsync();
+
+                return result.EnhancedAirBookRS;
+
+            }
+            catch (TimeoutException timeProblem)
+            {
+                logger.LogError(timeProblem, timeProblem.Message);
+                client.Abort();
+                throw new GDSException("30000025", "Sabre system timeout. Please try again!");
+            }
+            catch (FaultException unknownFault)
+            {
+                logger.LogError(unknownFault, unknownFault.Message);
+                client.Abort();
+                throw new GDSException("30000026", $"Sabre System Exception: {unknownFault.Message + (unknownFault.InnerException == null ? "" : Environment.NewLine + unknownFault.InnerException.Message)}");
+            }
+            catch (CommunicationException commProblem)
+            {
+                logger.LogError(commProblem, commProblem.Message);
+                client.Abort();
+                throw new GDSException("30000027", "There is a communication issue with Sabre. Please try again later!");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "PricePNR failed");
+                client.Abort();
+                throw;
+            }
+        }
+
+        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, IQuoteRequest quoterq, PNR pnr, List<pnrquotedata> pqnos = null)
         {
             int index = pqnos.IsNullOrEmpty() ?
                             1 :
@@ -604,7 +825,7 @@ namespace SabreWebtopTicketingService.Services
 
             //Quotes with single passenger
             var singlepaxquotes = from s in tempQuotes.Where(w => w.Qty == 1)
-                                  let pax = MatchPaxTypes(s.PaxType, pnr, quoterq).First()
+                                  let pax = MatchPaxTypes(s.PaxType, pnr, quoterq.SelectedPassengers).First()
                                   select new Quote()
                                   {
                                       ValidatingCarrier = s.Quote.ValidatingCarrier,
@@ -653,7 +874,7 @@ namespace SabreWebtopTicketingService.Services
             //Quotes with multiple passengers - split
             foreach (var item in tempQuotes.Where(w => w.Qty > 1))
             {
-                List<QuotePassenger> paxs = MatchPaxTypes(item.PaxType, pnr, quoterq);
+                List<QuotePassenger> paxs = MatchPaxTypes(item.PaxType, pnr, quoterq.SelectedPassengers);
 
                 for (int i = 0; i < item.Qty; i++)
                 {
@@ -775,7 +996,7 @@ namespace SabreWebtopTicketingService.Services
             };
         }
 
-        private int GetQuoteNumber(List<pnrquotedata> pqnos, GetQuoteRQ quoterq, List<QuoteSector> sectors, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
+        private int GetQuoteNumber(List<pnrquotedata> pqnos, IQuoteRequest quoterq, List<QuoteSector> sectors, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
         {
             var quoteno = pqnos?.
                         LastOrDefault(f =>
@@ -842,26 +1063,26 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private static List<QuoteSector> GetQuoteSectors(GetQuoteRQ quoterq, PNR pnr, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
+        private static List<QuoteSector> GetQuoteSectors(IQuoteRequest quoterq, PNR pnr, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
         {
             var validpqs = pqs.FareCalculationBreakdown.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment)).ToList();
 
             return quoterq.
                     SelectedSectors.
-                    Where(w => pnr.Sectors.First(f => f.SectorNo == w).From != "ARUNK").
+                    Where(w => pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK").
                     Select((s, index) => new QuoteSector()
                     {
-                        PQSectorNo = s,
+                        PQSectorNo = s.SectorNo,
                         DepartureCityCode = validpqs[index].Departure.AirportCode,
                         ArrivalCityCode = validpqs[index].Departure.ArrivalAirportCode,
-                        DepartureDate = pnr.Sectors.First(f => f.SectorNo == s).DepartureDate,
+                        DepartureDate = pnr.Sectors.First(f => f.SectorNo == s.SectorNo).DepartureDate,
                         FareBasis = validpqs[index].FareBasis.Code,
                         Baggageallowance = SabreSharedServices.GetBaggageDiscription(validpqs[index].FreeBaggageAllowance)
                     }).
                     ToList();
         }
 
-        private List<QuotePassenger> MatchPaxTypes(string quotepaxType, PNR pnr, GetQuoteRQ getquoterq)
+        private List<QuotePassenger> MatchPaxTypes(string quotepaxType, PNR pnr, List<QuotePassenger> quotepaxs)
         {
             DateTime FirstDepartureDate = GetFirstDepartureDate(pnr);
 
@@ -871,15 +1092,13 @@ namespace SabreWebtopTicketingService.Services
             {
                 if (quotepaxType.IsMatch(@"C\d+"))
                 {
-                    List<QuotePassenger> pax = getquoterq.
-                                                    SelectedPassengers.
+                    List<QuotePassenger> pax = quotepaxs.
                                                     Where(w => w.DOB.HasValue && FirstDepartureDate != DateTime.MinValue && quotepaxType == "C" + GetAge(FirstDepartureDate, w.DOB.Value).ToString().PadLeft(2, '0')).
                                                     ToList();
 
                     if (pax == null)
                     {
-                        pax = getquoterq.
-                                    SelectedPassengers.
+                        pax = quotepaxs.
                                     Where(w => (w.PaxType.IsMatch(@"C\d+") && w.PaxType == quotepaxType) ||
                                               w.PaxType == "CHD").
                                     ToList();
@@ -889,8 +1108,7 @@ namespace SabreWebtopTicketingService.Services
                 }
                 else
                 {
-                    result.AddRange(getquoterq.
-                                        SelectedPassengers.
+                    result.AddRange(quotepaxs.
                                         Where(w => (w.PaxType.StartsWith("C") && w.PaxType.Substring(0, 1) == quotepaxType.Substring(0, 1)) ||
                                                     w.PaxType == quotepaxType).
                                         ToList());
@@ -898,15 +1116,13 @@ namespace SabreWebtopTicketingService.Services
 
                 return result;
             }
-            result = getquoterq.
-                        SelectedPassengers.
+            result = quotepaxs.
                         Where(w => w.PaxType == quotepaxType).
                         ToList();
 
-            if (result.IsNullOrEmpty() && getquoterq.SelectedPassengers.All(a => a.PaxType != quotepaxType))
+            if (result.IsNullOrEmpty() && quotepaxs.All(a => a.PaxType != quotepaxType))
             {
-                result = getquoterq.
-                            SelectedPassengers.
+                result = quotepaxs.
                             Where(w => !(w.PaxType.StartsWith("C") || w.PaxType.StartsWith("I"))).
                             ToList();
             }
