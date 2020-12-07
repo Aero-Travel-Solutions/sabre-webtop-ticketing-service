@@ -236,6 +236,117 @@ namespace SabreWebtopTicketingService.Services
             return pnr;
         }
 
+        public async Task<List<Quote>> BestBuy(GetQuoteRQ request, string contextID)
+        {
+            request.Validate();
+            SabreSession token = null;
+            PNR pnr = null;
+
+            try
+            {
+                string sessionID = request.SessionID;
+                user = await session.GetSessionUser(sessionID);
+                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+                Agent agent = await getAgentData(
+                                        request.SessionID,
+                                        user.ConsolidatorId,
+                                        request.AgentID,
+                                        pcc.PccCode);
+
+                List<StoredCreditCard> storedCreditCards = null;
+                string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
+                var pnrAccessKey = $"{ticketingpcc}-{request.Locator}-pnr".EncodeBase64();
+
+                //Obtain session (if found from cache, else directly from sabre)
+                token = await _sessionCreateService.CreateStatefulSessionToken(pcc);
+
+                //Check to see if the session is from cache and usable
+                if (token.StoredSesson && !token.Expired)
+                {
+                    var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
+
+                    //Try get PNR in cache               
+                    pnr = await _dbCache.Get<PNR>(pnrAccessKey);
+
+                    if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
+                    {
+                        //Try get stored cards
+                        storedCreditCards = await _dbCache.Get<List<StoredCreditCard>>(cardAccessKey);
+                        if (!storedCreditCards.IsNullOrEmpty())
+                        {
+                            storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
+                            GetStoredCardDetails(request.SelectedPassengers, null, storedCreditCards);
+                        }
+                    }
+                }
+
+                if (pnr == null)
+                {
+                    if ((ticketingpcc != pcc.PccCode) ||
+                        (token.StoredSesson &&
+                         !token.Expired &&
+                         (string.IsNullOrEmpty(token.CurrentPCC) ? token.ConsolidatorPCC : token.CurrentPCC) != ticketingpcc))
+                    {
+                        //ignore session
+                        await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+                        //Context Change
+                        await _changeContextService.ContextChange(token, pcc, ticketingpcc, request.Locator);
+                    }
+
+                    //Retrieve PNR
+                    GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
+
+                    //Parse PNR++
+                    pnr = ParseSabrePNR(result, token.SessionID, sessionID);
+
+                    //Get stored card data
+                    var maskedcards = request.
+                                        SelectedPassengers.
+                                        Where(q =>
+                                            q.FormOfPayment.PaymentType == PaymentType.CC &&
+                                            q.FormOfPayment.CardNumber.Contains("XXX"));
+                    if (maskedcards.Count() > 0 &&
+                        (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
+                    {
+                        GetStoredCardDetails(request.SelectedPassengers, result);
+                    }
+                }
+
+                if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+
+                if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+
+                //published quote
+                List<Quote> quotes = new List<Quote>();
+
+                //ignore session
+                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
+
+                //workout plating carrier
+                string platingcarrier = GetManualPlatingCarrier(pnr, request);
+                logger.LogInformation($"Plating carrier {platingcarrier}.");
+
+                //Generate bestbuy command
+                string command = GetBestbuyCommand(request, platingcarrier);
+                logger.LogInformation($"Sabre bestbuy command: {command}.");
+
+                //sabre best buy
+                string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
+
+                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
+
+                return quotes;
+            }
+            finally
+            {
+                if (token.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+                }
+            }
+        }
+
         public async Task<List<Quote>> GetQuote(GetQuoteRQ request, string contextID)
         {
             request.Validate();
@@ -274,7 +385,7 @@ namespace SabreWebtopTicketingService.Services
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
-                        GetStoredCardDetails(request, null, storedCreditCards);
+                        GetStoredCardDetails(request.SelectedPassengers, null, storedCreditCards);
                     }
                 }
             }
@@ -308,7 +419,7 @@ namespace SabreWebtopTicketingService.Services
                 if (maskedcards.Count() > 0 &&
                     (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                 {
-                    GetStoredCardDetails(request, result);
+                    GetStoredCardDetails(request.SelectedPassengers, result);
                 }
             }
 
@@ -382,26 +493,26 @@ namespace SabreWebtopTicketingService.Services
                         quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
                     });
             }
-            catch (GDSException gdsex)
-            {
-                logger.LogInformation($"EnhancedAirBookService return {gdsex}");
+            //catch (GDSException gdsex)
+            //{
+            //    logger.LogInformation($"EnhancedAirBookService return {gdsex}");
 
-                //ignore session
-                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
+            //    //ignore session
+            //    await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
 
-                //workout plating carrier
-                string platingcarrier = GetManualPlatingCarrier(pnr, request);
-                logger.LogInformation($"Plating carrier {platingcarrier}.");
+            //    //workout plating carrier
+            //    string platingcarrier = GetManualPlatingCarrier(pnr, request);
+            //    logger.LogInformation($"Plating carrier {platingcarrier}.");
 
-                //Generate bestbuy command
-                string command = GetBestbuyCommand(request, platingcarrier);
-                logger.LogInformation($"Sabre bestbuy command: {command}.");
+            //    //Generate bestbuy command
+            //    string command = GetBestbuyCommand(request, platingcarrier);
+            //    logger.LogInformation($"Sabre bestbuy command: {command}.");
 
-                //sabre best buy
-                string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
+            //    //sabre best buy
+            //    string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
-                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
-            }
+            //    quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
+            //}
             finally
             {
                 if (token.IsLimitReached)
@@ -451,7 +562,7 @@ namespace SabreWebtopTicketingService.Services
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
-                        GetStoredCardDetails(request, null, storedCreditCards);
+                        GetStoredCardDetails(request.SelectedPassengers, null, storedCreditCards);
                     }
                 }
             }
@@ -485,7 +596,7 @@ namespace SabreWebtopTicketingService.Services
                 if (maskedcards.Count() > 0 &&
                     (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                 {
-                    GetStoredCardDetails(request, result);
+                    GetStoredCardDetails(request.SelectedPassengers, result);
                 }
             }
 
@@ -633,7 +744,7 @@ namespace SabreWebtopTicketingService.Services
 
         private string GetBestbuyCommand(GetQuoteRQ request, string platingcarrier)
         {
-            string command = $"WPNC¥A{platingcarrier}¥S{string.Join("/", request.SelectedSectors)}";
+            string command = $"WPNC¥A{platingcarrier}¥S{string.Join("/", request.SelectedSectors.Select(s=> s.SectorNo))}";
 
             if(!string.IsNullOrEmpty(request.PriceCode))
             {
@@ -652,14 +763,14 @@ namespace SabreWebtopTicketingService.Services
             return platingcarrier;
         }
 
-        private void GetStoredCardDetails(IQuoteRequest request, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
+        private void GetStoredCardDetails(List<QuotePassenger> quotePassengers, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
 
             //1. Extract stored cards from PNR
             var storedcards = storedCreditCards ?? GetStoredCards(res);
 
-            foreach (var item in request.SelectedPassengers.Where(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
+            foreach (var item in quotePassengers.Where(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
             {
                 //2. Match masked cards and extract card details
                 var value = storedcards.
@@ -676,7 +787,6 @@ namespace SabreWebtopTicketingService.Services
                 item.FormOfPayment.ExpiryDate = item.FormOfPayment.ExpiryDate;
             }
         }
-
 
         private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
         {
@@ -730,7 +840,6 @@ namespace SabreWebtopTicketingService.Services
             }
             return result;
         }
-
 
         private List<PNRAgent> GetAgents(string sessionid, string bookingpcc)
         {
@@ -996,6 +1105,226 @@ namespace SabreWebtopTicketingService.Services
             return secs.OrderBy(o => o.SectorNo).ToList();
         }
 
+        //public async Task<IssueExpressTicketRS> IssueExpressTicket(IssueExpressTicketRQ request, string contextID)
+        //{
+
+        //    SabreSession token = null;
+
+        //    PNR pnr = null;
+        //    string sessionID = request.SessionID;
+        //    User user = await session.GetSessionUser(sessionID);
+        //    pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+        //    Agent agent = await getAgentData(
+        //                            request.SessionID,
+        //                            user.ConsolidatorId,
+        //                            request.AgentID,
+        //                            pcc.PccCode);
+        //    string ticketingprinter = GetTicketingPrinter(pcc?.TicketPrinterAddress, pcc.PccCode);
+        //    string printerbypass = GetPrinterByPass(string.IsNullOrEmpty(pcc?.CountryCode) ? "" : pcc?.CountryCode.SplitOn("|").First(), pcc.PccCode);
+
+        //    string agentpcc = "";
+        //    User user = null;
+
+        //    try
+        //    {
+        //        user = await sessionData.GetSessionUser(sessionid);
+        //        if (user == null)
+        //        {
+        //            throw new ExpiredSessionException(sessionid, "50000401", "Invalid session.");
+        //        }
+
+        //        if (!((agent?.Agent?.Permission?.AllowTicketing ?? false) &&
+        //              (user.Permissions?.AllowTicketing ?? false)))
+        //        {
+        //            throw new AeronologyException("50000020", "Ticketing access is not provided for your account. Please contact your consolidator to request access.");
+        //        }
+
+        //        //Populate request collections
+        //        ReconstructRequestFromKeys(request);
+        //        string ticketingpcc = request.Quotes.IsNullOrEmpty() ? GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) : request.Quotes.First().TicketingPCC;
+        //        if (string.IsNullOrEmpty(ticketingpcc))
+        //        {
+        //            throw new ExpiredSessionException(sessionid, "50000401", "Invalid ticketing pcc.");
+        //        }
+
+        //        agentpcc = (await getagentpccs(user?.AgentId, pcc.PccCode)).FirstOrDefault();
+        //        user.Agent.CustomerNo = agent.CustomerNo;
+
+        //        //Obtain SOAP session
+        //        sabresession = await _sessionCreateService.CreateStatefulSessionToken(pcc, Operation.Ticket, request.Locator);
+        //        statefultoken = sabresession.SessionID;
+
+        //        if (sabresession.StoredSesson) { await sabreCommandService.ExecuteCommand(statefultoken, pcc, "I"); }
+
+        //        //Context Change
+        //        await changeContextService.ContextChange(sabresession, pcc, ticketingpcc, request.Locator);
+
+        //        //Retrieve PNR
+        //        GetReservationRS getReservationRS = null;
+        //        getReservationRS = await getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
+        //        pnr = ParseSabrePNR(getReservationRS, statefultoken, true, true);
+
+        //        //Stored cards
+        //        GetStoredCards(request, getReservationRS);
+
+        //        var pendingquotes = request.Quotes.Where(w => !w.FiledFare);
+        //        var pendingsfdata = request.Quotes.Where(a => a.PendingSfData);
+
+        //        if (!pendingquotes.IsNullOrEmpty())
+        //        {
+        //            //Quoting
+        //            await QuotingForTickting(pcc, request, statefultoken, pendingquotes, pnr, ticketingpcc);
+        //        }
+
+        //        //adding secure flight data for passengers if required - US itineraries
+        //        if (!pendingsfdata.IsNullOrEmpty())
+        //        {
+        //            //Add secure flight data
+        //            //await AddSFDataForTickting(request, statefultoken, pendingsfdata);
+        //        }
+
+        //        _backofficeOptions.ConsolidatorsBackofficeProcess.TryGetValue(agent.ConsolidatorId, out var backofficeProcess);
+
+        //        //credit check
+        //        if (request.MerchantData == null &&
+        //            (!(request.Quotes?.Any(q => q.Passenger.FormOfPayment.PaymentType == PaymentType.CC) ?? true) ||
+        //            !(request.EMDs?.Any(e => e.FormOfPayment.PaymentType == PaymentType.CC) ?? true)) &&
+        //            !string.IsNullOrEmpty(agent.CustomerNo) && (backofficeProcess?.CreditLimitCheck ?? false))
+        //        {
+        //            CreditCheck(request, agent.CustomerNo, sessionid);
+        //        }
+
+        //        //REST session
+        //        Token token = await sessionCreateService.CreateStatelessSessionToken(pcc);
+
+        //        //adding dob remarks
+        //        await AddDOBRemarks(request, ticketingpcc, user, token);
+
+        //        string bcode = "";
+        //        if (!request.Quotes.IsNullOrEmpty())
+        //        {
+        //            //BCode extraction
+        //            bcode = await bCodeDataSource.
+        //                                    RetrieveBCode(
+        //                                            sessionid,
+        //                                            request.Quotes.First().PlatingCarrier,
+        //                                            pnr.DKNumber);
+        //        }
+
+        //        bool enableextendedendo = false;
+        //        //Check if endorsement 
+        //        if (!string.IsNullOrEmpty(bcode))
+        //        {
+        //            string resp = await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "W/LRGEND¥*");
+        //            enableextendedendo = resp.Contains("EXPANDED ENDORSEMENT - ON");
+        //        }
+
+        //        //issue ticket
+        //        List<issueticketresponse> response = await enhancedIssueTicketService.
+        //                                                    IssueTicket(
+        //                                                        request,
+        //                                                        pcc.PccCode,
+        //                                                        token,
+        //                                                        ticketingpcc,
+        //                                                        ticketingprinter,
+        //                                                        printerbypass,
+        //                                                        bcode,
+        //                                                        enableextendedendo);
+
+        //        var ticketData = await ParseSabreTicketData(response, request, statefultoken, pcc, ticketingpcc, pnr, bcode, token, user);
+
+        //        if (agent?.ConsolidatorId == "expresstravelgroup")
+        //            //adding ETG Agency commission PNR remarks
+        //            await AddAgentCommissionRemarks(ticketData, request, ticketingpcc, user, token);
+
+        //        var transactionData = new IssueTicketTransactionData
+        //        {
+        //            SessionId = sessionid,
+        //            User = user,
+        //            Pnr = pnr,
+        //            TicketingResult = ticketData
+        //        };
+
+        //        if (!string.IsNullOrEmpty(request.MerchantData?.OrderID))
+        //        {
+        //            transactionData.TicketingResult.OrderId = request.MerchantData.OrderID;
+        //        }
+        //        else
+        //        {
+        //            //Get order sequence in transaction database
+        //            try
+        //            {
+        //                var orderSequence = await _getOrderSequenceFailedRetryPolicy.ExecuteAsync(() => _ordersTransactionDataSource.GetOrderSequence());
+        //                transactionData.TicketingResult.OrderId = orderSequence;
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                logger.LogError($"GETORDERSEQUENCE_ERROR : {ex.Message} : PNR : {transactionData.TicketingResult.Locator} [EXCEPTION]:", ex);
+        //                transactionData.TicketingResult.OrderId = $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{new Random().Next(9000, 10000)}";
+        //            }
+        //        }
+
+        //        //merchant
+        //        transactionData = await HandleMerchantPayment(sessionid, request, transactionData);
+
+        //        if (transactionData.TicketingResult.Tickets.IsNullOrEmpty() && !transactionData.TicketingResult.Errors.IsNullOrEmpty())
+        //        {
+        //            throw new GDSException(
+        //                        "ALL_TICKETS_FAILED",
+        //                        string.Join(
+        //                            Environment.NewLine,
+        //                            transactionData.TicketingResult.Errors.Select(s => s.Error).Distinct()));
+        //        }
+
+        //        //Queue tickets on SQS for invoicing
+        //        #region Invoicing              
+        //        //Queue back for ETG
+        //        #region QueueBack
+        //        //if (pcc.PccCode == "0M4J")
+        //        //{
+        //        //    user.Agent.TicketingQueue = "30";
+        //        //}
+
+        //        //if (!(ticketData.Tickets.IsNullOrEmpty() || string.IsNullOrEmpty(user.Agent.TicketingQueue)))
+        //        //{
+        //        //    await queuePlaceService.
+        //        //                QueueMove(
+        //        //                    statefultoken, 
+        //        //                    pcc, 
+        //        //                    user.Agent.TicketingQueue, 
+        //        //                    agentpcc, 
+        //        //                    new List<string>() { ticketData.Locator });
+        //        //}
+        //        #endregion
+
+        //        //Download to backoffice
+        //        if (!string.IsNullOrEmpty(agent.CustomerNo) && (backofficeProcess?.DownloadDocuments ?? false))
+        //        {
+        //            await _backofficeDataSource.Book(transactionData);
+        //        }
+        //        else
+        //        {
+        //            await _notificationHelper.NotifyTicketIssued(transactionData);
+        //        }
+
+        //        #endregion
+
+        //        return ticketData;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError(ex, ex.Message);
+        //        throw;
+        //    }
+        //    finally
+        //    {
+        //        if (sabresession != null && sabresession.IsLimitReached)
+        //        {
+        //            await sessionCloseService.SabreSignout(sabresession.SessionID, pcc);
+        //        }
+        //    }
+        //}
+
         private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sabresessionID, string sessionid)
         {
             if (sabrequotes == null) { return new List<Quote>(); }
@@ -1029,6 +1358,7 @@ namespace SabreWebtopTicketingService.Services
                             Endorsements = q.PQ.Endosements,
                             EquivFare = q.PQ.BaseFare,
                             FareCalculation = q.PQ.FareCalculation,
+                            ROE = q.PQ.FareCalculation.LastMatch(@"ROE\s*([\d\.]+)", "1"),
                             QuotePassenger = new QuotePassenger()
                             {
                                 PassengerName = q.PQSummary.Passenger.LastName + "/" + q.PQSummary.Passenger.FisrtName,

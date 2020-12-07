@@ -5,14 +5,14 @@ using System.Text;
 
 namespace SabreWebtopTicketingService.Interface
 {
-    interface IQuoteRequest
+    public interface IQuoteRequest
     {
-        public string SessionID { get; set; }
-        public string AgentID { get; set; }
-        public string GDSCode { get; set; }
-        public string Locator { get; set; }
-        public string AccessKey { get; set; }
-        public List<QuotePassenger> SelectedPassengers { get; set; }
-        public List<IQuoteSector> SelectedSectors{ get; set; }
+        string SessionID { get; set; }
+        string AgentID { get; set; }
+        string GDSCode { get; set; }
+        string Locator { get; set; }
+        string AccessKey { get; set; }
+        List<QuotePassenger> SelectedPassengers { get; set; }
+        List<IQuoteSector> SelectedSectors{ get; set; }
     }
 }

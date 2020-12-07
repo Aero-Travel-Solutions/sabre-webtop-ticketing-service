@@ -60,14 +60,14 @@ namespace SabreWebtopTicketingService.Services
                         ToList());
             }
 
-            return ParseSabreQuote(response.OTA_AirPriceRS, quoteRequest, pnr, quotenos);
+            return ParseSabreQuote(response.OTA_AirPriceRS, (IQuoteRequest)quoteRequest, pnr, quotenos);
         }
 
         public async Task<List<Quote>> PricePNR(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc)
         {
             var response = await PricePNR(CreatePriceByPaxRequest(quoteRequest, pnr), token, pcc, ticketingpcc);
 
-            return ParseSabreQuote(response.OTA_AirPriceRS, quoteRequest, pnr);
+            return ParseSabreQuote(response.OTA_AirPriceRS, (IQuoteRequest)quoteRequest, pnr);
         }
 
         private static MessageHeader CreateHeader(string pcc, string ticketingpcc)
@@ -112,7 +112,7 @@ namespace SabreWebtopTicketingService.Services
 
         private EnhancedAirBookRQ CreatePriceByPaxRequest(GetQuoteRQ quoteRequest, PNR pnr)
         {
-            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest, pnr);
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
                             quoteRequest.
                                 SelectedPassengers.
@@ -257,13 +257,12 @@ namespace SabreWebtopTicketingService.Services
             return res;
         }
 
-        private static EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] GetPaxTypeData(IQuoteRequest quoteRequest, PNR pnr)
+        private static EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] GetPaxTypeData(List<QuotePassenger> selpax, PNR pnr)
         {
             DateTime FirstDepartureDate = GetFirstDepartureDate(pnr);
 
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes =
-                                        quoteRequest.
-                                            SelectedPassengers.
+                                        selpax.
                                             GroupBy(g => g.PaxType.StartsWith("C") ?
                                                             g.PaxType.IsMatch(@"C\d+") ?
                                                                 g.PaxType :
@@ -280,9 +279,6 @@ namespace SabreWebtopTicketingService.Services
                                                 //Force = true
                                             }).
                                             ToArray();
-            //Removed Force flag as this will stop Sabre defaulting to ADT if the specified pax type is not available
-            //passengerTypes.LastOrDefault().ForceSpecified = true;
-            //passengerTypes.LastOrDefault().Force = true;
 
             return passengerTypes;
         }
@@ -400,7 +396,7 @@ namespace SabreWebtopTicketingService.Services
 
         private EnhancedAirBookRQ CreatePriceByForceFBRequest(ForceFBQuoteRQ quoteRequest, PNR pnr)
         {
-            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest, pnr);
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
                             quoteRequest.
                                 SelectedPassengers.
@@ -510,7 +506,7 @@ namespace SabreWebtopTicketingService.Services
         {
             var response = await ExecForceFarebasis(request, sessionID, pcc, pnr, ticketingpcc);
 
-            return ParseSabreQuote(response.OTA_AirPriceRS, request, pnr);
+            return ParseSabreQuote(response.OTA_AirPriceRS, (IQuoteRequest)request, pnr);
         }
 
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
@@ -785,6 +781,7 @@ namespace SabreWebtopTicketingService.Services
                                       PrivateFare = pqs.ItinTotalFare.PrivateFare?.Ind == "Y" || isCat35,
                                       NonRefundable = pqs.ItinTotalFare.NonRefundableInd,
                                       FareCalculation = pqs.FareCalculation.Text,
+                                      ROE = pqs.FareCalculation.Text.LastMatch(@"ROE\s*([\d\.]+)", "1"),
                                       Endorsements = pqs.ItinTotalFare.Endorsements?.ToList(),
                                       SpecificPenalties = pqs.
                                                             SpecificPenalty?.
@@ -834,6 +831,7 @@ namespace SabreWebtopTicketingService.Services
                                       Endorsements = s.Quote.Endorsements,
                                       EquivFare = s.Quote.EquivFare,
                                       FareCalculation = s.Quote.FareCalculation,
+                                      ROE = s.Quote.ROE,
                                       NonRefundable = s.Quote.NonRefundable,
                                       PrivateFare = s.Quote.PrivateFare,
                                       QuotePassenger = new QuotePassenger()
@@ -887,6 +885,7 @@ namespace SabreWebtopTicketingService.Services
                         Endorsements = item.Quote.Endorsements,
                         EquivFare = item.Quote.EquivFare,
                         FareCalculation = item.Quote.FareCalculation,
+                        ROE = item.Quote.ROE,
                         QuoteSectors = item.Quote.QuoteSectors,
                         Fee = item.Quote.Fee,
                         LastPurchaseDate = item.Quote.LastPurchaseDate,

@@ -53,4 +53,9 @@ functions:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::ForceFarebasis
     timeout: 120
     package:
-      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip  
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  BestBuy:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::BestBuy
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip

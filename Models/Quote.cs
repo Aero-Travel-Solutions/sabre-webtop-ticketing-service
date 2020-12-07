@@ -34,7 +34,7 @@ namespace SabreWebtopTicketingService.Models
         public List<string> Endorsements { get; set; }
         public string NonRefundable { get; set; }
         public bool PrivateFare { get; set; }
-        public string ROE => FareCalculation.LastMatch(@"ROE\s*([\d\.]+)", "1");
+        public string ROE { get; set; }
         public List<SpecificPenalty> SpecificPenalties { get; set; }
         public bool Expired { get; set; }
         public List<WebtopWarning> Warnings { get; set; }

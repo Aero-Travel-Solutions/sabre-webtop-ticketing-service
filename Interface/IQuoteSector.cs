@@ -6,6 +6,6 @@ namespace SabreWebtopTicketingService.Interface
 {
     public interface IQuoteSector
     {
-        public int SectorNo { get; set; }
+        int SectorNo { get; set; }
     }
 }

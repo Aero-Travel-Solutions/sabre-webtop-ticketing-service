@@ -52,19 +52,29 @@ namespace SabreWebtopTicketingService.Models
 
         private List<BestBuyItem> GetBestBuyItems(string gdsresponse)
         {
-            List<TaxInfo> taxitems = gdsresponse.
-                                        SplitOnRegex(@"[ACI][DHN][TDF]-\d+").
-                                        First().
-                                        Replace("\n", "###").
-                                        SplitOnRegex(@"(\d+\s*-.*)").
-                                        Select(s=> new TaxInfo(s)).
-                                        ToList();
+            List<TaxInfo> taxitems = new List<TaxInfo>();
+            var taxlines = gdsresponse.
+                                SplitOnRegex(@"[ACI][DHN][TDF]-\d+").
+                                First().
+                                SplitOnRegex(@"(\d+\s*-.*)").
+                                Where(w => !string.IsNullOrEmpty(w)).
+                                ToList();
 
-            List<PriceHintInfo> pricehintitems = gdsresponse.
-                                            SplitOnRegex(@"[ACI][DHN][TDF]-\d+.*").
-                                            Skip(1).
-                                            Select(s => new PriceHintInfo(s)).
-                                            ToList();
+            for (int i = 0; i < taxlines.Count(); i+=2)
+            {
+                taxitems.Add(new TaxInfo(taxlines[i].Replace("\n", "###") + taxlines[i + 1].Replace("\n", "###")));
+            }
+
+            List<PriceHintInfo> pricehintitems = new List<PriceHintInfo>();
+            var pricehintlines = gdsresponse.
+                                    SplitOnRegex(@"([ACI][DHN][TDF]-\d+.*)").
+                                    Skip(1).
+                                    ToList();
+
+            for (int i = 0; i < taxlines.Count(); i += 2)
+            {
+                pricehintitems.Add(new PriceHintInfo(pricehintlines[i].Replace("\n", "###") + pricehintlines[i + 1].Replace("\n", "###")));
+            }
 
             var items = taxitems.
                             Select(bestbuy => new
@@ -96,26 +106,25 @@ namespace SabreWebtopTicketingService.Models
         }
 
         public string PaxType => s.Trim().Substring(0, 3);
-        public string PriceHint => s.SplitOn("\n").Skip(1).First(w => w.StartsWith("CHANGE BOOKING CLASS"));
+        public string PriceHint => s.SplitOn("###").Skip(1).Where(w=> !string.IsNullOrEmpty(w)).First(w => w.Trim().StartsWith("CHANGE BOOKING CLASS"));
     }
 
     internal class TaxInfo
     {
-        private string s;
+        private string gdsresponse;
 
         public TaxInfo(string s)
         {
-            this.s = s;
+            this.gdsresponse = s.Replace("\n", "###");
         }
 
-        public string PaxType => s.SplitOn("###").First().Last(3);
-        public List<Tax> Taxes => s.
-                                    SplitOn("\n").
+        public string PaxType => gdsresponse.SplitOn("###").First().Last(3);
+        public List<Tax> Taxes => gdsresponse.
+                                    AllMatches(@"(\d+\.\d{2}\w{2})\s+").
                                     Skip(1).
-                                    SelectMany(m => m.SplitOnRegex(@"(\d+\.\d{2}\w{2})\s+")).
                                     Select(tax => new Tax() 
                                     {
-                                        Code = tax.Last(2),
+                                        Code = tax.Trim().Last(2),
                                         Amount = decimal.Parse(tax.Trim().Substring(0, tax.Trim().Length - 2))
                                     }).
                                     ToList();

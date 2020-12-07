@@ -1,12 +1,12 @@
 ﻿using FluentValidation;
+using Newtonsoft.Json;
 using SabreWebtopTicketingService.Interface;
-using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
 namespace SabreWebtopTicketingService.Models
 {
-    public class GetQuoteRQ: IQuoteRequest
+    public class GetQuoteRQ
     {
         public string SessionID { get; set; }
         public string AgentID { get; set; }
@@ -14,12 +14,12 @@ namespace SabreWebtopTicketingService.Models
         public string Locator { get; set; }
         public string AccessKey { get; set; }
         public List<QuotePassenger> SelectedPassengers { get; set; }
-        public List<IQuoteSector> SelectedSectors { get; set; }
+        public List<SelectedQuoteSector> SelectedSectors { get; set; }
         public string PriceCode { get; set; }
         public bool AlternativePricing { get; set; }
     }
 
-    public class SelectedQuoteSector : IQuoteSector
+    public class SelectedQuoteSector
     {
         public int SectorNo { get; set; }
     }

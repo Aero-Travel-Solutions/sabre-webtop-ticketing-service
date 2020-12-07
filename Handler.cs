@@ -110,7 +110,7 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> GetPublishQuote(GetQuoteRQ rq)
         {
-            logger.LogInformation("*****SearchPNR invoked *****");
+            logger.LogInformation("*****GetPublishQuote invoked *****");
             logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
@@ -192,9 +192,178 @@ namespace SabreWebtopTicketingService
             return lambdaResponse;
         }
 
+        public async Task<LambdaResponse> BestBuy(GetQuoteRQ rq)
+        {
+            logger.LogInformation("*****BestBuy invoked *****");
+            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                }
+            };
+
+            string contextid = "";
+
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || rq.SelectedPassengers.IsNullOrEmpty() || rq.SelectedSectors.IsNullOrEmpty())
+            {
+                lambdaResponse.statusCode = 400;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new SearchPNRLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            else
+            {
+                contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
+                List<Quote> result = await sabreGDS.BestBuy(rq, contextid);
+                lambdaResponse.statusCode = result.All(a => a.Errors.IsNullOrEmpty()) ? 200 : 500;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new GetQuoteLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = result.All(a => a.Errors.IsNullOrEmpty()) ?
+                                                                new List<WebtopError>() :
+                                                                result.
+                                                                    SelectMany(s => s.Errors).
+                                                                    DistinctBy(d => d.message).
+                                                                    ToList(),
+                                                    data = result.All(a => a.Errors.IsNullOrEmpty()) ? result : null
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+
+            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
+        }
+
+
         public async Task<LambdaResponse> ForceFarebasis(ForceFBQuoteRQ rq)
         {
-            logger.LogInformation("*****SearchPNR invoked *****");
+            logger.LogInformation("*****ForceFarebasis invoked *****");
+            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                }
+            };
+
+            string contextid = "";
+
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || rq.SelectedPassengers.IsNullOrEmpty() || rq.SelectedSectors.IsNullOrEmpty())
+            {
+                lambdaResponse.statusCode = 400;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new SearchPNRLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            else
+            {
+                contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
+                List<Quote> result = await sabreGDS.ForceFBQuote(rq, contextid);
+                lambdaResponse.statusCode = result.All(a => a.Errors.IsNullOrEmpty()) ? 200 : 500;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new GetQuoteLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = result.All(a => a.Errors.IsNullOrEmpty()) ?
+                                                                new List<WebtopError>() :
+                                                                result.
+                                                                    SelectMany(s => s.Errors).
+                                                                    DistinctBy(d => d.message).
+                                                                    ToList(),
+                                                    data = result.All(a => a.Errors.IsNullOrEmpty()) ? result : null
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+
+            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
+        }
+
+        public async Task<LambdaResponse> ManualBuildIssue(ForceFBQuoteRQ rq)
+        {
+            logger.LogInformation("*****ManualBuildIssue invoked *****");
             logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()

@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Newtonsoft.Json;
 using SabreWebtopTicketingService.Interface;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace SabreWebtopTicketingService.Models
 {
-    public class ForceFBQuoteRQ: IQuoteRequest
+    public class ForceFBQuoteRQ
     {
         public string SessionID { get; set; }
         public string AgentID { get; set; }
@@ -14,12 +15,12 @@ namespace SabreWebtopTicketingService.Models
         public string Locator { get; set; }
         public string AccessKey { get; set; }
         public List<QuotePassenger> SelectedPassengers { get; set; }
-        public List<IQuoteSector> SelectedSectors { get; set; }
+        public List<SelectedSector> SelectedSectors { get; set; }
         public string PriceCode { get; set; }
         public bool AlternativePricing { get; set; }
     }
 
-    public class SelectedSector: IQuoteSector
+    public class SelectedSector
     {
         public int SectorNo { get; set; }
         public string FareBasis { get; set; }
