@@ -820,7 +820,7 @@ namespace SabreWebtopTicketingService.Services
                                    LastMatch(@"COMM\sPCT\s*(\d+)", "");
 
                 string pricecommandline = diffquotes[i + 1].SplitOn("BASE FARE").First().Trim().Replace("\n", "");
-                string paxtype = pricecommandline.LastMatch(@"ÂP([ACI][D\dN][T\dNF])Â");
+                string paxtype = pricecommandline.LastMatch(@"ÂP([ACI][D\dN][T\dNF])");
                 if (string.IsNullOrEmpty(paxtype))
                 {
                     paxtype = diffquotes[i + 1].LastMatch(@"\s+INPUT\s+PTC\s*-\s*(.*)");

@@ -60,14 +60,23 @@ namespace SabreWebtopTicketingService.Services
                         ToList());
             }
 
-            return ParseSabreQuote(response.OTA_AirPriceRS, (IQuoteRequest)quoteRequest, pnr, quotenos);
+            return ParseSabreQuote(
+                        response.OTA_AirPriceRS, 
+                        quoteRequest.SelectedPassengers,
+                        quoteRequest.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
+                        pnr, 
+                        quotenos);
         }
 
         public async Task<List<Quote>> PricePNR(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc)
         {
             var response = await PricePNR(CreatePriceByPaxRequest(quoteRequest, pnr), token, pcc, ticketingpcc);
 
-            return ParseSabreQuote(response.OTA_AirPriceRS, (IQuoteRequest)quoteRequest, pnr);
+            return ParseSabreQuote(
+                            response.OTA_AirPriceRS, 
+                            quoteRequest.SelectedPassengers, 
+                            quoteRequest.SelectedSectors.Select(s=> new SectorData() { SectorNo = s.SectorNo}).ToList(),
+                            pnr);
         }
 
         private static MessageHeader CreateHeader(string pcc, string ticketingpcc)
@@ -167,7 +176,7 @@ namespace SabreWebtopTicketingService.Services
                                                                 Where(w=> pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "SURFACE").
                                                                 Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                 {
-                                                                    Number = s.ToString()
+                                                                    Number = s.SectorNo.ToString()
                                                                 }).
                                                                 ToArray()
                                         },
@@ -451,16 +460,18 @@ namespace SabreWebtopTicketingService.Services
                                                                 Where(w=> pnr.Sectors.First(f=> f.SectorNo == w.SectorNo).From != "SURFACE").
                                                                 Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                 {
-                                                                    Number = s.ToString()
+                                                                    RPH = s.SectorNo.ToString(),
+                                                                    Number = s.SectorNo.ToString()
                                                                 }).
                                                                 ToArray()
                                         },
+                                        
                                         //Enable Specific Penalty
-                                        SpecificPenalty = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
-                                        {
-                                            AdditionalInfoSpecified = true,
-                                            AdditionalInfo = true
-                                        },
+                                        //SpecificPenalty = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
+                                        //{
+                                        //    AdditionalInfoSpecified = true,
+                                        //    AdditionalInfo = true,
+                                        //},
                                         Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
                                                     null:
                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
@@ -476,10 +487,11 @@ namespace SabreWebtopTicketingService.Services
                                                             SelectedSectors.
                                                             Select(sec => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricing()
                                                             {
+                                                                RPH = sec.SectorNo.ToString(),
                                                                 FareBasis = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricingFareBasis()
                                                                 {
-                                                                    Code = ((SelectedSector)sec).FareBasis,
-                                                                    TicketDesignator = ((SelectedSector)sec).TicketDesignator
+                                                                    Code = sec.FareBasis,
+                                                                    TicketDesignator = sec.TicketDesignator
                                                                 }
                                                             }).
                                                             ToArray()
@@ -506,7 +518,11 @@ namespace SabreWebtopTicketingService.Services
         {
             var response = await ExecForceFarebasis(request, sessionID, pcc, pnr, ticketingpcc);
 
-            return ParseSabreQuote(response.OTA_AirPriceRS, (IQuoteRequest)request, pnr);
+            return ParseSabreQuote(
+                            response.OTA_AirPriceRS, 
+                            request.SelectedPassengers,
+                            request.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
+                            pnr);
         }
 
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
@@ -719,7 +735,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, IQuoteRequest quoterq, PNR pnr, List<pnrquotedata> pqnos = null)
+        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, List<QuotePassenger> paxsdata, List<SectorData> sectordata, PNR pnr, List<pnrquotedata> pqnos = null)
         {
             int index = pqnos.IsNullOrEmpty() ?
                             1 :
@@ -745,7 +761,7 @@ namespace SabreWebtopTicketingService.Services
                               let isCat35 = resp.PriceQuote.MiscInformation.HeaderInformation.SelectMany(s => s.Text).Where(w => w == "PRIVATE ¤").Count() > 0
                               from pqs in resp.PriceQuote.PricedItinerary.AirItineraryPricingInfo
                               let lastpurchasedate = getLastPurchaseDate(resp, pqs)
-                              let sectors = GetQuoteSectors(quoterq, pnr, pqs)
+                              let sectors = GetQuoteSectors(sectordata, pnr, pqs)
                               let obfee = pqs.
                                             TicketingFees?.
                                             FirstOrDefault(f => f.FeeInformation.ServiceType == "OB" &&
@@ -763,7 +779,7 @@ namespace SabreWebtopTicketingService.Services
                               {
                                   Quote = new Quote()
                                   {
-                                      QuoteNo = GetQuoteNumber(pqnos, quoterq, sectors, pqs),
+                                      QuoteNo = GetQuoteNumber(pqnos, paxsdata, sectors, pqs),
                                       ValidatingCarrier = validatingcarrier,
                                       BaseFare = pqs.ItinTotalFare.EquivFare == null ?
                                                 decimal.Parse(pqs.ItinTotalFare.BaseFare.Amount) :
@@ -822,7 +838,7 @@ namespace SabreWebtopTicketingService.Services
 
             //Quotes with single passenger
             var singlepaxquotes = from s in tempQuotes.Where(w => w.Qty == 1)
-                                  let pax = MatchPaxTypes(s.PaxType, pnr, quoterq.SelectedPassengers).First()
+                                  let pax = MatchPaxTypes(s.PaxType, pnr, paxsdata).First()
                                   select new Quote()
                                   {
                                       ValidatingCarrier = s.Quote.ValidatingCarrier,
@@ -840,17 +856,15 @@ namespace SabreWebtopTicketingService.Services
                                           PassengerName = pax.PassengerName,
                                           NameNumber = pax.NameNumber,
                                           DOB = pax.DOB,
-                                          DOBChanged = quoterq.
-                                                                SelectedPassengers.
-                                                                FirstOrDefault(f =>
-                                                                        f.NameNumber.Replace("0", "") ==
-                                                                        pax.NameNumber.Replace("0", ""))?.DOBChanged ?? false,
-                                          FormOfPayment = quoterq.
-                                                                SelectedPassengers.
-                                                                FirstOrDefault(f =>
-                                                                        f.NameNumber.Replace("0", "") ==
-                                                                        pax.NameNumber.Replace("0", ""))?.
-                                                                FormOfPayment
+                                          DOBChanged = paxsdata.
+                                                        FirstOrDefault(f =>
+                                                                f.NameNumber.Replace("0", "") ==
+                                                                pax.NameNumber.Replace("0", ""))?.DOBChanged ?? false,
+                                          FormOfPayment = paxsdata.
+                                                            FirstOrDefault(f =>
+                                                                    f.NameNumber.Replace("0", "") ==
+                                                                    pax.NameNumber.Replace("0", ""))?.
+                                                            FormOfPayment
                                       },
                                       QuoteSectors = s.Quote.QuoteSectors,
                                       Taxes = s.Quote.Taxes,
@@ -864,7 +878,7 @@ namespace SabreWebtopTicketingService.Services
                                       LastPurchaseDate = s.Quote.LastPurchaseDate,
                                       DifferentPaxType = returnedPTCs.Any(a => (a.StartsWith("C") && a.Substring(0, 1) == pax.PaxType.Substring(0, 1)) || a == pax.PaxType) ? 
                                                                 new List<string>() : 
-                                                                returnedPTCs.Distinct().Except(quoterq.SelectedPassengers.Select(S=> s.PaxType).Distinct()).ToList()
+                                                                returnedPTCs.Distinct().Except(paxsdata.Select(S=> s.PaxType).Distinct()).ToList()
                                   };
 
             quotes.AddRange(singlepaxquotes.ToList());
@@ -872,7 +886,7 @@ namespace SabreWebtopTicketingService.Services
             //Quotes with multiple passengers - split
             foreach (var item in tempQuotes.Where(w => w.Qty > 1))
             {
-                List<QuotePassenger> paxs = MatchPaxTypes(item.PaxType, pnr, quoterq.SelectedPassengers);
+                List<QuotePassenger> paxs = MatchPaxTypes(item.PaxType, pnr, paxsdata);
 
                 for (int i = 0; i < item.Qty; i++)
                 {
@@ -901,8 +915,7 @@ namespace SabreWebtopTicketingService.Services
                             PassengerName = paxs[i].PassengerName,
                             DOB = paxs[i].DOB,
                             DOBChanged = paxs[i].DOBChanged,
-                            FormOfPayment = quoterq.
-                                                SelectedPassengers.
+                            FormOfPayment = paxsdata.
                                                 First(f =>
                                                         f.NameNumber.Replace("0", "") ==
                                                         paxs[i].NameNumber.Replace("0", "")).
@@ -916,7 +929,7 @@ namespace SabreWebtopTicketingService.Services
                         Route = item.Quote.Route,
                         DifferentPaxType = returnedPTCs.Any(a => (a.StartsWith("C") && a.Substring(0,1) == item.PaxType.Substring(0,1)) || a == item.PaxType) ?
                                                                 new List<string>() :
-                                                                returnedPTCs.Distinct().Except(quoterq.SelectedPassengers.Select(s => s.PaxType).Distinct()).ToList()
+                                                                returnedPTCs.Distinct().Except(paxsdata.Select(s => s.PaxType).Distinct()).ToList()
                     };
 
                     quotes.Add(multipaxquotes.Quote);
@@ -995,7 +1008,7 @@ namespace SabreWebtopTicketingService.Services
             };
         }
 
-        private int GetQuoteNumber(List<pnrquotedata> pqnos, IQuoteRequest quoterq, List<QuoteSector> sectors, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
+        private int GetQuoteNumber(List<pnrquotedata> pqnos, List<QuotePassenger> paxs, List<QuoteSector> sectors, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
         {
             var quoteno = pqnos?.
                         LastOrDefault(f =>
@@ -1004,10 +1017,9 @@ namespace SabreWebtopTicketingService.Services
                             //Match passenger name numbers
                             f.
                                 PassengerNameNumbers.
-                                All(a => quoterq.
-                                SelectedPassengers.
-                                Where(w => w.PaxType.Substring(0, 1) == pqs.PassengerTypeQuantity.Code.Substring(0, 1) &&
-                                w.NameNumber == a).
+                                All(a => paxs.
+                                            Where(w => w.PaxType.Substring(0, 1) == pqs.PassengerTypeQuantity.Code.Substring(0, 1) &&
+                                            w.NameNumber == a).
                                 Any()) &&
                             //Match sectors
                             f.
@@ -1062,12 +1074,11 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private static List<QuoteSector> GetQuoteSectors(IQuoteRequest quoterq, PNR pnr, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
+        private static List<QuoteSector> GetQuoteSectors(List<SectorData> sectors, PNR pnr, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
         {
             var validpqs = pqs.FareCalculationBreakdown.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment)).ToList();
 
-            return quoterq.
-                    SelectedSectors.
+            return sectors.
                     Where(w => pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK").
                     Select((s, index) => new QuoteSector()
                     {
@@ -1133,6 +1144,11 @@ namespace SabreWebtopTicketingService.Services
 
             return result;
         }
+    }
+
+    internal class SectorData
+    {
+        public int SectorNo { get; set; }
     }
 
     public class PQSecData
