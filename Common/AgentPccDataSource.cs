@@ -27,9 +27,9 @@ namespace SabreWebtopTicketingService.Common
             return new AgentPccList { PccList = result };
         }
 
-        public async Task<Agent> RetrieveAgentDetails(string consolidator_id, string agent_id, string sessionID)
+        public async Task<ADBAgent> RetrieveAgentDetails(string consolidator_id, string agent_id, string sessionID)
         {           
-            var result = await lambda.Invoke<Agent>($"{PFX_ADB}-agent-retrieve", new { consolidator_id, agent_id }, sessionID);
+            var result = await lambda.Invoke<ADBAgent>($"{PFX_ADB}-agent-retrieve", new { consolidator_id, agent_id }, sessionID);
             return result;
         }
 
