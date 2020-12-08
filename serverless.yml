@@ -59,3 +59,8 @@ functions:
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  PriceOverride:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::PriceOverride
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip

@@ -356,7 +356,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        public async Task<List<Quote>> GetQuote(GetQuoteRQ request, string contextID)
+        public async Task<List<Quote>> GetQuote(GetQuoteRQ request, string contextID, bool IsPriceOverride = false)
         {
             request.Validate();
 
@@ -441,7 +441,7 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
-                quotes = await _enhancedAirBookService.PricePNR(request, token.SessionID, pcc, pnr, ticketingpcc);
+                quotes = await _enhancedAirBookService.PricePNR(request, token.SessionID, pcc, pnr, ticketingpcc, IsPriceOverride);
 
                 //Check for pax type differences
                 quotes.

@@ -16,7 +16,9 @@ namespace SabreWebtopTicketingService.Models
         public List<QuotePassenger> SelectedPassengers { get; set; }
         public List<SelectedQuoteSector> SelectedSectors { get; set; }
         public string PriceCode { get; set; }
+        public string PlatingCarrier { get; set; }
         public bool AlternativePricing { get; set; }
+        public bool IsRTW { get; set; }
     }
 
     public class SelectedQuoteSector

@@ -68,7 +68,7 @@ namespace SabreWebtopTicketingService.Services
                         quotenos);
         }
 
-        public async Task<List<Quote>> PricePNR(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc)
+        public async Task<List<Quote>> PricePNR(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc, bool IsPriceOverride)
         {
             var response = await PricePNR(CreatePriceByPaxRequest(quoteRequest, pnr), token, pcc, ticketingpcc);
 
@@ -119,7 +119,7 @@ namespace SabreWebtopTicketingService.Services
             };
         }
 
-        private EnhancedAirBookRQ CreatePriceByPaxRequest(GetQuoteRQ quoteRequest, PNR pnr)
+        private EnhancedAirBookRQ CreatePriceByPaxRequest(GetQuoteRQ quoteRequest, PNR pnr, bool IsPriceOveride = false)
         {
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
@@ -164,8 +164,8 @@ namespace SabreWebtopTicketingService.Services
                                 {
                                     PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
                                     {
-                                        //RoundTheWorldSpecified = true,
-                                        //RoundTheWorld = quoteRequest.SelectedSectors.Count() >=3 ? true: false,
+                                        RoundTheWorldSpecified = quoteRequest.IsRTW,
+                                        RoundTheWorld = quoteRequest.SelectedSectors.Count() >= 3 ? quoteRequest.IsRTW: false,
                                         PassengerType = passengerTypes,
                                         NameSelect = nameselect,
                                         //Sector Selection
@@ -197,7 +197,21 @@ namespace SabreWebtopTicketingService.Services
                                                             quoteRequest.PriceCode
                                                         }
                                                     },
-                                        
+                                        Overrides = IsPriceOveride ?
+                                                            new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverrides()
+                                                            {
+                                                                GoverningCarrierOverride = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride[]
+                                                                {
+                                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride()
+                                                                    {
+                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverrideAirline()
+                                                                        {
+                                                                            Code = quoteRequest.PlatingCarrier
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }:
+                                                            null
                                     },
                                     FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
                                     MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
@@ -209,7 +223,17 @@ namespace SabreWebtopTicketingService.Services
                                                              Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
                                                          }
                                                      }:
-                                                     null
+                                                     null,
+                                    FlightQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
+                                    {
+                                        VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                        {
+                                            Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                            {
+                                                Code = quoteRequest.PlatingCarrier
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
