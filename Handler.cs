@@ -129,7 +129,7 @@ namespace SabreWebtopTicketingService
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
-                                                new SearchPNRLambdaResponseBody()
+                                                new GetQuoteLambdaResponseBody()
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
@@ -213,7 +213,7 @@ namespace SabreWebtopTicketingService
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
-                                                new SearchPNRLambdaResponseBody()
+                                                new GetQuoteLambdaResponseBody()
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
@@ -297,7 +297,7 @@ namespace SabreWebtopTicketingService
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
-                                                new SearchPNRLambdaResponseBody()
+                                                new GetQuoteLambdaResponseBody()
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
@@ -381,7 +381,7 @@ namespace SabreWebtopTicketingService
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
-                                                new SearchPNRLambdaResponseBody()
+                                                new GetQuoteLambdaResponseBody()
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
@@ -444,7 +444,7 @@ namespace SabreWebtopTicketingService
             return lambdaResponse;
         }
 
-        public async Task<LambdaResponse> ManualBuildIssue(ForceFBQuoteRQ rq)
+        public async Task<LambdaResponse> ManualBuildAndIssue(ForceFBQuoteRQ rq)
         {
             logger.LogInformation("*****ManualBuildIssue invoked *****");
             logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
@@ -527,5 +527,121 @@ namespace SabreWebtopTicketingService
 
             return lambdaResponse;
         }
-    }    
+
+        public async Task<LambdaResponse> ValidateCommission(GetQuoteRQ rq)
+        {
+            logger.LogInformation("*****SearchPNR invoked *****");
+            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                }
+            };
+
+            string contextid = "";
+
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || rq.SelectedPassengers.IsNullOrEmpty() || rq.SelectedSectors.IsNullOrEmpty())
+            {
+                lambdaResponse.statusCode = 400;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new ValidateCommissionLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            else
+            {
+                contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
+                try
+                {
+                    List<WebtopWarning> result = await sabreGDS.ValidateCommission(rq, contextid);
+                    lambdaResponse.statusCode = 200;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new ValidateCommissionLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>(),
+                                                        data = result
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+                catch (Exception ex)
+                {
+                    lambdaResponse.statusCode = 500;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new ValidateCommissionLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>()
+                                                        {
+                                                            new WebtopError()
+                                                            {
+                                                                message = ex.Message,
+                                                                code = "UNKNOWN_ERROR",
+                                                                stack = ex.StackTrace.ToString()
+                                                            }
+                                                        },
+                                                        data = null
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+            }
+
+            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
+        }
+
+    }
 }

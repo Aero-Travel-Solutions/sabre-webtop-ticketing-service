@@ -45,4 +45,12 @@ namespace SabreWebtopTicketingService.Models
         public List<Quote> data { get; set; }
         public List<WebtopError> error { get; set; }
     }
+
+    public class ValidateCommissionLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public List<WebtopWarning> data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
 }

@@ -64,3 +64,14 @@ functions:
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  ValidateCommission:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::ValidateCommission
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  ManualBuildAndIssue:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::ManualBuildAndIssue
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+      

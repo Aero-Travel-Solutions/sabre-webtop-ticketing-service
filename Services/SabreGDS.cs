@@ -87,30 +87,30 @@ namespace SabreWebtopTicketingService.Services
             this.session = session;
         }
 
-        private async Task<Agent> getAgentData(string sessionid,  string consolidatorid, string agentid, string webservicepcc)
+        private async Task<Agent> getAgentData(string sessionid, string consolidatorid, string agentid, string webservicepcc)
         {
-            Agent agent = new Agent()
-            {
-                Agent = user.Agent,
-                AgentId = user.AgentId,
-                ConsolidatorId = user.ConsolidatorId,
-                Consolidator = user.Consolidator,
-                Permissions = user.Permissions,
-                Roles = user.Roles,
-                Email = user.Email,
-                FullName = user.FullName,
-                Name = user.Name,
-                CreditLimit = user.Agent.AccounDetails?.CreditLimit
-            };
-
             var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(consolidatorid, agentid, sessionid);
 
-            agent.TicketingQueue = webservicepcc == "0M4J" ? "30" : "";
-            agent.PccList = (await _agentPccDataSource.RetrieveAgentPccs(agentid, sessionid)).PccList;
-            agent.CustomerNo = agentDetails?.CustomerNo;
-            agent.Address = agentDetails?.Address;
+            if(agentDetails == null) { throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction fail."); }
+            
+            Agent agent = new Agent()
+            {
+                TicketingQueue = webservicepcc == "G4AK" ? "30" : "",
+                PccList = (await _agentPccDataSource.RetrieveAgentPccs(agentid, sessionid)).PccList,
+                AgentId = agentid,
+                Agent = agentDetails,
+                ConsolidatorId = consolidatorid,
+                Consolidator = agentDetails?.Consolidator,
+                Permissions = agentDetails?.Permission,
+                CustomerNo = agentDetails?.CustomerNo,
+                FullName = agentDetails?.Name,
+                Name = agentDetails?.Name,
+                CreditLimit = agentDetails.AccounDetails?.CreditLimit,
+                Address = agentDetails?.Address,
+                TicketingPcc = await GetTicketingPCC(sessionid)
+            };       
+
             user.Agent.CustomerNo = agent.CustomerNo;
-            agent.TicketingPcc = await GetTicketingPCC(sessionid);
             return agent;
         }
 
@@ -190,6 +190,11 @@ namespace SabreWebtopTicketingService.Services
             }
 
             return ticketingpcc;
+        }
+
+        internal Task<List<WebtopWarning>> ValidateCommission(GetQuoteRQ rq, string contextid)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
@@ -346,6 +351,41 @@ namespace SabreWebtopTicketingService.Services
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
 
                 return quotes;
+            }
+            catch(Exception ex)
+            {
+                if (ex is GDSException || ex is AeronologyException)
+                {
+                    return new List<Quote>()
+                    {
+                        new Quote()
+                        {
+                            Errors = new List<WebtopError>()
+                            {
+                                new WebtopError()
+                                {
+                                    code = ((AeronologyException)ex).ErrorCode,
+                                    message = ex.Message
+                                }
+                            }
+                        }
+                    };
+                }
+
+                return new List<Quote>()
+                {
+                    new Quote()
+                    {
+                        Errors = new List<WebtopError>()
+                        {
+                            new WebtopError()
+                            {
+                                code = "UNKNOWN_ERROR",
+                                message = ex.Message
+                            }
+                        }
+                    }
+                };
             }
             finally
             {
