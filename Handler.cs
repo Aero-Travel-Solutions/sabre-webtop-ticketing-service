@@ -493,7 +493,7 @@ namespace SabreWebtopTicketingService
             else
             {
                 contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
-                List<Quote> result = await sabreGDS.ForceFBQuote(rq, contextid);
+                List<Quote> result = await sabreGDS.ManualBuildAndIsue(rq, contextid);
                 lambdaResponse.statusCode = result.All(a => a.Errors.IsNullOrEmpty()) ? 200 : 500;
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject

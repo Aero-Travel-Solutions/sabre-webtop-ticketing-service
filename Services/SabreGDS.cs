@@ -649,9 +649,9 @@ namespace SabreWebtopTicketingService.Services
                 }
             }
 
-            if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+            if (pnr == null) { throw new AeronologyException("PNR_NOT_FOUND", "PNR data not found"); }
 
-            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("NO_FLIGHTS", "No flights found in the PNR"); }
 
             //published quote
             List<Quote> quotes = new List<Quote>();
@@ -728,6 +728,11 @@ namespace SabreWebtopTicketingService.Services
             }
 
             return quotes;
+        }
+
+        internal Task<List<Quote>> ManualBuildAndIsue(ForceFBQuoteRQ rq, string contextid)
+        {
+            throw new NotImplementedException();
         }
 
         private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier)
@@ -893,15 +898,25 @@ namespace SabreWebtopTicketingService.Services
         private List<PNRAgent> GetAgents(string sessionid, string bookingpcc)
         {
             List<DataAgent> agents = _agentPccDataSource.RetrieveAgents(user?.ConsolidatorId, sessionid).GetAwaiter().GetResult();
-            return agents.
-                    Where(w => w.pcc_code == bookingpcc).
-                    DistinctBy(d=> d.agent_id).
-                    Select(agt => new PNRAgent()
-                    {
-                        AgentId = agt.agent_id,
-                        Name = agt.name
-                    }).
-                    ToList();
+            var agentlist = agents.
+                                Where(w => w.pcc_code == bookingpcc).
+                                DistinctBy(d=> d.agent_id).
+                                Select(agt => new PNRAgent()
+                                {
+                                    AgentId = agt.agent_id
+                                }).
+                                ToList();
+
+            CancellationToken ct = new CancellationToken();
+
+            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            Parallel.ForEach(agentlist, options, (agent) =>
+            {
+                agent.Name = _agentPccDataSource.RetrieveAgentDetails(user?.ConsolidatorId, agent.AgentId, sessionid).GetAwaiter().GetResult().Name;
+            });
+
+            return agentlist;
         }
 
         private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, bool includeQuotes = false, bool includeexpiredquote = false)
