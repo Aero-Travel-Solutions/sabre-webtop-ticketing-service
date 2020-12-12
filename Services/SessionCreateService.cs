@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.ServiceModel;
+using System.Text.Json;
 using System.Threading.Tasks;
 using SabreWebtopTicketingService.Common;
+using SabreWebtopTicketingService.CustomException;
 using SabreWebtopTicketingService.Models;
 using SessionCreate;
 
@@ -9,21 +15,44 @@ namespace SabreWebtopTicketingService.Services
 {
     public class SessionCreateService : ConnectionStubs
     {
-        public SessionCreateService()
+        private readonly DbCache _dbCache;
+        private readonly SessionDataSource _sessionDataSource;
+
+        public SessionCreateService(
+                        DbCache dbCache,
+                        SessionDataSource sessionDataSource)
         {
-            
+            _dbCache = dbCache;
+            _sessionDataSource = sessionDataSource;
         }        
 
-        public async Task<SabreSession> CreateStatefulSessionToken(Pcc defaultwspcc)
+        public async Task<SabreSession> CreateStatefulSessionToken(Pcc defaultwspcc, string locator, bool NoCache = false)
         {
             SessionCreatePortTypeClient client = null;
             var userName = defaultwspcc.Username;
             var password = defaultwspcc.Password;
             string pcc = defaultwspcc.PccCode;
             var url = Constants.GetSoapUrl();
+            string accessKey = $"{defaultwspcc.PccCode}-{locator}".EncodeBase64();
+
+            SabreSession sabreSession = null;
 
             try
-            {                
+            {
+                if (!NoCache)
+                {
+                    #region Retrieve ession from dynamo db
+                    //Check token in cache
+                    sabreSession = await _dbCache.Get<SabreSession>(accessKey);
+
+                    if (sabreSession != null && !sabreSession.Expired)
+                    {
+                        sabreSession.Stored = true;
+                        await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
+                        return sabreSession;
+                    }
+                    #endregion
+                }
 
                 EnableTLS();
 
@@ -32,8 +61,6 @@ namespace SabreWebtopTicketingService.Services
                 //Attach client credentials
                 client.ClientCredentials.UserName.UserName = userName;
                 client.ClientCredentials.UserName.Password = password;
-
-
 
                 var header = CreateHeader(pcc);
                 var security = CreateSecurityCredentials(userName, password, pcc);
@@ -50,16 +77,75 @@ namespace SabreWebtopTicketingService.Services
 
                 await client.CloseAsync();
 
-                SabreSession sabreSession = new SabreSession()
+                #region store session in dynamo db cache
+                sabreSession = new SabreSession()
                 {
-                    SessionID = token
+                    SessionID = token,
+                    ConsolidatorPCC = defaultwspcc.PccCode,
+                    CreatedDateTime = DateTime.Now,
+                    CurrentPCC = defaultwspcc.PccCode,
+                    Locator = locator,
                 };
+
+                await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
+                #endregion
+
                 return sabreSession;
             }            
             catch (Exception ex)
             {                
                 client.Abort();
                 throw ex;
+            }
+        }
+
+        public async Task<Token> CreateStatelessSessionToken(Pcc pcc)
+        {
+            //Check in cache
+            Token token = await _dbCache.Get<Token>($"{pcc.PccCode}-RESTTOKEN");
+            if (token != null)
+            {
+                return token;
+            }
+
+            //Reference: https://beta.developer.sabre.com/guides/travel-agency/how-to/get-token
+            string url = Constants.GetRestUrl();
+            var client = IHttpClientFactory.CreateClient();
+
+            //URL
+            var uri = new Uri(url.Trim() + "/v2/auth/token");
+
+            //Authorization Header
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                "Basic",
+                SabreSharedServices.GetSabreToken(pcc.Username, pcc.Password, pcc.PccCode));
+
+            // Add an Accept header for content type
+            client.DefaultRequestHeaders.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));
+
+            var form = new Dictionary<string, string>
+                {
+                    { "grant_type", "client_credentials" }
+                };
+
+            // List data response.
+            HttpResponseMessage response = await client.PostAsync(uri, new FormUrlEncodedContent(form));
+
+            response.EnsureSuccessStatusCode();
+
+            using (var reader = new StreamReader(await response.Content.ReadAsStreamAsync()))
+            {
+                var content = await reader.ReadToEndAsync();
+
+                if (string.IsNullOrEmpty(content)) { throw new GDSException("TOKEN_NOT_RETURN", "Stateless session token was not returned."); }
+
+                token = JsonSerializer.Deserialize<Token>(content);
+
+                //cache token                    
+                await _dbCache.Set<Token>(token, $"{pcc.PccCode}-RESTTOKEN", 10080);
+
+                return token;
             }
         }
 

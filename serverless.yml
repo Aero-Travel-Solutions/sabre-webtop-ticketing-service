@@ -8,6 +8,7 @@ provider:
   environment:
     APP_VERSION: ${opt:appversion, '0.0.0.0'}
     SABRE_URL: ${self:custom.sabre_soap_uri.${self:provider.stage}}
+    REST_URL: ${self:custom.sabre_rest_uri.${self:provider.stage}}
     ENVIRONMENT: ${self:provider.stage}
   tracing:
     lambda: true

@@ -23,8 +23,9 @@ namespace SabreWebtopTicketingService.Services
         public const string GetReservationPriceQuoteVersion = "3.2.0";
 
         //REST
-        public const string EnhancedIssueTicketVersion = "1.2.1";
+        public const string EnhancedAirTicketVersion = "1.2.1";
         public const string EnhancedAirBookVersion = "3.10.0";
+        public const string EnhancedEndTransactionVersion = "1.0.0";
 
         public const string EXPIRED_SESSION_CODE = "USG_INVALID_SESSION";
         public const string SABRE_SESSION_LIMIT = "SABRE_SESSION_LIMIT";
@@ -37,7 +38,19 @@ namespace SabreWebtopTicketingService.Services
             return Environment.GetEnvironmentVariable("SABRE_SOAP_URI") ?? "https://webservices.havail.sabre.com";
         }
 
+        public static string GetRestUrl()
+        {
+            //CERT
+            //return Environment.GetEnvironmentVariable(URL_KEY_REST) ?? "https://api-crt.cert.havail.sabre.com";
+            //PROD
+            return Environment.GetEnvironmentVariable("SABRE_REST_URI") ?? "https://api.havail.sabre.com";
+        }
+
         public static XElement xml { get; set; }
+
+        public const string BACKOFFICE_URL = "BACKOFFICE_URL";
+        public const string BACKOFFICE_SQS_URL = "BACKOFFICE_SQS_URL";
+        public const string BACKOFFICE_VOID_SQS_URL = "BACKOFFICE_VOID_SQS_URL";
     }
 
 }

@@ -444,7 +444,7 @@ namespace SabreWebtopTicketingService
             return lambdaResponse;
         }
 
-        public async Task<LambdaResponse> ManualBuildAndIssue(ForceFBQuoteRQ rq)
+        public async Task<LambdaResponse> ManualBuildAndIssue(IssueExpressTicketRQ rq)
         {
             logger.LogInformation("*****ManualBuildIssue invoked *****");
             logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
@@ -459,7 +459,7 @@ namespace SabreWebtopTicketingService
 
             string contextid = "";
 
-            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || rq.SelectedPassengers.IsNullOrEmpty() || rq.SelectedSectors.IsNullOrEmpty())
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || (rq.IssueTicketQuoteKeys.IsNullOrEmpty() && rq.Quotes.IsNullOrEmpty()))
             {
                 lambdaResponse.statusCode = 400;
                 lambdaResponse.body = JsonConvert.
@@ -493,22 +493,17 @@ namespace SabreWebtopTicketingService
             else
             {
                 contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
-                List<Quote> result = await sabreGDS.ManualBuildAndIsue(rq, contextid);
-                lambdaResponse.statusCode = result.All(a => a.Errors.IsNullOrEmpty()) ? 200 : 500;
+                IssueExpressTicketRS result = await sabreGDS.IssueExpressTicket(rq, contextid);
+                lambdaResponse.statusCode = result.Tickets.IsNullOrEmpty() ? 500 : 00;
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
-                                                new GetQuoteLambdaResponseBody()
+                                                new IssueTicketLambdaResponseBody()
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
-                                                    error = result.All(a => a.Errors.IsNullOrEmpty()) ?
-                                                                new List<WebtopError>() :
-                                                                result.
-                                                                    SelectMany(s => s.Errors).
-                                                                    DistinctBy(d => d.message).
-                                                                    ToList(),
-                                                    data = result.All(a => a.Errors.IsNullOrEmpty()) ? result : null
+                                                    error = result.Errors.Select(s=> s.Error).ToList(),
+                                                    data = result.Tickets.IsNullOrEmpty() ? null : result
                                                 },
                                                 new JsonSerializerSettings()
                                                 {

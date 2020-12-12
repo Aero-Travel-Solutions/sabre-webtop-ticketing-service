@@ -23,7 +23,7 @@ namespace SabreWebtopTicketingService.Models
         public List<Ancillary> Ancillaries { get; set; }
         public List<SSR> SSRs { get; set; }
         public List<PNRTicket> Tickets { get; set; }
-        public List<Warning> Warnings { get; set; }
+        public List<WebtopWarning> Warnings { get; set; }
         public int LastQuoteNumber { get; set; }
         public string DKNumber { get; set; }       
         public string HostUserId { get; set; }

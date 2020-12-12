@@ -44,7 +44,7 @@ namespace SabreWebtopTicketingService.Services
 
         private static void GetWarnings(this PNR pnr)
         {
-            List<Warning> warnings = new List<Warning>();
+            List<WebtopWarning> warnings = new List<WebtopWarning>();
 
             #region Pax Age validation for CHD/INF
             DateTime FirstDepartureDate = DateTime.Parse(pnr.
@@ -71,20 +71,20 @@ namespace SabreWebtopTicketingService.Services
                 if (chdageatfirstdept > 11 || chdageatfirstdept < 2)
                 {
                     //CHD age is incorrect
-                    warnings.Add(new Warning()
+                    warnings.Add(new WebtopWarning()
                     {
-                        Code = "90000001",
-                        Message = string.Format("Date of birth for {0} may have entered incorrectly. Please check.", chd.Passengername)
+                        code = "INVALID_DOB",
+                        message = string.Format("Date of birth for {0} may have entered incorrectly. Please check.", chd.Passengername)
                     });
 
                 }
                 else if (chdageatlastdept > 11 && chdageatfirstdept < chdageatlastdept)
                 {
                     //Check CHD become ADT during flight
-                    warnings.Add(new Warning()
+                    warnings.Add(new WebtopWarning()
                     {
-                        Code = "90000002",
-                        Message = string.Format("Passenger {0} will turn {1} years old while travelling. Please check with the plating carrier before ticketing.", chd.Passengername, chdageatlastdept)
+                        code = "PAX_TURN_ONE",
+                        message = string.Format("Passenger {0} will turn {1} years old while travelling. Please check with the plating carrier before ticketing.", chd.Passengername, chdageatlastdept)
                     });
                 }
 
@@ -102,10 +102,10 @@ namespace SabreWebtopTicketingService.Services
                                             Select(s => s.SectorNo).
                                             Distinct());
 
-                warnings.Add(new Warning()
+                warnings.Add(new WebtopWarning()
                 {
-                    Code = "90000003",
-                    Message = string.Format("Unconfirmed sectors {0} found. Please confirm the sectors before issuing.", unconfimedsecs)
+                    code = "HX_SECTOR",
+                    message = string.Format("Unconfirmed sectors {0} found. Please confirm the sectors before issuing.", unconfimedsecs)
                 });
             }
             #endregion

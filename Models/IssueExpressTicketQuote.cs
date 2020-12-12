@@ -8,6 +8,7 @@ namespace SabreWebtopTicketingService.Models
     public class IssueExpressTicketQuote: IIssueExpressTicketDocument
     {
         public int QuoteNo { get; set; }
+        public PriceType PriceType { get; set; }
         public decimal BaseFare { get; set; }
         public decimal TotalFare { get; set; }
         public decimal TotalTax { get; set; }

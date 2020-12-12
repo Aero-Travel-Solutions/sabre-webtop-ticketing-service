@@ -1,11 +1,18 @@
 ﻿using SabreWebtopTicketingService.Common;
+using SabreWebtopTicketingService.CustomException;
 using SabreWebtopTicketingService.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace SabreWebtopTicketingService.Services
 {
@@ -289,5 +296,98 @@ namespace SabreWebtopTicketingService.Services
             return ttls;
         }
 
+        public static async Task<string> InvokeRestAPI(Token token, RestServices service, string requestjson, ILogger logger, string mode = "")
+        {
+            //Reference: https://beta.developer.sabre.com/guides/travel-agency/how-to/get-token
+            if (string.IsNullOrEmpty(requestjson) || string.IsNullOrWhiteSpace(requestjson))
+            {
+                throw new AeronologyException(string.Format(
+                                    "Invalid request json found when executing rest service {0}",
+                                    Enum.GetName(typeof(RestServices), service)),
+                                    "");
+            }
+
+            using (HttpClient client = new HttpClient())
+            {
+                string url = Constants.GetRestUrl() + GetURLPostfix(service, logger);
+                UriBuilder uribuilder = new UriBuilder(url);
+
+                //Append mode to URL query string if required
+                if (!string.IsNullOrEmpty(mode))
+                {
+                    var query = HttpUtility.ParseQueryString(uribuilder.Query);
+                    query["mode"] = mode;
+                    uribuilder.Query = query.ToString();
+                }
+
+                //URL
+                var uri = new Uri(uribuilder.ToString());
+
+                //Authorization Header
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                    "Bearer",
+                    token.access_token);
+
+                logger.LogInformation("InvokeRestAPI invoked.");
+                var sw = Stopwatch.StartNew();
+
+                // List data response.
+                HttpResponseMessage response = await client.PostAsync(uri, new StringContent(requestjson, Encoding.UTF8, "application/json"));
+
+                logger.LogInformation($"InvokeRestAPI completed is {sw.ElapsedMilliseconds} ms.");
+                sw.Stop();
+
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    logger.LogInformation($"Sabre Error: {string.Join(Environment.NewLine, response.Headers.GetValues("Error-Message"))}");
+                    logger.LogInformation($"Request JSON: {requestjson.MaskLog()}");
+                    throw new GDSException("50000073", string.Join(Environment.NewLine, response.Headers.GetValues("Error-Message")));
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                using (var reader = new StreamReader(await response.Content.ReadAsStreamAsync()))
+                {
+                    string content = reader.ReadToEnd();
+
+                    if (string.IsNullOrEmpty(content))
+                    {
+                        throw new GDSException("5000002", $"{Enum.GetName(typeof(RestServices), service)} rest service return no content.");
+                    }
+
+                    return content.ReplaceAllSabreSpecialChar();
+                }
+            }
+        }
+
+
+        public static string GetURLPostfix(RestServices service, ILogger logger)
+        {
+            switch (service)
+            {
+                case RestServices.EnhanceIssueTicket:
+                    return $"/v{Constants.EnhancedAirTicketVersion}/air/ticket";
+                //case RestServices.UpdatePassengerNameRecord:
+                //    return $"/v{Constants.UpdatePNRVersion}/passenger/records";
+                default:
+                    logger.LogInformation($"Service {Enum.GetName(typeof(RestServices), service)} not supported by the GDS");
+                    throw new NotImplementedException();
+            }
+        }
+        public enum RestServices
+        {
+            EnhanceIssueTicket,
+            Seatmap,
+            UpdatePassengerNameRecord
+        }
+
+    }
+
+    public class Token
+    {
+        //{"access_token":"T1RLAQKmCUAo4apoHPiNN44ErYVQpvpvWxAFBCLBeNCFf2su+FVDqk7jAACwlEZxNdp7AB8+/5OlpCygqz2G8naK2X/Js5iUOV5+E4fVpjSu1dGVqewh7fewMvxNl/frLBmm5woZX21hzC//MxUCDN4yKaLVbeN1ahSSqVQtmy08qneMoSxPemW6/Ub5RJT10A82M2fsYsXCsfdOC7j1z9kZyshGaqQjnJC/3gK2QTjU2ScKHw2qVhUe94AGKVw1DOhSVpWLJV++6uJVnYKBe+lSch43I2rLYrv8/iI*","token_type":"bearer","expires_in":604800}
+        public string access_token { get; set; }
+        public string token_type { get; set; }
+        public int expires_in { get; set; }
     }
 }

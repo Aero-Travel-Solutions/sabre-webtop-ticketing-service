@@ -31,7 +31,7 @@ namespace SabreWebtopTicketingService.Models
 
     public class IssueTicketError
     {
-        public string Error { get; set; }
+        public WebtopError Error { get; set; }
         public DocumentType DocumentType{get;set;}
         public List<int> DocumentNumber { get; set; }
     }

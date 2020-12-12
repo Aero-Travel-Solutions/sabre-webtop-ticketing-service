@@ -46,11 +46,28 @@ namespace SabreWebtopTicketingService.Models
         public List<WebtopError> error { get; set; }
     }
 
+    public class IssueTicketLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public IssueExpressTicketRS data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
+
     public class ValidateCommissionLambdaResponseBody
     {
         public string session_id { get; set; }
         public string context_id { get; set; }
         public List<WebtopWarning> data { get; set; }
         public List<WebtopError> error { get; set; }
+    }
+
+    public class MerchantLambdaResponse
+    {
+        public string ApprovalCode { get; set; }
+        public string CardNumber { get; set; }
+        public string CardType { get; set; }
+        public string CardExpiry { get; set; }
+        public bool Success { get; set; }
     }
 }

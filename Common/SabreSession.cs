@@ -7,17 +7,7 @@ namespace SabreWebtopTicketingService.Common
     {
         [JsonPropertyName("sabre_session_id")]
         public string SessionID { get; set; }
-        public bool Stored { get; set; }
         public bool IsLimitReached { get; set; }
-        public string AccessKey
-        {
-            get
-            {
-                string pcc = string.IsNullOrEmpty(CurrentPCC) ? ConsolidatorPCC : CurrentPCC;
-                return ($"{pcc} - {Locator}").EncodeBase64();
-            }
-            private set { }
-        }
         public string ConsolidatorPCC { get; set; }
         /// <summary>
         /// Set only if we emulate to an agent PCC
@@ -31,7 +21,7 @@ namespace SabreWebtopTicketingService.Common
         /// <summary>
         /// indicate if the session is extracted from cache
         /// </summary>
-        public bool StoredSesson { get; set; }
+        public bool Stored { get; set; }
         /// <summary>
         /// auto populated property
         /// If lastmodified date is 15 or earlier we set expired to true

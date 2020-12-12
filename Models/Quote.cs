@@ -9,6 +9,7 @@ namespace SabreWebtopTicketingService.Models
     public class Quote
     {
         public int QuoteNo { get; set; }
+        public PriceType PriceType { get; set; }
         public string LastPurchaseDate { get; set; }
         public bool FiledFare { get; set; }
         public QuotePassenger QuotePassenger { get; set; }
@@ -42,7 +43,6 @@ namespace SabreWebtopTicketingService.Models
         public int SectorCount { get; set; }
         public string Route { get; set; }
         public string IssueTicketQuoteKey { get; set; }
-        [JsonIgnore]
         public string PricingCommand { get; set; }
         public string PriceCode { get; set; }
         public string TourCode { get; set; }
@@ -66,5 +66,14 @@ namespace SabreWebtopTicketingService.Models
                                             AgentCommissions.First().AgtComm.Amount.Value;
         public decimal Fee { get; set; }
         public List<AgentCommission> AgentCommissions { get; set; }
+    }
+
+    public enum PriceType
+    {
+        Published,
+        ForcedFarebasis,
+        RTW,
+        PriceOverride,
+        Manual
     }
 }

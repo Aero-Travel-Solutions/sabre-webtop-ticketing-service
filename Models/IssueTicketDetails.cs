@@ -23,7 +23,7 @@ namespace SabreWebtopTicketingService.Models
         public decimal CashAmount { get; set; }
         public decimal CreditAmount { get; set; }
         public decimal TotalCreditAmount { get; set; }
-        public Warning Warning { get; set; }
+        public WebtopWarning Warning { get; set; }
         public MerchantFOP MerchantFOP { get; set; }
     }
 }

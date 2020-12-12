@@ -52,6 +52,37 @@ namespace SabreWebtopTicketingService.Common
             }
         }
 
+        public async Task<bool> Set<T>(T item, string key, int expiryinmins)
+        {
+            if (string.IsNullOrEmpty(key))
+                return false;
+
+            try
+            {
+                _logger.LogInformation($"### DB cache set('{key}') ###");
+
+                var newDoc = new Document();
+                string json = JsonSerializer.Serialize(item);
+                newDoc[key] = json;
+
+                var result = await table.PutItemAsync(newDoc);
+
+                if (result is { })
+                {
+                    _logger.LogInformation($"### DB cache get('{key}') => empty ###");
+                    return default;
+                }
+
+                return false;
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"### DB cache get('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
+                return default;
+            }
+        }
+
         public async Task<SabreSession> GetSession(string key, Pcc pcc)
         {
             var doc = await table.GetItemAsync(key);
