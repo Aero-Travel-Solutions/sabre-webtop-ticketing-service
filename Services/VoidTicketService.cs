@@ -1,29 +1,25 @@
-﻿using Aeronology.CustomException;
-using Aeronology.DTO.Interfaces;
-using Aeronology.DTO.Models;
-using Aeronology.Infrastructure;
-using Aeronology.Sabre.SabreGDSObjects;
-using Aeronology.Utilities;
-using Microsoft.Extensions.Logging;
+﻿using SabreWebtopTicketingService.Common;
+using SabreWebtopTicketingService.CustomException;
+using SabreWebtopTicketingService.Models;
 using System;
 using System.Diagnostics;
 using System.ServiceModel;
 using System.Threading.Tasks;
 using VoidTicket;
 
-namespace Aeronology.Sabre.SabreServices
+namespace SabreWebtopTicketingService.Services
 {
     public class VoidTicketService : ConnectionStubs
     {
-        private readonly ISessionDataSource sessionData;
+        private readonly SessionDataSource sessionData;
 
-        private readonly ILogger<GetReservationService> logger;
+        private readonly ILogger logger;
 
         private readonly string url;
 
         public VoidTicketService(
-            ISessionDataSource sessionData,
-            ILogger<GetReservationService> logger)
+            SessionDataSource sessionData,
+            ILogger logger)
         {
             this.sessionData = sessionData;
             this.logger = logger;
@@ -102,25 +98,25 @@ namespace Aeronology.Sabre.SabreServices
             }
             catch (TimeoutException timeProblem)
             {
-                logger.LogError(timeProblem, timeProblem.Message);
+                logger.LogError(timeProblem.Message);
                 client.Abort();
                 throw new GDSException("30000025", "Sabre system timeout. Please try again!");
             }
             catch (FaultException unknownFault)
             {
-                logger.LogError(unknownFault, unknownFault.Message);
+                logger.LogError(unknownFault.Message);
                 client.Abort();
                 throw new GDSException("30000026", $"Sabre System Exception: {unknownFault.Message + (unknownFault.InnerException == null ? "" : Environment.NewLine + unknownFault.InnerException.Message)}");
             }
             catch (CommunicationException commProblem)
             {
-                logger.LogError(commProblem, commProblem.Message);
+                logger.LogError(commProblem.Message);
                 client.Abort();
                 throw new GDSException("30000027", "There is a communication issue with Sabre. Please try again later!");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Void ticket failed");
+                logger.LogError("Void ticket failed");
                 client.Abort();
                 throw;
             }

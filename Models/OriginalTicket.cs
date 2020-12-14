@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SabreWebtopTicketingService.Interface;
+using System.Collections.Generic;
 
 namespace SabreWebtopTicketingService.Models
 {
@@ -37,7 +38,7 @@ namespace SabreWebtopTicketingService.Models
         public FrequentFlyer FrequentFlyer { get; set; }
     }
 
-    public class Coupon
+    public class Coupon: ICoupon
     {
         public string CouponNumber { get; set; }
         public string From { get; set; }

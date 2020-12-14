@@ -1,4 +1,4 @@
-﻿using Amazon.Runtime.Internal.Util;
+﻿using GetElectronicDocumentService;
 using GetReservation;
 using Microsoft.AspNetCore.DataProtection;
 using Newtonsoft.Json;
@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FrequentFlyer = SabreWebtopTicketingService.Models.FrequentFlyer;
 using ILogger = SabreWebtopTicketingService.Common.ILogger;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace SabreWebtopTicketingService.Services
 {
@@ -34,6 +35,8 @@ namespace SabreWebtopTicketingService.Services
         private readonly EnhancedAirBookService _enhancedAirBookService;
         private readonly EnhancedAirTicketService enhancedAirTicketService;
         private readonly EnhancedEndTransService enhancedEndTransService;
+        private readonly VoidTicketService voidTicketService;
+        private readonly SabreUpdatePNRService updatePNRService;
         private readonly IGetTurnaroundPointDataSource _getTurnaroundPointDataSource;
         private readonly ICommissionDataService _commissionDataService;
         private readonly IAgentPccDataSource _agentPccDataSource;
@@ -72,6 +75,8 @@ namespace SabreWebtopTicketingService.Services
             IGetTurnaroundPointDataSource getTurnaroundPointDataSource,
             ICommissionDataService commissionDataService,
             ExpiredTokenRetryPolicy expiredTokenRetryPolicy,
+            VoidTicketService _voidTicketService,
+            SabreUpdatePNRService _updatePNRService,
             IDataProtectionProvider dataProtectionProvider,
             IAgentPccDataSource agentPccDataSource,
             SessionDataSource session,
@@ -104,6 +109,8 @@ namespace SabreWebtopTicketingService.Services
             _backofficeDataSource = backofficeDataSource;
             enhancedAirTicketService = _enhancedAirTicketService;
             enhancedEndTransService = _enhancedEndTransService;
+            voidTicketService = _voidTicketService;
+            updatePNRService = _updatePNRService;
             this.session = session;
         }
 
@@ -1404,7 +1411,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //merchant
-                transactionData = await HandleMerchantPayment(request.SessionID, request, transactionData);
+                transactionData = await HandleMerchantPayment(request.SessionID, request, transactionData, contextID);
 
                 if (transactionData.TicketingResult.Tickets.IsNullOrEmpty() && !transactionData.TicketingResult.Errors.IsNullOrEmpty())
                 {
@@ -1462,6 +1469,855 @@ namespace SabreWebtopTicketingService.Services
                     await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
                 }
             }
+        }
+
+
+        private async Task<IssueExpressTicketRS> ParseSabreTicketData(List<issueticketresponse> responselist, IssueExpressTicketRQ rq, string statefultoken, Pcc pcc, string ticketingpcc, PNR pnr, string bcode, Token statelesstoken, User user)
+        {
+            List<IssueTicketDetails> issueTicketDetails = new List<IssueTicketDetails>();
+            IssueExpressTicketRS issueExpressTicketRS = new IssueExpressTicketRS()
+            {
+                GDSCode = "1W",
+                GrandPriceItAmount = rq.GrandPriceItAmount.HasValue ? rq.GrandPriceItAmount.Value : default(decimal?)
+            };
+            bool isccfop = !rq.Quotes.IsNullOrEmpty() && rq.Quotes.First().Passenger.FormOfPayment.PaymentType == PaymentType.CC ||
+                           !rq.EMDs.IsNullOrEmpty() && rq.EMDs.First().FormOfPayment.PaymentType == PaymentType.CC;
+
+            //TODO: workout ticketing pcc timezone
+
+            foreach (var response in responselist)
+            {
+                var res = JsonSerializer.
+                            Deserialize<AirTicketRQResponse>(
+                                response.GDSResponse,
+                                new System.Text.Json.JsonSerializerOptions()
+                                {
+                                    PropertyNameCaseInsensitive = true
+                                });
+
+                List<IssueTicketError> errors = HandleTicketingErrors(rq, response, res);
+
+                issueTicketDetails.AddRange(GetTicketDataThroughTicketDisplay(errors, statefultoken, pcc, ticketingpcc));
+
+                if (!issueTicketDetails.IsNullOrEmpty())
+                {
+                    GetQuoteEMDData(issueTicketDetails, response);
+                }
+
+                issueExpressTicketRS.Errors = errors;
+
+                issueExpressTicketRS.Locator = rq.Locator;
+
+
+                if (res.AirTicketRS.ApplicationResults.status != "Complete")
+                {
+                    issueExpressTicketRS.Tickets = issueTicketDetails;
+                    return issueExpressTicketRS;
+                }
+
+                var query = from result in res.AirTicketRS.Summary
+                            let quote = response.
+                                        QuoteNos.
+                                        FirstOrDefault(f => f.PassengerName.RegexReplace(@"\s*").
+                                                            Contains($"{result.LastName}/{result.FirstName}".RegexReplace(@"\s*")) &&
+                                                            Math.Round(f.TotalFare, 2) == Math.Round(decimal.Parse(result.TotalAmount.content), 2))
+                            let emd = response.
+                                        EMDNos.
+                                        FirstOrDefault(f => f.PassengerName.RegexReplace(@"\s*").
+                                                Contains($"{result.LastName}/{result.FirstName}".RegexReplace(@"\s*")) &&
+                                                Math.Round(f.TotalFare, 2) == Math.Round(decimal.Parse(result.TotalAmount.content), 2))
+                            select new IssueTicketDetails()
+                            {
+                                DocumentNumber = result.DocumentNumber,
+                                DocumentType = result.DocumentType,
+                                IssuingPCC = result.IssuingLocation,
+                                LocalIssueDateTime = result.LocalIssueDateTime.GetISODateTime(),
+                                PassengerName = $"{result.LastName}/{result.FirstName}",
+                                TotalAmount = decimal.Parse(result.TotalAmount.content),
+                                CurrencyCode = result.TotalAmount.currencyCode,
+                                AgentPrice = result.DocumentType == "TKT" && quote != null ?
+                                                quote.AgentPrice :
+                                                result.DocumentType == "EMD" && emd != null ?
+                                                     emd.AgentPrice :
+                                                     decimal.Parse(result.TotalAmount.content),
+                                GrossPrice = decimal.Parse(result.TotalAmount.content),
+                                QuoteRefNo = result.DocumentType == "TKT" && quote != null ? quote.DocumentNo : -1,
+                                EMDNumber = new List<int> { result.DocumentType == "EMD" && emd != null ? emd.DocumentNo : -1 },
+                                Route = result.DocumentType == "TKT" && quote != null ?
+                                            quote.Route :
+                                            result.DocumentType == "EMD" && emd != null ?
+                                                emd.Route :
+                                                "",
+                                PriceIt = rq.GrandPriceItAmount == decimal.MinValue ? 0.00M :
+                                            result.DocumentType == "TKT" && quote != null ?
+                                                quote.PriceIt :
+                                                 result.DocumentType == "EMD" && emd != null ?
+                                                    emd.PriceIt :
+                                                    0.00M,
+                                CashAmount = result.DocumentType == "TKT" && quote != null ?
+                                                quote.FormOfPayment == null || quote.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                        decimal.Parse(result.TotalAmount.content) - quote.TotalTax :
+                                                        quote.FormOfPayment.PaymentType == PaymentType.CC && decimal.Parse(result.TotalAmount.content) > quote.FormOfPayment.CreditAmount ?
+                                                                quote.TotalTax > quote.FormOfPayment.CreditAmount ?
+                                                                        decimal.Parse(result.TotalAmount.content) - quote.TotalTax :
+                                                                        decimal.Parse(result.TotalAmount.content) - quote.FormOfPayment.CreditAmount :
+                                                            0.00M :
+                                                result.DocumentType == "EMD" && emd != null ?
+                                                    emd.FormOfPayment == null || emd.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                        decimal.Parse(result.TotalAmount.content) - emd.TotalTax :
+                                                        emd.FormOfPayment.PaymentType == PaymentType.CC && decimal.Parse(result.TotalAmount.content) > emd.FormOfPayment.CreditAmount ?
+                                                            emd.TotalTax > emd.FormOfPayment.CreditAmount ?
+                                                                        decimal.Parse(result.TotalAmount.content) - emd.TotalTax :
+                                                                        decimal.Parse(result.TotalAmount.content) - emd.FormOfPayment.CreditAmount :
+                                                            0.00M :
+                                                decimal.Parse(result.TotalAmount.content),
+                                FormOfPayment = result.DocumentType == "TKT" && quote != null ?
+                                                    new FOP()
+                                                    {
+                                                        PaymentType = quote.FormOfPayment.PaymentType,
+                                                        CardNumber = quote.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                        dataProtector.Protect(quote.FormOfPayment.CardNumber) :
+                                                                        "",
+                                                        CardType = quote.FormOfPayment.PaymentType == PaymentType.CC ? CreditCardOperations.GetCreditCardType(quote.FormOfPayment.CardNumber) : "",
+                                                        ExpiryDate = quote.FormOfPayment.ExpiryDate,
+                                                        CreditAmount = quote.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                            quote.FormOfPayment.CreditAmount :
+                                                                            0.00M,
+                                                        BCode = string.IsNullOrEmpty(quote.FormOfPayment.BCode) ? bcode : quote.FormOfPayment.BCode
+                                                    } :
+                                                result.DocumentType == "EMD" && emd != null ?
+                                                     new FOP()
+                                                     {
+                                                         PaymentType = emd.FormOfPayment.PaymentType,
+                                                         CardNumber = emd.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                        dataProtector.Protect(emd.FormOfPayment.CardNumber) :
+                                                                        "",
+                                                         CardType = emd.FormOfPayment.PaymentType == PaymentType.CC ? CreditCardOperations.GetCreditCardType(emd.FormOfPayment.CardNumber) : "",
+                                                         ExpiryDate = emd.FormOfPayment.ExpiryDate,
+                                                         CreditAmount = emd.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                            emd.FormOfPayment.CreditAmount :
+                                                                            0.00M,
+                                                         BCode = string.IsNullOrEmpty(emd.FormOfPayment.BCode) ? bcode : quote.FormOfPayment.BCode
+                                                     } :
+                                                     null,
+                                TotalCreditAmount = rq.MerchantData != null ?
+                                                        0.00M :
+                                                        result.DocumentType == "TKT" && quote != null ?
+                                                            quote.FormOfPayment.CreditAmount :
+                                                            result.DocumentType == "EMD" && emd != null ?
+                                                                emd.FormOfPayment.CreditAmount :
+                                                                0.00M,
+                                CreditAmount = result.DocumentType == "TKT" && quote != null ?
+                                                quote.FormOfPayment == null || quote.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                            0.00M :
+                                                            quote.FormOfPayment.PaymentType == PaymentType.CC && decimal.Parse(result.TotalAmount.content) > quote.FormOfPayment.CreditAmount ?
+                                                                    quote.TotalTax > quote.FormOfPayment.CreditAmount ?
+                                                                        quote.FormOfPayment.CreditAmount :
+                                                                        quote.FormOfPayment.CreditAmount - quote.TotalTax :
+                                                                    quote.FormOfPayment.CreditAmount - quote.TotalTax :
+                                                result.DocumentType == "EMD" && emd != null ?
+                                                    emd.FormOfPayment == null || emd.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                            0.00M :
+                                                            emd.FormOfPayment.PaymentType == PaymentType.CC && decimal.Parse(result.TotalAmount.content) > emd.FormOfPayment.CreditAmount ?
+                                                                emd.TotalTax > emd.FormOfPayment.CreditAmount ?
+                                                                    emd.FormOfPayment.CreditAmount :
+                                                                    emd.FormOfPayment.CreditAmount - emd.TotalTax :
+                                                                emd.FormOfPayment.CreditAmount - emd.TotalTax :
+                                                0.00M
+                            };
+
+                List<IssueTicketDetails> ticketdata = query.ToList();
+
+                //check if the same quote number used for multiple tickets
+                HandleSameQuoteNumber(rq, statefultoken, pcc, response, ticketdata);
+
+                //check if the same emd no assign to multiple tickets
+                //if EMD grouping happens on sabre one or more EMD can get issued agaist one ticket number
+                HandleGroupedEMDs(rq, statefultoken, pcc, response, errors, ticketdata, bcode);
+
+                var quotenonotused = response.
+                                        QuoteNos.
+                                        Where(w => w.DocumentType == "QUOTE" &&
+                                                    !ticketdata.
+                                                        Where(t =>
+                                                            t.DocumentType == "TKT" &&
+                                                            t.QuoteRefNo != -1 &&
+                                                            !string.IsNullOrEmpty(t.DocumentNumber) &&
+                                                            int.TryParse(t.DocumentNumber.Trim(), out int docno)).
+                                                        Select(s => int.Parse(s.DocumentNumber.Trim())).
+                                                        ToList().
+                                                        Contains(w.DocumentNo));
+
+                //Quote number not found
+                NoQuoteNoTicketDisplay(ticketdata, quotenonotused);
+
+                //Conjunction
+                GetConjunctionPostfix(rq, issueTicketDetails, ticketdata);
+            }
+
+            issueExpressTicketRS.Tickets = issueTicketDetails;
+
+            issueExpressTicketRS.GrandTotal = issueTicketDetails.Sum(s => s.TotalAmount);
+
+            //Get approval code
+            IssueTicketDetails doc = new IssueTicketDetails();
+            if (isccfop && !issueTicketDetails.IsNullOrEmpty())
+            {
+                //display irst ticket/ emd
+                GetElectronicDocumentRS displayticketres = _displayTicket.DisplayDocument(statefultoken, pcc, issueTicketDetails.First().DocumentNumber, ticketingpcc).GetAwaiter().GetResult();
+
+                doc = _displayTicket.PraseDisplatTicketResponseforIssueTicket(displayticketres.DocumentDetailsDisplay.Item, ticketingpcc);
+
+            }
+
+            issueExpressTicketRS.ApprovalCode = doc.FormOfPayment?.ApprovalCode;
+
+            return issueExpressTicketRS;
+        }
+
+        private static void GetConjunctionPostfix(IssueExpressTicketRQ rq, List<IssueTicketDetails> issueTicketDetails, List<IssueTicketDetails> ticketdata)
+        {
+            List<IIssueExpressTicketDocument> tktconjs = new List<IIssueExpressTicketDocument>();
+            List<IIssueExpressTicketDocument> emdconjs = new List<IIssueExpressTicketDocument>();
+            //tickets
+            if (!rq.Quotes.IsNullOrEmpty())
+            {
+                tktconjs.AddRange(rq.Quotes.Where(w => w.SectorCount > 4));
+            }
+            //emds
+            if (!rq.EMDs.IsNullOrEmpty())
+            {
+                emdconjs.AddRange(rq.EMDs.Where(w => w.SectorCount > 4));
+            }
+
+            if (!tktconjs.IsNullOrEmpty())
+            {
+                foreach (var conj in tktconjs)
+                {
+                    int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4)));
+                    var selectedtkt = ticketdata.FirstOrDefault(f => f.DocumentType == "TKT" && f.PassengerName.StartsWith(conj.PassengerName));
+                    if (selectedtkt != null)
+                    {
+                        selectedtkt.ConjunctionPostfix = (int.Parse(selectedtkt.DocumentNumber.Trim().Last(3)) + noofticketsallocated).ToString();
+                    }
+                }
+            }
+
+
+            if (!emdconjs.IsNullOrEmpty())
+            {
+                foreach (var conj in emdconjs)
+                {
+                    int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4)));
+                    var selectedtkt = ticketdata.FirstOrDefault(f => f.DocumentType == "EMD" && f.PassengerName.StartsWith(conj.PassengerName));
+                    if (selectedtkt != null)
+                    {
+                        selectedtkt.ConjunctionPostfix = (int.Parse(selectedtkt.DocumentNumber.Trim().Last(3)) + noofticketsallocated).ToString();
+                    }
+                }
+            }
+
+            issueTicketDetails.AddRange(ticketdata);
+        }
+
+        private void NoQuoteNoTicketDisplay(List<IssueTicketDetails> ticketdata, IEnumerable<IssueTicketDocumentData> quotenonotused)
+        {
+            var noquotenumtkt = ticketdata.Where(w => w.DocumentType == "TKT" && w.QuoteRefNo == -1);
+
+            if (noquotenumtkt.IsNullOrEmpty()) { return; }
+
+            foreach (var tkt in noquotenumtkt)
+            {
+                var quote = quotenonotused.FirstOrDefault(f => f.PassengerName.RegexReplace(@"\s*").Contains(tkt.PassengerName.RegexReplace(@"\s*")));
+
+                if (quote == null) { continue; }
+
+                tkt.QuoteRefNo = quote.DocumentNo;
+                tkt.AgentPrice = quote.AgentPrice >= tkt.TotalAmount ?
+                                    quote.AgentPrice :
+                                    tkt.TotalAmount;
+                tkt.Route = quote.Route;
+                tkt.PriceIt = quote.PriceIt >= tkt.TotalAmount ?
+                                    quote.PriceIt :
+                                    tkt.TotalAmount;
+                tkt.CashAmount = quote.FormOfPayment == null || quote.FormOfPayment.PaymentType == PaymentType.CA ?
+                                        tkt.TotalAmount - quote.TotalTax :
+                                        quote.FormOfPayment.PaymentType == PaymentType.CC && tkt.TotalAmount > quote.FormOfPayment.CreditAmount ?
+                                                quote.TotalTax > quote.FormOfPayment.CreditAmount ?
+                                                        tkt.TotalAmount - quote.TotalTax :
+                                                        tkt.TotalAmount - quote.FormOfPayment.CreditAmount :
+                                            0.00M;
+                tkt.FormOfPayment = new FOP()
+                {
+                    PaymentType = quote.FormOfPayment.PaymentType,
+                    CardNumber = quote.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                                            quote.FormOfPayment.CardNumber.MaskNumber() :
+                                                                                            "",
+                    CardType = quote.FormOfPayment.CardType,
+                    ExpiryDate = quote.FormOfPayment.ExpiryDate,
+                    CreditAmount = quote.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                                                quote.FormOfPayment.CreditAmount :
+                                                                                                0.00M
+                };
+                tkt.TotalCreditAmount = quote.FormOfPayment.CreditAmount;
+                tkt.CreditAmount = quote.FormOfPayment == null || quote.FormOfPayment.PaymentType == PaymentType.CA ?
+                                        0.00M :
+                                        quote.FormOfPayment.PaymentType == PaymentType.CC && tkt.TotalAmount > quote.FormOfPayment.CreditAmount ?
+                                                quote.TotalTax > quote.FormOfPayment.CreditAmount ?
+                                                    quote.FormOfPayment.CreditAmount :
+                                                    quote.FormOfPayment.CreditAmount - quote.TotalTax :
+                                                quote.FormOfPayment.CreditAmount - quote.TotalTax;
+
+                if (tkt.TotalAmount != quote.TotalFare)
+                {
+                    tkt.Warning = new WebtopWarning()
+                    {
+                        code = "TOTAL_MISSMATCH",
+                        message = $"Alert! The tickets have been issued at a different price level({tkt.TotalAmount}) than the original price quote price({quote.TotalFare}) in the booking. " +
+                                Environment.NewLine +
+                                "Please verify and void the tickets before midnight if necessary."
+                    };
+                }
+            }
+        }
+
+        private void HandleGroupedEMDs(IssueExpressTicketRQ rq, string token, Pcc pcc, issueticketresponse response, List<IssueTicketError> errors, List<IssueTicketDetails> ticketdata, string bcode)
+        {
+            var sameemdtkt = ticketdata.
+                                GroupBy(grp => grp.EMDNumber.First()).
+                                Where(w => w.Count() > 1).
+                                ToList();
+
+            if (!sameemdtkt.IsNullOrEmpty())
+            {
+                List<int> usedemdno = sameemdtkt.Select(s => s.Key).ToList();
+                foreach (var item in sameemdtkt)
+                {
+                    foreach (var ticketitem in item.Skip(1))
+                    {
+                        var emd = response.
+                                        EMDNos.
+                                        Where(w => !usedemdno.Contains(w.DocumentNo)).
+                                        FirstOrDefault(f => f.PassengerName.Contains(ticketitem.PassengerName) &&
+                                                            Math.Round(f.TotalFare, 2) == ticketitem.TotalAmount);
+
+                        if (emd == null)
+                        {
+                            ticketitem.EMDNumber = new List<int> { -1 };
+                            continue;
+                        }
+
+                        ticketitem.EMDNumber = new List<int> { emd.DocumentNo };
+                        ticketitem.PriceIt = rq.GrandPriceItAmount == decimal.MinValue ? 0.00M : emd.PriceIt;
+                        ticketitem.Route = emd.Route;
+                        usedemdno.Add(emd.DocumentNo);
+                    }
+                }
+            }
+
+            List<IssueTicketDetails> emds = ticketdata.
+                            Where(w => w.DocumentType == "EMD" && w.QuoteRefNo == -1 && w.EMDNumber.First() == -1).
+                            ToList();
+
+            List<int> errEMDs = errors.
+                                    Where(doc => doc.DocumentType == Models.DocumentType.EMD).
+                                    SelectMany(s => s.DocumentNumber).
+                                    ToList();
+
+            if (!emds.IsNullOrEmpty())
+            {
+                foreach (var emd in emds)
+                {
+                    //Display ticket
+                    GetElectronicDocumentRS displaytktesponse = _displayTicket.DisplayDocument(token, pcc, emd.DocumentNumber, emd.IssuingPCC).GetAwaiter().GetResult();
+                    var doc = _displayTicket.PraseDisplatEMDResponse(displaytktesponse);
+
+                    var emdtkt = response.
+                                EMDNos.
+                                Where(w => !errEMDs.Contains(w.DocumentNo) &&
+                                           w.PassengerName.Contains(doc.Passenger.PassengerName) &&
+                                           doc.PlatingCarrier == w.PlatingCarrier &&
+                                           doc.EMDCoupons.FirstOrDefault()?.Reason == w.RFISC);
+
+                    var tkt = ticketdata.First(f => f.DocumentNumber == emd.DocumentNumber);
+                    tkt.EMDNumber = emdtkt.Select(s => s.DocumentNo).ToList();
+                    tkt.ConjunctionPostfix = doc.ConjunctionPostfix;
+                    tkt.AgentPrice = emdtkt.First().FormOfPayment.PaymentType == PaymentType.CA ?
+                                            doc.TotalAmount - emdtkt.Sum(s => s.Commission) + emdtkt.Sum(s => s.Fee) + emdtkt.Where(w => w.FeeGST.HasValue).Sum(s => s.FeeGST.Value) :
+                                            emdtkt.Sum(s => s.Fee) - emdtkt.Sum(s => s.Commission);
+                    tkt.Route = GetRoute(doc.EMDCoupons.ToList<ICoupon>());
+                    tkt.PriceIt = rq.GrandPriceItAmount == decimal.MinValue ? 0.00M : emdtkt.Sum(s => s.PriceIt);
+                    tkt.TotalAmount = doc.TotalAmount;
+                    tkt.GrossPrice = doc.TotalAmount;
+                    tkt.CashAmount = emdtkt.All(a => a.FormOfPayment == null) ?
+                                                    doc.TotalAmount - doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount) :
+                                                    emdtkt.All(a => a.FormOfPayment.PaymentType == PaymentType.CA) ?
+                                                        doc.TotalAmount - doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount) :
+                                                    emdtkt.All(a => a.FormOfPayment.PaymentType == PaymentType.CC) && doc.TotalAmount > emdtkt.Sum(s => s.FormOfPayment.CreditAmount) ?
+                                                            doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount) > emd.FormOfPayment.CreditAmount ?
+                                                                        doc.TotalAmount - doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount) :
+                                                                        doc.TotalAmount - emd.FormOfPayment.CreditAmount :
+                                                        0.00M;
+                    tkt.CreditAmount = emdtkt.All(a => a.FormOfPayment == null) ?
+                                                        0.00M :
+                                                        emdtkt.All(a => a.FormOfPayment.PaymentType == PaymentType.CA) ?
+                                                            0.00M :
+                                                            emdtkt.All(a => a.FormOfPayment.PaymentType == PaymentType.CC) && doc.TotalAmount > emdtkt.Sum(s => s.FormOfPayment.CreditAmount) ?
+                                                                doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount) > emdtkt.Sum(s => s.FormOfPayment.CreditAmount) ?
+                                                                    emdtkt.Sum(s => s.FormOfPayment.CreditAmount) :
+                                                                    emdtkt.Sum(s => s.FormOfPayment.CreditAmount) - doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount) :
+                                                                emdtkt.Sum(s => s.FormOfPayment.CreditAmount) - doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(t => t.Amount);
+                    tkt.TotalCreditAmount = emdtkt.Sum(s => s.FormOfPayment.CreditAmount);
+                    tkt.FormOfPayment = new FOP()
+                    {
+                        PaymentType = emdtkt.First().FormOfPayment.PaymentType,
+                        CardNumber = emdtkt.First().FormOfPayment.PaymentType == PaymentType.CC ?
+                                            emdtkt.First().FormOfPayment.CardNumber.MaskNumber() :
+                                            "",
+                        CardType = emdtkt.First().FormOfPayment.CardType,
+                        ExpiryDate = emdtkt.First().FormOfPayment.ExpiryDate,
+                        CreditAmount = emdtkt.First().FormOfPayment.PaymentType == PaymentType.CC ?
+                                        emdtkt.First().FormOfPayment.CreditAmount - doc.EMDCoupons.Where(w => !w.Taxes.IsNullOrEmpty()).SelectMany(s => s.Taxes).Sum(s => s.Amount) :
+                                        0.00M,
+                        BCode = string.IsNullOrEmpty(emdtkt.First().FormOfPayment.BCode) ? bcode : emdtkt.First().FormOfPayment.BCode
+                    };
+                }
+            }
+        }
+
+        private void HandleSameQuoteNumber(IssueExpressTicketRQ rq, string token, Pcc pcc, issueticketresponse response, List<IssueTicketDetails> ticketdata)
+        {
+            var samequotenotkt = ticketdata.
+                                Where(w => w.DocumentType == "TKT").
+                                GroupBy(grp => grp.QuoteRefNo).
+                                Where(w => w.Count() > 1).
+                                ToList();
+
+            if (samequotenotkt.IsNullOrEmpty()) { return; }
+
+            foreach (var currenttkt in samequotenotkt.SelectMany(s => s))
+            {
+                //display ticket
+                GetElectronicDocumentRS displaytktesponse = _displayTicket.
+                                                                DisplayDocument(
+                                                                    token,
+                                                                    pcc,
+                                                                    currenttkt.DocumentNumber,
+                                                                    currenttkt.IssuingPCC).
+                                                                GetAwaiter().
+                                                                GetResult();
+                var doc = _displayTicket.PraseDisplatTicketResponse(displaytktesponse);
+
+                var quotetkt = response.
+                                QuoteNos.
+                                FirstOrDefault(w => w.PassengerName.Contains(doc.Passenger.PassengerName) &&
+                                                    w.TotalFare == doc.TotalFare &&
+                                                    doc.PlatingCarrier == w.PlatingCarrier &&
+                                                    GetRoute(doc.Coupons.ToList<ICoupon>()) == w.Route);
+
+                if (quotetkt == null) { continue; }
+
+                var tkt = ticketdata.First(f => f.DocumentNumber == doc.DocumentNumber);
+                tkt.QuoteRefNo = quotetkt.DocumentNo;
+                tkt.ConjunctionPostfix = doc.ConjunctionPostfix;
+                tkt.AgentPrice = quotetkt.AgentPrice;
+                tkt.Route = GetRoute(doc.Coupons.ToList<ICoupon>());
+                tkt.PriceIt = quotetkt.PriceIt;
+                tkt.FormOfPayment = new FOP()
+                {
+                    PaymentType = quotetkt.FormOfPayment.PaymentType,
+                    CardNumber = quotetkt.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                        quotetkt.FormOfPayment.CardNumber.MaskNumber() :
+                                                                        "",
+                    CardType = quotetkt.FormOfPayment.CardType,
+                    ExpiryDate = quotetkt.FormOfPayment.ExpiryDate,
+                    CreditAmount = quotetkt.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                            quotetkt.FormOfPayment.CreditAmount :
+                                                                            0.00M
+                };
+                tkt.CashAmount = quotetkt.FormOfPayment == null || quotetkt.FormOfPayment.PaymentType == PaymentType.CA ?
+                                        0.00M :
+                                        quotetkt.FormOfPayment.PaymentType == PaymentType.CC && doc.TotalFare > quotetkt.FormOfPayment.CreditAmount ?
+                                                quotetkt.TotalTax > quotetkt.FormOfPayment.CreditAmount ?
+                                                    quotetkt.FormOfPayment.CreditAmount :
+                                                    quotetkt.FormOfPayment.CreditAmount - quotetkt.TotalTax :
+                                                quotetkt.FormOfPayment.CreditAmount - quotetkt.TotalTax;
+                tkt.CreditAmount = quotetkt.FormOfPayment == null || quotetkt.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                            0.00M :
+                                                            quotetkt.FormOfPayment.PaymentType == PaymentType.CC && doc.TotalFare > quotetkt.FormOfPayment.CreditAmount ?
+                                                                    quotetkt.TotalTax > quotetkt.FormOfPayment.CreditAmount ?
+                                                                        quotetkt.FormOfPayment.CreditAmount :
+                                                                        quotetkt.FormOfPayment.CreditAmount - quotetkt.TotalTax :
+                                                                    quotetkt.FormOfPayment.CreditAmount - quotetkt.TotalTax;
+                tkt.TotalCreditAmount = quotetkt.FormOfPayment.CreditAmount;
+            }
+        }
+
+        private string GetRoute(List<ICoupon> tktcoupons)
+        {
+            string route = "";
+            for (int i = 0; i < tktcoupons.Count(); i++)
+            {
+                if (i == 0)
+                {
+                    route += tktcoupons[i].From;
+                    route += "-" + tktcoupons[i].To;
+                    continue;
+                }
+
+                if (i < tktcoupons.Count()
+                    && tktcoupons[i - 1].To != tktcoupons[i].From)
+                {
+                    route += "//";
+                    route += tktcoupons[i].From;
+                    route += "-" + tktcoupons[i].To;
+                    continue;
+                }
+
+                route += "-" + tktcoupons[i].To;
+            }
+            return route;
+        }
+
+        private List<IssueTicketError> HandleTicketingErrors(IssueExpressTicketRQ rq, issueticketresponse response, AirTicketRQResponse res)
+        {
+            List<string> excludedwarnings = new List<string>()
+            {
+                "TTY REQ PEND",
+                "PAC TO VERIFY CORRECT NBR ",
+                @"EndTransactionLLSRQ:\s+\*PAC TO VERIFY CORRECT NBR OF ACCTG LINES",
+                "No new tickets have been issued",
+                "CREDIT VERIFICATION IN PROGRESS",
+                @"UNABLE TO PROCESS\s+-\s+CORRECT/RETRY",
+                "VERIFY ORDER OF ITINERARY SEGMENTS",
+                @"PNR HAS BEEN UPDATED\s+-\s+IGN AND RETRY",
+                "has been issued successfully but it has not been committed to the PNR.",
+                @"INVOICED\s+-\s+NUMBER\s+NONE",
+                "NO COMMISSION WAS ENTERED",
+                @"REQUEST PRINTING\s+-\s+\d+\s+INVOICE",
+                "ETR MESSAGE PROCESSED",
+                @"OK\s+\d+[\.\d]*",
+                @"AE ITEMS EXIST\s+-\s+USE W‡EMD ENTRY TO FULFILL",
+                "US INS INSPECTION AND CUSTOMS FEES INCLUDED",
+                @".*‡UTP-\d+‡",
+                @"USE ‡DUPE TO OVERRIDE AND ISSUE TICKET OR CORRECT AND RETRY",
+                @"INVOICED\s+-\s+NUMBER\s*\d+"
+            };
+
+            List<IssueTicketError> errors = new List<IssueTicketError>();
+
+            //Warnings
+            if (res.AirTicketRS.ApplicationResults.Warning != null)
+            {
+                var err = res.
+                                AirTicketRS.
+                                ApplicationResults.
+                                Warning.
+                                SelectMany(s => s.SystemSpecificResults).
+                                SelectMany(s => s.Message).
+                                Select(s => s.content);
+                errors.
+                    AddRange(err.
+                                Where(w => excludedwarnings.All(a => !w.IsMatch(a))).
+                                Select(s => GetIssueTicketError(s, response.GDSRequest, rq)).
+                                Where(w => !string.IsNullOrEmpty(w.Error?.message)).
+                                ToList());
+            }
+
+            List<string> excludeerrors = new List<string>()
+            {
+                "No new tickets have been issued",
+            };
+
+            //Errors
+            if (res.AirTicketRS.ApplicationResults.Error != null)
+            {
+                var err = res.
+                            AirTicketRS.
+                            ApplicationResults.
+                            Error.
+                            SelectMany(s => s.SystemSpecificResults).
+                            SelectMany(s => s.Message).
+                            Select(s => s.content);
+
+                errors.
+                    AddRange(err.
+                                Where(w => excludeerrors.All(a => !w.IsMatch(a))).
+                                Select(s => GetIssueTicketError(s, response.GDSRequest, rq)).
+                                Where(w => !string.IsNullOrEmpty(w.Error?.message)).
+                                ToList());
+            }
+
+            //group errors by document number and type
+            errors = errors.
+                        GroupBy(g => new { DocumentNumbers = g.DocumentNumber.IsNullOrEmpty() ? "" : string.Join(",", g.DocumentNumber), g.DocumentType }).
+                        Select(s => new IssueTicketError()
+                        {
+                            DocumentNumber = s.Where(w => !w.DocumentNumber.IsNullOrEmpty()).SelectMany(m => m.DocumentNumber).Distinct().ToList(),
+                            DocumentType = s.Key.DocumentType,
+                            Error = new WebtopError()
+                            {
+                                code = "TICKETING_ERROR",
+                                message = string.Join(", ", s.Select(p => p.Error).ToList().Distinct())
+                            }
+                        }).
+                        ToList();
+
+            if (res.AirTicketRS.ApplicationResults.status != "Complete")
+            {
+                //if()
+                ModifyErrors(rq, errors);
+            }
+
+            return errors;
+        }
+
+        private static void ModifyErrors(IssueExpressTicketRQ rq, List<IssueTicketError> errors)
+        {
+            if (errors.IsNullOrEmpty()) { return; }
+            var err = errors.Where(s => s.Error != null && s.Error.message.Contains("AUTH CARRIER INVLD"));
+            if (!err.IsNullOrEmpty())
+            {
+                throw new AeronologyException(
+                    "50000016",
+                    $"Airline Plate for { (rq.EMDs != null ? rq.EMDs.First().PlatingCarrier : rq.Quotes.First().PlatingCarrier)} inactive for ticketing");
+            }
+            err = errors.Where(s => s.Error != null && s.Error.message.Contains("Unable to process the stateless transaction. Please retry"));
+            if (!err.IsNullOrEmpty())
+            {
+                throw new AeronologyException(
+                    "50000019",
+                    "Unable to process the ticketing request due to GDS connectivity issue. Please try again later.");
+            }
+        }
+
+        private static void GetQuoteEMDData(List<IssueTicketDetails> issueTicketDetails, issueticketresponse response)
+        {
+            issueTicketDetails.
+                ForEach(f =>
+                {
+                    if (f.DocumentType == "TKT")
+                    {
+                        var quote = response.
+                                        QuoteNos.
+                                        FirstOrDefault(i => i.DocumentType == "QUOTE" && i.PassengerName.StartsWith(f.PassengerName));
+                        if (quote != null)
+                        {
+                            f.QuoteRefNo = quote.DocumentNo;
+                        }
+                    }
+                    else if (f.DocumentType == "EMD")
+                    {
+                        var emd = response.
+                                    EMDNos.
+                                    FirstOrDefault(i => i.DocumentType == "EMD" && i.PassengerName.StartsWith(f.PassengerName));
+                        if (emd != null)
+                        {
+                            f.EMDNumber = new List<int>() { emd.DocumentNo };
+                        }
+                    }
+                });
+        }
+
+        private List<IssueTicketDetails> GetTicketDataThroughTicketDisplay(List<IssueTicketError> errors, string token, Pcc pcc, string ticketingpcc)
+        {
+            List<IssueTicketDetails> ticketdata = new List<IssueTicketDetails>();
+            var etfailederror = errors.
+                                    Where(s => s.Error != null && s.Error.message.
+                                        Contains("found. This document(s) was not present during initial reservation retrieval and "));
+
+            if (etfailederror.IsNullOrEmpty())
+            {
+                return ticketdata;
+            }
+
+            List<string> tktnumbers = etfailederror.
+                                        Where(w=> !string.IsNullOrEmpty(w.Error?.message)).
+                                        SelectMany(s => s.Error.message.AllMatches(@"(\d{13})")).
+                                        ToList();
+
+            CancellationToken ct = new CancellationToken();
+
+            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            Parallel.ForEach(tktnumbers, options, (tktnumber) =>
+            {
+                GetElectronicDocumentRS displayticketres = _displayTicket.DisplayDocument(token, pcc, tktnumber, ticketingpcc).GetAwaiter().GetResult();
+
+                var doc = _displayTicket.PraseDisplatTicketResponseforIssueTicket(displayticketres.DocumentDetailsDisplay.Item, ticketingpcc);
+
+                ticketdata.Add(doc);
+            });
+
+            return ticketdata;
+        }
+
+        private IssueTicketError GetIssueTicketError(string warning, EnhancedAirTicket.AirTicketRQ gDSRequest, IssueExpressTicketRQ rq)
+        {
+            IssueTicketError issueTicketError = new IssueTicketError();
+            string temperroritemno = warning.LastMatch(@"^AirTicketLLS failed for \/Ticketing\[(\d+)\]");
+            if (!temperroritemno.IsNullOrEmpty())
+            {
+                var erroreditem = gDSRequest.Ticketing[int.Parse(temperroritemno) - 1];
+                issueTicketError.DocumentType = erroreditem.PricingQualifiers != null ?
+                                                    erroreditem.PricingQualifiers.PriceQuote != null ?
+                                                        Models.DocumentType.Quote :
+                                                    erroreditem.MiscQualifiers.AirExtras != null ?
+                                                        Models.DocumentType.EMD :
+                                                        Models.DocumentType.Unknown :
+                                                    Models.DocumentType.Unknown;
+                issueTicketError.DocumentNumber = erroreditem.PricingQualifiers != null ?
+                                                    erroreditem.PricingQualifiers.PriceQuote != null &&
+                                                    erroreditem.PricingQualifiers.PriceQuote != null ?
+                                                            erroreditem.PricingQualifiers.PriceQuote.SelectMany(m => m.Record).Select(s => s.Number).Distinct().ToList() :
+                                                    erroreditem.PricingQualifiers.NameSelect != null ?
+                                                            rq.Quotes.
+                                                            Where(w =>
+                                                                erroreditem.PricingQualifiers.NameSelect.Select(s => s.NameNumber).Contains(w.Passenger.NameNumber)).
+                                                            Select(s => s.QuoteNo).
+                                                            Distinct().
+                                                                ToList() :
+                                                            erroreditem.MiscQualifiers.AirExtras != null ?
+                                                                erroreditem.MiscQualifiers.AirExtras.Select(e => e.Number).Distinct().ToList() :
+                                                                new List<int>() :
+                                                            new List<int>();
+            }
+
+            string[] delimiters =  {
+                                @"AirTicketLLSRQ: ",
+                                @"with Cause: ",
+                                @"DesignatePrinterLLSRQ: ",
+                                @"SabreCommandLLSRQ: ",
+                                @"TicketingDocumentServicesRQ: "
+                              };
+            issueTicketError.Error = new WebtopError()
+            {
+                code = "TICKETING_ERROR",
+                message = warning.
+                            Split(delimiters, StringSplitOptions.RemoveEmptyEntries).
+                            Last().
+                            ReplaceAllSabreSpecialChar()
+            };
+
+            return issueTicketError;
+        }
+
+
+        private async Task AddDOBRemarks(IssueExpressTicketRQ request, string ticketingpcc, User user, Token token)
+        {
+            var dobquotes = request.Quotes.Where(w => w.Passenger.DOBChanged && w.Passenger.DOB.HasValue);
+            if (!dobquotes.IsNullOrEmpty())
+            {
+                List<Remark> remarks = GetRemarks(
+                                        dobquotes.
+                                            Select(s => new Remark()
+                                            {
+                                                SegmentNumber = string.Join(",", dobquotes.First().Sectors.Select(sec => sec.PQSectorNo.ToString()).Distinct()),
+                                                RemarkText = $"Date of birth for {s.Passenger.PassengerName} was updated by {user?.FullName ?? "Aeronology"} to {s.Passenger.DOB.Value:ddMMMyyyy}"
+                                            }).
+                                            ToList());
+
+                AddRemarkRequest remarkrequest = new AddRemarkRequest()
+                {
+                    Locator = request.Locator,
+                    Remarks = remarks
+                };
+
+                //Add Remarks for DOB
+                await updatePNRService.AddGeneralDOBRemarks(token, ticketingpcc, remarkrequest);
+            }
+        }
+
+        private async Task AddAgentCommissionRemarks(IssueExpressTicketRS ticketData, IssueExpressTicketRQ request, string ticketingpcc, User user, Token token)
+        {
+            var agtcomdata = from ticket in ticketData.Tickets.Where(w => w.DocumentType == "TKT" && w.QuoteRefNo != -1)
+                             let quote = request.Quotes.First(f => f.QuoteNo == ticket.QuoteRefNo)
+                             select new AgentCommissionData()
+                             {
+                                 DocumentNumber = ticket.DocumentNumber,
+                                 IsFee = !quote.AgentCommissionRate.HasValue,
+                                 AgentCommissionRate = quote.AgentCommissionRate,
+                                 AgentFee = quote.Fee + (quote.FeeGST.HasValue ? quote.FeeGST.Value : 0.00M),
+                                 CurrencyCode = "AUD"
+                             };
+
+            if (!agtcomdata.IsNullOrEmpty())
+            {
+                List<Remark> remarks = GetAGTCOMMRemarks(
+                                        agtcomdata.
+                                            Select(s => new Remark()
+                                            {
+                                                RemarkText = s.IsFee ?
+                                                                $"AGTFEE TKT NO {s.DocumentNumber} {s.CurrencyCode}{s.AgentFee.Value}" :
+                                                                $"AGTCOMM TKT NO {s.DocumentNumber} COMM {s.AgentCommissionRate:0.##}PCT"
+                                            }).
+                                            ToList());
+
+                AddRemarkRequest remarkrequest = new AddRemarkRequest()
+                {
+                    Locator = request.Locator,
+                    Remarks = remarks
+                };
+
+                //Add Remarks for agent commissions
+                await updatePNRService.AddGeneralAGTCOMMRemarks(token, ticketingpcc, remarkrequest);
+            }
+        }
+
+
+        private List<Remark> GetAGTCOMMRemarks(List<Remark> rems)
+        {
+            List<Remark> remarks = new List<Remark>();
+
+            remarks.
+                AddRange(
+                    $"Aeronology Robotics-{DateTime.Now:ddMMMyyyy HHmm}".
+                    SplitInChunk(65).
+                    Select(rem => new Remark()
+                    {
+                        RemarkText = rem
+                    }).
+                    ToList());
+
+            remarks.
+                AddRange(
+                    (from agtcommremark in rems
+                     from agtcommremarkline in agtcommremark.RemarkText.SplitInChunk(65)
+                     select new Remark()
+                     {
+                         RemarkText = agtcommremarkline
+                     }).
+                    ToList());
+            return remarks;
+        }
+
+        private List<Remark> GetRemarks(List<Remark> rems)
+        {
+            List<Remark> remarks = new List<Remark>();
+
+            remarks.
+                AddRange(
+                    $"Aeronology Robotics-{DateTime.Now:ddMMMyyyy HHmm}".
+                    SplitInChunk(65).
+                    Select(rem => new Remark()
+                    {
+                        RemarkText = rem,
+                        SegmentNumber = string.Join(",", rems.SelectMany(s => s.SegmentNumber.Split(",")).Distinct())
+                    }).
+                    ToList());
+
+            remarks.
+                AddRange(
+                    (from dobremark in rems
+                     let segno = dobremark.SegmentNumber
+                     from dobremarkline in dobremark.RemarkText.SplitInChunk(65)
+                     select new Remark()
+                     {
+                         RemarkText = dobremarkline,
+                         SegmentNumber = segno
+                     }).
+                    ToList());
+            return remarks;
         }
 
         private async Task<List<string>> getagentpccs(string agentid, string pcc, string sessionId)
@@ -1825,7 +2681,7 @@ namespace SabreWebtopTicketingService.Services
                             throw new AeronologyException("5000022", "Printer bypass not found");
         }
 
-        private async Task<IssueTicketTransactionData> HandleMerchantPayment(string sessionid, IssueExpressTicketRQ request, IssueTicketTransactionData tickettransData)
+        private async Task<IssueTicketTransactionData> HandleMerchantPayment(string sessionid, IssueExpressTicketRQ request, IssueTicketTransactionData tickettransData, string contextId)
         {
             IssueTicketTransactionData returntickettransactiondata = tickettransData;
             MerchantLambdaResponse result = null;
@@ -1899,14 +2755,15 @@ namespace SabreWebtopTicketingService.Services
                         Tickets = returntickettransactiondata.
                                     TicketingResult.
                                     Tickets.
-                                    Select(tkt => new VoidTicket()
+                                    Select(tkt => new Models.VoidTicket()
                                     {
                                         DocumentNumber = tkt.DocumentNumber,
                                         DocumentType = tkt.DocumentType,
                                         IssuingPCC = tkt.IssuingPCC
                                     }).
                                     ToList()
-                    });
+                    },
+                    contextId);
 
                     //CancelHold - Reverse fund reserved
                     sw = Stopwatch.StartNew();
@@ -1941,6 +2798,256 @@ namespace SabreWebtopTicketingService.Services
             }
 
             return returntickettransactiondata;
+        }
+
+        public async Task<List<VoidTicketResponse>> VoidTicket(VoidTicketRequest request, string contextId)
+        {
+            SabreSession token = null;
+
+            List<SabreVoidTicketResponse> sabreVoidTicketResponses = new List<SabreVoidTicketResponse>();
+            List<VoidTicketResponse> voidTicketResponses = new List<VoidTicketResponse>();
+
+            try
+            {
+                //Obtain session
+                token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
+
+                //remove duplicate tickets in the request
+                request.Tickets = request.
+                                    Tickets.
+                                    GroupBy(d => new { d.DocumentNumber, d.DocumentType }).
+                                    Select(s => s.First()).
+                                    ToList();
+
+                //Get existing tickets on PNR
+                List<TicketData> pnrtkts = await GetTicketsFromGDS(request.Locator, token.SessionID);
+
+
+                foreach (var tkt in request.Tickets.GroupBy(g => g.IssuingPCC))
+                {
+                    try
+                    {
+                        //Emulate to issuing PCC
+                        await _changeContextService.ContextChange(token, pcc, tkt.Key, request.Locator);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.Message == "PLEASE FINISH OR IGNORE THE CURRENT TRANSACTION")
+                        {
+                            //Ignore Transaction
+                            await _ignoreTransactionService.Ignore(token.SessionID, pcc);
+
+                            //Emulate to issuing PCC
+                            await _changeContextService.ContextChange(token, pcc, tkt.Key, request.Locator);
+
+                        }
+                        throw;
+                    }
+
+                    //Execute display price quote command
+                    string text = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, $"*{request.Locator}", tkt.Key);
+
+                    if ((text.Contains("ADDR") ||
+                        text.Contains("UTL PNR") ||
+                        text.Contains("SECURED PNR")))
+                    {
+                        throw new GDSException("50000035", text);
+                    }
+
+                    var tktitems = tkt.
+                                    Where(p => !string.IsNullOrEmpty(p.DocumentNumber)).
+                                    Select(s => s.DocumentNumber.SplitOn("|").First()).
+                                    Distinct().
+                                    ToList();
+
+                    bool inpnrevaluated = false;
+                    bool inpnr = true;
+                    int counter = 1;
+
+                    foreach (string tktno in tktitems.OrderByDescending(o => o))
+                    {
+                        string doctype = tkt.First(f => f.DocumentNumber == tktno).DocumentType;
+                        if (!inpnr)
+                        {
+                            //Execute display pnr command
+                            text = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, $"*{request.Locator}", tkt.Key);
+
+                            if ((text.Contains("ADDR") ||
+                                text.Contains("UTL PNR") ||
+                                text.Contains("SECURED PNR")))
+                            {
+                                throw new GDSException("50000035", text);
+                            }
+                        }
+
+                        var pnrtkt = pnrtkts.FirstOrDefault(f => f.DocumentNumber == tktno);
+
+                        if (pnrtkt == null)
+                        {
+                            sabreVoidTicketResponses.
+                                Add(new SabreVoidTicketResponse
+                                        (
+                                            tktno,
+                                            doctype,
+                                            null,
+                                            request.Locator,
+                                            $"Ticket {tktno} not found on PNR({request.Locator})."
+                                        )
+                                    );
+                            continue;
+                        }
+
+                        if (pnrtkt != null && pnrtkt.Voided)
+                        {
+                            sabreVoidTicketResponses.
+                               Add(new SabreVoidTicketResponse
+                                   (
+                                        tktno,
+                                        doctype,
+                                        null,
+                                        request.Locator,
+                                        $"Ticket {pnrtkt.DocumentNumber} already voided.",
+                                        true)
+                                   );
+                            continue;
+                        }
+
+                        string rphno = pnrtkt.RPH.ToString();
+
+                        //void ticket
+                        SabreVoidTicketResponse voidres = await voidTicketService.
+                                                                    VoidTicket(
+                                                                        request.Locator,
+                                                                        tktno,
+                                                                        doctype,
+                                                                        rphno,
+                                                                        token.SessionID,
+                                                                        pcc, tkt.Key);
+
+                        //reissue ticket diplay for coupon status update on original ticket 
+                        if (request.Tickets.First(f => f.DocumentNumber == tktno).DocumentType.ToUpper() == "REI" && counter < tktitems.Count())
+                        {
+                            await Task.Delay(2000);
+                        }
+
+                        if (!inpnrevaluated)
+                        {
+                            //check if we are still on PNR
+                            string response = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "*R", tkt.Key);
+
+                            inpnr = response != "NO DATA";
+                            inpnrevaluated = true;
+                        }
+
+                        sabreVoidTicketResponses.
+                               Add(voidres);
+                        counter++;
+                    }
+
+                    if (!sabreVoidTicketResponses.IsNullOrEmpty() &&
+                    sabreVoidTicketResponses.Any(a => a.Success))
+                    {
+                        try
+                        {
+                            //End the transaction
+                            await enhancedEndTransService.EndTransaction(token.SessionID, contextId, "Aeronology", true);
+                        }
+                        catch (GDSException gdsex)
+                        {
+                            logger.LogError(gdsex);
+                            sabreVoidTicketResponses.
+                                Where(w => w.Success).
+                                ToList().
+                                ForEach(f => f.Errors = new List<string>() { $"End Transaction Error: {gdsex.Message}" });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex);
+                sabreVoidTicketResponses.
+                                Add(new SabreVoidTicketResponse
+                                    (
+                                      "",
+                                      "",
+                                      null,
+                                      request.Locator,
+                                      $"There was a GDS issue encountered while voiding the ticket(s) on PNR {request.Locator}."));
+            }
+            finally
+            {
+                if (token != null && token.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+                }
+            }
+
+            var query = from voidtkt in request.Tickets
+                        let voidtktres = sabreVoidTicketResponses.FirstOrDefault(f => voidtkt.DocumentNumber.StartsWith(f.DocumentNumber))
+                        where voidtktres != null
+                        select new VoidTicketResponse()
+                        {
+                            DocumentNumber = voidtkt.DocumentNumber,
+                            DocumentType = voidtkt.DocumentType,
+                            AlreadyVoided = voidtktres.Alreadyvoided,
+                            Voided = voidtktres.Success,
+                            Errors = voidtktres.Errors
+                        };
+
+            voidTicketResponses = query.ToList();
+
+            //reporting Reissue EMDs
+            return HandleReissueEMD(request, voidTicketResponses);
+        }
+
+        private async Task<List<TicketData>> GetTicketsFromGDS(string locator, string token)
+        {
+            //Execute display price quote command
+            string text = await _sabreCommandService.ExecuteCommand(token, pcc, $"*{locator}", "9SNJ");
+
+            if ((text.Contains("ADDR") ||
+                text.Contains("UTL PNR") ||
+                text.Contains("SECURED PNR")))
+            {
+                throw new GDSException("50000035", text);
+            }
+
+            text = await _sabreCommandService.ExecuteCommand(token, pcc, "*T", "9SNJ");
+
+            await _sabreCommandService.ExecuteCommand(token, pcc, "I", "9SNJ");
+
+            List<TicketData> pnrtkts = new T(text).Tickets;
+            return pnrtkts;
+        }
+
+
+        private static List<VoidTicketResponse> HandleReissueEMD(VoidTicketRequest request, List<VoidTicketResponse> voidTicketResponses)
+        {
+            List<VoidTicketResponse> tempvoidTicketResponses = new List<VoidTicketResponse>();
+            tempvoidTicketResponses.AddRange(voidTicketResponses);
+            var reitkts = voidTicketResponses.Where(w => w.DocumentType.ToUpper() == "REI");
+            foreach (var reitkt in reitkts.Select(s => s.DocumentNumber))
+            {
+                Models.VoidTicket voidtktrq = request.Tickets.First(f => f.DocumentNumber == reitkt);
+
+                if (!voidtktrq.LinkedDocuments.IsNullOrEmpty())
+                {
+                    tempvoidTicketResponses.
+                        AddRange(voidtktrq.
+                                    LinkedDocuments.
+                                    Select(linkdoc => new VoidTicketResponse()
+                                    {
+                                        DocumentNumber = linkdoc.DocumentNumber,
+                                        DocumentType = "EMD",
+                                        Voided = true
+                                    }).
+                                    ToList());
+
+                }
+            }
+
+            return tempvoidTicketResponses;
         }
 
         private static void PopulateMerchantFOP(IssueExpressTicketRQ request, IssueTicketTransactionData returntickettransactiondata, MerchantLambdaResponse result, decimal merchantfee)
@@ -2711,4 +3818,96 @@ namespace SabreWebtopTicketingService.Services
         public decimal? BSPCommission { get; set; }
         public string TourCode { get; set; }
     }
+
+    internal class AgentCommissionData
+    {
+        public string DocumentNumber { get; set; }
+        public bool IsFee { get; set; }
+        public decimal? AgentCommissionRate { get; set; }
+        public string CurrencyCode { get; set; }
+        public decimal? AgentFee { get; set; }
+    }
+
+
+    #region AirTicketRQResponse JSON proxy
+    public class Success
+    {
+        public DateTime timeStamp { get; set; }
+    }
+
+    public class Message
+    {
+        public string code { get; set; }
+        public string content { get; set; }
+    }
+
+    public class SystemSpecificResult
+    {
+        public List<Message> Message { get; set; }
+    }
+
+    public class Warning
+    {
+        public string type { get; set; }
+        public DateTime timeStamp { get; set; }
+        public List<SystemSpecificResult> SystemSpecificResults { get; set; }
+    }
+
+    public class Error
+    {
+        public string type { get; set; }
+        public DateTime timeStamp { get; set; }
+        public List<SystemSpecificResult> SystemSpecificResults { get; set; }
+    }
+
+    public class ApplicationResults
+    {
+        public string status { get; set; }
+        public List<Success> Success { get; set; }
+        public List<Warning> Warning { get; set; }
+        public List<Error> Error { get; set; }
+    }
+
+    public class Reservation
+    {
+        public string content { get; set; }
+    }
+
+    internal class TotalAmount
+    {
+        public string currencyCode { get; set; }
+        public int decimalPlace { get; set; }
+        public string content { get; set; }
+    }
+
+    internal class Summary
+    {
+        public string DocumentNumber { get; set; }
+        public DateTime LocalIssueDateTime { get; set; }
+        public string DocumentType { get; set; }
+        public string IssuingLocation { get; set; }
+        public Reservation Reservation { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public TotalAmount TotalAmount { get; set; }
+    }
+
+    internal class AirTicketRS
+    {
+        public ApplicationResults ApplicationResults { get; set; }
+        public List<Summary> Summary { get; set; }
+    }
+
+    public class Link
+    {
+        public string rel { get; set; }
+        public string href { get; set; }
+    }
+
+    internal class AirTicketRQResponse
+    {
+        public AirTicketRS AirTicketRS { get; set; }
+        public List<Link> Links { get; set; }
+    }
+    #endregion
 }

@@ -7,6 +7,7 @@ namespace SabreWebtopTicketingService.Common
 	public interface ILogger
 	{
 		void LogInformation(string messageTemplate, params object[] arguments);
+		void LogMaskInformation(string messageTemplate, params object[] arguments);
 		void LogError(string messageTemplate, params object[] arguments);
 		void LogError(Exception ex);
 	}
@@ -26,6 +27,11 @@ namespace SabreWebtopTicketingService.Common
 		public void LogInformation(string messageTemplate, params object[] arguments)
 		{
 			_logger.Information(messageTemplate, arguments);
+		}
+
+		public void LogMaskInformation(string messageTemplate, params object[] arguments)
+        {
+			_logger.Information(messageTemplate.Mask(), arguments);
 		}
 
 		public void LogError(string messageTemplate, params object[] arguments)

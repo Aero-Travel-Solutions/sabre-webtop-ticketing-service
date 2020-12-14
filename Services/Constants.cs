@@ -21,6 +21,8 @@ namespace SabreWebtopTicketingService.Services
         public const string SabreCommandVersion = "1.8.1";
         public const string TripSearchVersion = "4.4.0";
         public const string GetReservationPriceQuoteVersion = "3.2.0";
+        public const string VoidAirTicketVersion = "2.1.0";
+        public const string UpdatePNRVersion = "1.0.0";
 
         //REST
         public const string EnhancedAirTicketVersion = "1.2.1";

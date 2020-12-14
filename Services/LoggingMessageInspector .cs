@@ -3,7 +3,6 @@ using SabreWebtopTicketingService.Common;
 using System;
 using System.IO;
 using System.ServiceModel;
-using System.ServiceModel.Channels;
 using System.ServiceModel.Dispatcher;
 using System.Xml;
 using System.Xml.Linq;
@@ -23,7 +22,7 @@ namespace SabreWebtopTicketingService.Services
         }
         public ILogger<LoggingMessageInspector> Logger { get; }
 
-        public void AfterReceiveReply(ref Message reply, object correlationState)
+        public void AfterReceiveReply(ref System.ServiceModel.Channels.Message reply, object correlationState)
         {
             using (var buffer = reply.CreateBufferedCopy(int.MaxValue))
             {
@@ -43,7 +42,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        public object BeforeSendRequest(ref Message request, IClientChannel channel)
+        public object BeforeSendRequest(ref System.ServiceModel.Channels.Message request, IClientChannel channel)
         {
             using (var buffer = request.CreateBufferedCopy(int.MaxValue))
             {
@@ -62,7 +61,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private XmlDocument GetDocument(Message request)
+        private XmlDocument GetDocument(System.ServiceModel.Channels.Message request)
         {
             XmlDocument document = new XmlDocument();
             using (MemoryStream memoryStream = new MemoryStream())

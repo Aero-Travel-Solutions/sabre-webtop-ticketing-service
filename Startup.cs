@@ -75,14 +75,23 @@ namespace SabreWebtopTicketingService
             services.AddScoped<TicketingPccDataSource>();
             services.AddScoped<GetReservationService>();
             services.AddScoped<EnhancedAirBookService>();
+            services.AddScoped<VoidTicketService>();
+            services.AddScoped<EnhancedEndTransService>();
+            services.AddScoped<SabreUpdatePNRService>();
             services.AddScoped<AmazonLambdaClient>();
             services.AddScoped<LambdaHelper>();
             services.AddScoped<SessionDataSource>();
+
+            services.AddScoped<INotificationHelper, NotificationHelper>();
             services.AddScoped<IGetTurnaroundPointDataSource, GetTurnaroundPointDataSource>();
             services.AddScoped<ICommissionDataService, CommissionDataService>();
             services.AddScoped<IAgentPccDataSource, AgentPccDataSource>();
             services.AddSingleton<ExpiredTokenRetryPolicy>();
             services.AddSingleton<GetOrderSquenceRetryPolicy>();
+            services.AddScoped<IOrdersTransactionDataSource, OrdersTransactionDataSource>();
+            services.AddScoped<IBackofficeDataSource, BackofficeDataSource>();
+            services.AddScoped<IMerchantDataSource, MerchantDataSource>();
+            services.AddScoped<IBCodeDataSource, BCodeDataSource>();
 
             //services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<DbCache>();

@@ -7,6 +7,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class VoidTicketRequest
     { 
+        public string SessionID { get; set; }
         public string GDSCode { get; set; }
         public string Locator { get; set; }
         public List<VoidTicket> Tickets { get; set; }

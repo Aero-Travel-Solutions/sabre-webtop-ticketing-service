@@ -17,13 +17,16 @@ namespace SabreWebtopTicketingService.Services
     {
         private readonly DbCache _dbCache;
         private readonly SessionDataSource _sessionDataSource;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public SessionCreateService(
                         DbCache dbCache,
-                        SessionDataSource sessionDataSource)
+                        SessionDataSource sessionDataSource,
+                        IHttpClientFactory httpClientFactory)
         {
             _dbCache = dbCache;
             _sessionDataSource = sessionDataSource;
+            _httpClientFactory = httpClientFactory;
         }        
 
         public async Task<SabreSession> CreateStatefulSessionToken(Pcc defaultwspcc, string locator, bool NoCache = false)
@@ -110,7 +113,7 @@ namespace SabreWebtopTicketingService.Services
 
             //Reference: https://beta.developer.sabre.com/guides/travel-agency/how-to/get-token
             string url = Constants.GetRestUrl();
-            var client = IHttpClientFactory.CreateClient();
+            var client = _httpClientFactory.CreateClient();
 
             //URL
             var uri = new Uri(url.Trim() + "/v2/auth/token");

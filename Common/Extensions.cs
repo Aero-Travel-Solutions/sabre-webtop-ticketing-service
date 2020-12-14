@@ -151,6 +151,16 @@ namespace SabreWebtopTicketingService.Common
             return new List<string>();
         }
 
+        public static List<string> SplitInChunk(this string text, int max)
+        {
+            var charCount = 0;
+            var lines = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            return lines.GroupBy(w => (charCount += (((charCount % max) + w.Length + 1 >= max)
+                            ? max - (charCount % max) : 0) + w.Length + 1) / max)
+                        .Select(g => string.Join(" ", g.ToArray()))
+                        .ToList();
+        }
+
         public static string ReplaceAllSabreSpecialChar(this string seed, string replacementstring = "")
         {
             Dictionary<string, string> replacablestrings = new Dictionary<string, string>()
