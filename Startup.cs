@@ -47,6 +47,7 @@ namespace SabreWebtopTicketingService
             //Add data protection
             services
                 .AddDataProtection()
+                .PersistKeysToAWSSystemsManager("/Sabre/DataProtection")
                 //.PersistKeysToStackExchangeRedis(redis)
                 .UseCryptographicAlgorithms(
                     new AuthenticatedEncryptorConfiguration()
