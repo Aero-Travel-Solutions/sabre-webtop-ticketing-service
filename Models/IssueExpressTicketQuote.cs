@@ -10,6 +10,10 @@ namespace SabreWebtopTicketingService.Models
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
         public decimal BaseFare { get; set; }
+        public string BaseFareCurrency { get; set; }
+        public decimal? EquivFare { get; set; }
+        public string EquivFareCurrency { get; set; }
+        public List<Tax> Taxes { get; set; }
         public decimal TotalFare { get; set; }
         public decimal TotalTax { get; set; }
         public decimal? AgentCommissionRate { get; set; }

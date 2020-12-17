@@ -1310,7 +1310,16 @@ namespace SabreWebtopTicketingService.Services
                 //Manual build
                 if(!manualquotes.IsNullOrEmpty())
                 {
-                    await ManualBuild(pcc, request, statefultoken, manualquotes, pnr, ticketingpcc, contextID);
+                    await ManualBuild(
+                                pcc, 
+                                request, 
+                                statefultoken, 
+                                manualquotes, 
+                                pnr, 
+                                ticketingpcc, 
+                                contextID,
+                                ticketingprinter,
+                                printerbypass);
                 }
 
                 //GDS quote
@@ -2531,9 +2540,77 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private Task ManualBuild(Pcc pcc, IssueExpressTicketRQ request, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID)
+        private async Task ManualBuild(Pcc pcc, IssueExpressTicketRQ request, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass)
         {
+            //Assign printer
+            await _sabreCommandService.
+                        ExecuteCommand(
+                            statefultoken,
+                            pcc,
+                            $"W*{printerbypass}",
+                            ticketingpcc);
+
+            await _sabreCommandService.
+                        ExecuteCommand(
+                            statefultoken,
+                            pcc,
+                            $"PTR/{ticketingprinter}",
+                            ticketingpcc);
+
+            foreach (var quote in request.Quotes.GroupBy(grp => grp.Passenger.PaxType))
+            {
+                string command = "W¥CTKT";
+                //pax type and quantity added
+                command += $"¥P{quote.First().Passenger.PaxType}¥" +
+                           $"N{string.Join("/", quote.Select(quo => quo.Passenger.NameNumber).Distinct())}";
+                //sector no
+                command += string.Join("/", quote.First().Sectors.Select(s => s.PQSectorNo));
+                //validating carrier
+                command += $"¥A{quote.First().PlatingCarrier}";
+
+                //Create manual price quote shell
+                string mask1 = await _sabreCommandService.
+                                        ExecuteCommand(
+                                            statefultoken,
+                                            pcc,
+                                            command,
+                                            ticketingpcc);
+
+                SabreManualBuildScreen1 screen1 = new SabreManualBuildScreen1(mask1, quote.First());
+                command = screen1.Command;
+
+                string mask2 = await _sabreCommandService.
+                                        ExecuteCommand(
+                                            statefultoken,
+                                            pcc,
+                                            command,
+                                            ticketingpcc);
+
+                if(screen1.AdditionalTaxPresent)
+                {
+                    SabreManualBuildAdditinalTax screen2 = HandleAdditionalTax(quote, mask2);
+                }
+            }
             throw new NotImplementedException();
+        }
+
+        private SabreManualBuildAdditinalTax HandleAdditionalTax(IGrouping<string, IssueExpressTicketQuote> quote, string mask2)
+        {
+            SabreManualBuildAdditinalTax screen2 = new SabreManualBuildAdditinalTax(
+                                                                mask2,
+                                                                quote.
+                                                                    First().
+                                                                    Taxes.
+                                                                    GroupBy(grp => grp.Code).
+                                                                    Skip(6).
+                                                                    Select(tax => new Tax()
+                                                                    {
+                                                                        Code = tax.Key,
+                                                                        Amount = tax.Sum(s => s.Amount)
+                                                                    }).
+                                                                    ToList());
+
+            return screen2;
         }
 
         private static void ReconstructRequestFromKeys(IssueExpressTicketRQ request)
