@@ -74,4 +74,9 @@ functions:
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  CurrencyConvert:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::CurrencyConvert
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
       

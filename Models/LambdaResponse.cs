@@ -53,4 +53,12 @@ namespace SabreWebtopTicketingService.Models
         public List<WebtopWarning> data { get; set; }
         public List<WebtopError> error { get; set; }
     }
+
+    public class CurrencyConvertLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public ConvertCurrencyResponse data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
 }
