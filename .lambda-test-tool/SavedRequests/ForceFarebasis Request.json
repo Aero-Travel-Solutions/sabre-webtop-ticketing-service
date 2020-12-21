@@ -1,1 +1,20 @@
-{"SessionID":"ece165f909d22dfa59bf9e4c8897627391c3f0894d5ccaff1051fe035ed14b13", "platform":0,"gdsCode":"1W","locator":"FYLYWK","selectedPassengers":[{"nameNumber":"1.1","passengerName":"CHUNG/EASON MR","paxType":"ADT","formOfPayment":{"paymentType":0}}],"selectedSectors":[{"sectorNo":1,"fareBasis":"O14SA"},{"sectorNo":2,"fareBasis":"O14SA"},{"sectorNo":3,"fareBasis":"NIQW"}],"agentID":"1234567891"}
+{
+  "SessionID": "ece165f909d22dfa59bf9e4c8897627391c3f0894d5ccaff1051fe035ed14b13",
+  "platform": 0,
+  "gdsCode": "1W",
+  "locator": "FYLYWK",
+  "selectedPassengers": [
+    {
+      "nameNumber": "1.1",
+      "passengerName": "CHUNG/EASON MR",
+      "paxType": "ADT",
+      "formOfPayment": { "paymentType": 0 }
+    }
+  ],
+  "selectedSectors": [
+    { "sectorNo": 1, "fareBasis": "O14SA" },
+    { "sectorNo": 2, "fareBasis": "O14SA" },
+    { "sectorNo": 3, "fareBasis": "NIQW" }
+  ],
+  "agentID": "1234567891"
+}
