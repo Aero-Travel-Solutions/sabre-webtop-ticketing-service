@@ -1158,6 +1158,15 @@ namespace SabreWebtopTicketingService.Services
             }
             catch { }//Do not error as INF dob is not critical to issue tickets
 
+            passengers.
+                ForEach(f => f.SelectPassengerKey = JsonConvert.
+                                                        SerializeObject( new QuotePassenger()
+                                                        {
+                                                            NameNumber = f.NameNumber,
+                                                            PassengerName = f.Passengername,
+                                                            DOB = string.IsNullOrEmpty(f.DOB) ? default : DateTime.Parse(f.DOB),
+                                                            PaxType = f.PaxType
+                                                        }).EncodeBase64());
             return passengers;
         }
 

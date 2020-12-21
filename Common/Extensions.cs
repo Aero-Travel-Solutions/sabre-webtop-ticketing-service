@@ -121,6 +121,17 @@ namespace SabreWebtopTicketingService.Common
             return Convert.ToBase64String(textAsBytes);
         }
 
+        public static string DecodeBase64(this string encodedText)
+        {
+            if (encodedText == null)
+            {
+                return null;
+            }
+
+            byte[] textAsBytes = Convert.FromBase64String(encodedText);
+            return Encoding.ASCII.GetString(textAsBytes);
+        }
+
         public static bool IsMatch(this string text, string pattern)
         {
             if (string.IsNullOrEmpty(text)) { return false; }
