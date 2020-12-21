@@ -918,6 +918,40 @@ namespace SabreWebtopTicketingService.Services
             return result;
         }
 
+        internal async Task<ConvertCurrencyResponse> CurrencyConvert(ConvertCurrencyRequest request, string contextID)
+        {
+            ConvertCurrencyResponse convertCurrencyResponse = new ConvertCurrencyResponse();
+            try
+            {
+                string sessionID = request.SessionID;
+                user = await session.GetSessionUser(sessionID);
+                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+
+                //Obtain session (if found from cache, else directly from sabre)
+                SabreSession sabresession = await _sessionCreateService.CreateStatefulSessionToken(pcc);
+
+                string command = $"DC¥{request.FromCurrency}{request.Amount}/{request.ToCurrency}";
+
+                string res = await _sabreCommandService.ExecuteCommand(sabresession.SessionID, pcc, command);
+
+                SabreCurrencyConvert sabreCurrencyConvert = new SabreCurrencyConvert(res);
+
+                convertCurrencyResponse.CurrencyCode = sabreCurrencyConvert.CurrencyCode;
+                convertCurrencyResponse.Amount = sabreCurrencyConvert.Amount;
+            }
+            catch(GDSException gdsex)
+            {
+                logger.LogError(gdsex.Message);
+                convertCurrencyResponse.Error = new WebtopError()
+                {
+                    code = gdsex.ErrorCode,
+                    message = gdsex.Message
+                };
+            }
+
+            return convertCurrencyResponse;
+        }
+
         private List<PNRAgent> GetAgents(string sessionid, string bookingpcc)
         {
             List<DataAgent> agents = _agentPccDataSource.RetrieveAgents(user?.ConsolidatorId, sessionid).GetAwaiter().GetResult();
@@ -1195,6 +1229,15 @@ namespace SabreWebtopTicketingService.Services
             }
             catch { }//Do not error as INF dob is not critical to issue tickets
 
+            passengers.
+                ForEach(f => f.SelectPassengerKey = JsonConvert.
+                                                        SerializeObject( new QuotePassenger()
+                                                        {
+                                                            NameNumber = f.NameNumber,
+                                                            PassengerName = f.Passengername,
+                                                            DOB = string.IsNullOrEmpty(f.DOB) ? default : DateTime.Parse(f.DOB),
+                                                            PaxType = f.PaxType
+                                                        }).EncodeBase64());
             return passengers;
         }
 

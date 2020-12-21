@@ -70,4 +70,12 @@ namespace SabreWebtopTicketingService.Models
         public string CardExpiry { get; set; }
         public bool Success { get; set; }
     }
+
+    public class CurrencyConvertLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public ConvertCurrencyResponse data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
 }
