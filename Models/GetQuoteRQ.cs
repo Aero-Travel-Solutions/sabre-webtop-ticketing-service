@@ -65,7 +65,7 @@ namespace SabreWebtopTicketingService.Models
                 return quotePassengers;
             }
 
-            private set { }
+            set { }
         }
         public List<SelectedQuoteSector> SelectedSectors { get; set; }
         public string PriceCode { get; set; }

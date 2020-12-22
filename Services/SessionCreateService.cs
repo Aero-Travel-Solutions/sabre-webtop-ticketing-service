@@ -29,7 +29,7 @@ namespace SabreWebtopTicketingService.Services
             _httpClientFactory = httpClientFactory;
         }        
 
-        public async Task<SabreSession> CreateStatefulSessionToken(Pcc defaultwspcc, string locator, bool NoCache = false)
+        public async Task<SabreSession> CreateStatefulSessionToken(Pcc defaultwspcc, string locator = "", bool NoCache = false)
         {
             SessionCreatePortTypeClient client = null;
             var userName = defaultwspcc.Username;
@@ -37,12 +37,11 @@ namespace SabreWebtopTicketingService.Services
             string pcc = defaultwspcc.PccCode;
             var url = Constants.GetSoapUrl();
             string accessKey = $"{defaultwspcc.PccCode}-{locator}".EncodeBase64();
-
-            SabreSession sabreSession = null;
-
             try
             {
-                if (!NoCache)
+
+                SabreSession sabreSession;
+                if (!NoCache || !string.IsNullOrEmpty(locator))
                 {
                     #region Retrieve ession from dynamo db
                     //Check token in cache
@@ -69,7 +68,7 @@ namespace SabreWebtopTicketingService.Services
                 var security = CreateSecurityCredentials(userName, password, pcc);
                 var request = CreateSessionRequest(pcc);
 
-                var response = await client.SessionCreateRQAsync(header, security, request);                
+                var response = await client.SessionCreateRQAsync(header, security, request);
 
                 if (response.SessionCreateRS.Errors != null && response.SessionCreateRS.Errors.Error != null)
                 {
@@ -94,9 +93,9 @@ namespace SabreWebtopTicketingService.Services
                 #endregion
 
                 return sabreSession;
-            }            
+            }
             catch (Exception ex)
-            {                
+            {
                 client.Abort();
                 throw ex;
             }
