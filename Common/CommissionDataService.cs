@@ -54,7 +54,7 @@ namespace SabreWebtopTicketingService.Common
                     Payload = jsoninput
                 };
 
-                logger.LogInformation($"Invoking lambda function {functionName} with {invokeRequest}");
+                logger.LogInformation($"Invoking lambda function {functionName} with {jsoninput}");
                 var lambdaResponse = await client.InvokeAsync(invokeRequest);
 
                 using (var sr = new StreamReader(lambdaResponse.Payload))
