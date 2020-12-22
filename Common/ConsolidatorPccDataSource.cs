@@ -74,6 +74,12 @@ namespace SabreWebtopTicketingService.Common
             {
                 throw new Exception("ConsolidatorID not found!"); 
             }
+
+            //default consolidator id to acn if the consolidator_id is internal
+            if(consolidator_id == "internal")
+            {
+                consolidator_id = "acn";
+            }
  
             var result = await lambda.Invoke<Pcc[]>($"{PFX_ADB}-pcc-details-list", new { consolidator_id }, sessionid);
             return new ConsolidatorPccList { PccList = result };
