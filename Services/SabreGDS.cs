@@ -149,6 +149,14 @@ namespace SabreWebtopTicketingService.Services
             SabreSession sabreSession = null;
             user = await session.GetSessionUser(request.SessionID);
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
+            if (!string.IsNullOrEmpty(request.AgentID))
+            {
+                agent = await getAgentData(
+                            request.SessionID,
+                            user.ConsolidatorId,
+                            request.AgentID,
+                            pcc.PccCode);
+            }
 
             try
             {
@@ -236,43 +244,48 @@ namespace SabreWebtopTicketingService.Services
             //booking pcc
             string bookingpcc = ((ReservationPNRB)response.Item).POS.Source.PseudoCityCode;
 
-            PNR pnr = null;
+            PNR pnr = new PNR();
             List<PNRAgent> agents = new List<PNRAgent>();
-
-            CancellationToken ct = new CancellationToken();
-
-            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
-
-            Parallel.
-                Invoke(
-                    //Post retrieval actions
-                    () => pnr = ParseSabrePNR(response, sabresessionid, sessionid, includeQuotes, includeexpiredquote),
-                    //Retrieve agencies
-                    () => agents = GetAgents(sessionid, bookingpcc)
-                );
-
-            if(!agents.IsNullOrEmpty())
+            if (agent == null)
             {
-                pnr.Agents = agents;
+                agents = GetAgents(sessionid, bookingpcc);
+                if (!agents.IsNullOrEmpty())
+                {
+                    pnr.Agents = agents;
+                }
             }
 
-            if (withpnrvalidation)
+            if (agents.IsNullOrEmpty() || agents.Count() == 1)
             {
+                if (!agents.IsNullOrEmpty())
+                {
+                    agent = await getAgentData(
+                                    sessionid,
+                                    user.ConsolidatorId,
+                                    agents.First().AgentId,
+                                    pcc.PccCode);
+                }
+
+                pnr = ParseSabrePNR(response, sabresessionid, sessionid, includeQuotes, includeexpiredquote);
+
+                if (withpnrvalidation)
+                {
                     //PNR validation
                     pnr.InvokePostPNRRetrivalActions();
-            }
+                }
 
-            //Save PNR in cache
-            await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
+                //Save PNR in cache
+                await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
 
-            if (getStoredCards)
-            {
-                var storedCreditCard = GetStoredCards(response);
+                if (getStoredCards)
+                {
+                    var storedCreditCard = GetStoredCards(response);
 
-                //Encrypt card number
-                storedCreditCard.ForEach(c => c.CreditCard = dataProtector.Protect(c.CreditCard));
+                    //Encrypt card number
+                    storedCreditCard.ForEach(c => c.CreditCard = dataProtector.Protect(c.CreditCard));
 
-                await _dbCache.InsertStoreCC(cardAccessKey, storedCreditCard, 15);
+                    await _dbCache.InsertStoreCC(cardAccessKey, storedCreditCard, 15);
+                }
             }
 
             return pnr;
