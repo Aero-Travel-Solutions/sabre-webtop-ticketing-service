@@ -37,7 +37,11 @@ custom:
   sabre_soap_uri:
     dev: ${ssm:/dev/sabre-soap/uri}
     stg: ${ssm:/stg/sabre-soap/uri}
-    prod: ${ssm:/prod/sabre-soap/uri} 
+    prod: ${ssm:/prod/sabre-soap/uri}
+  sabre_rest_uri:
+    dev: ${ssm:/dev/sabre_rest/uri}
+    stg: ${ssm:/stg/sabre_rest/uri}
+    prod: ${ssm:/prod/sabre_rest/uri} 
   
 functions:
   SearchPNR:
