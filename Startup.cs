@@ -8,11 +8,12 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using StackExchange.Redis;
 using SabreWebtopTicketingService.Interface;
 using ILogger = SabreWebtopTicketingService.Common.ILogger;
-using Microsoft.AspNetCore.Builder;
 using SabreWebtopTicketingService.PollyPolicies;
+using System.Net.Http;
+using Amazon.S3;
+using Amazon.SQS;
 
 namespace SabreWebtopTicketingService
 {
@@ -35,20 +36,19 @@ namespace SabreWebtopTicketingService
             //AWS configuration
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
 
+
+            services.AddAWSService<IAmazonDynamoDB>();
+            services.AddAWSService<IAmazonS3>();
+            services.AddAWSService<IAmazonSQS>();
+
             //In memory cache
             services.AddMemoryCache();
             services.AddDistributedMemoryCache();
-           
-            //Redis cache
-            //var cacheHost = Environment.GetEnvironmentVariable(Constants.CACHE_HOST) ?? "localhost:6379";
-            //var redis = ConnectionMultiplexer.Connect(cacheHost);
-            //services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
 
             //Add data protection
             services
                 .AddDataProtection()
                 .PersistKeysToAWSSystemsManager("/Sabre/DataProtection")
-                //.PersistKeysToStackExchangeRedis(redis)
                 .UseCryptographicAlgorithms(
                     new AuthenticatedEncryptorConfiguration()
                     {
@@ -58,6 +58,11 @@ namespace SabreWebtopTicketingService
                 )
                 .SetApplicationName("WebtopCCDataProtectApp")
                 .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
+
+            services.AddHttpClient<SessionCreateService>();
+
+            var backofficeUrl = Environment.GetEnvironmentVariable(Constants.BACKOFFICE_URL);
+            services.AddHttpClient(Constants.BACKOFFICE_URL, c => c.BaseAddress = new Uri(backofficeUrl));
 
             //AWS Configuration
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
@@ -76,12 +81,14 @@ namespace SabreWebtopTicketingService
             services.AddScoped<TicketingPccDataSource>();
             services.AddScoped<GetReservationService>();
             services.AddScoped<EnhancedAirBookService>();
+            services.AddScoped<EnhancedAirTicketService>();
             services.AddScoped<VoidTicketService>();
             services.AddScoped<EnhancedEndTransService>();
             services.AddScoped<SabreUpdatePNRService>();
             services.AddScoped<AmazonLambdaClient>();
             services.AddScoped<LambdaHelper>();
             services.AddScoped<SessionDataSource>();
+            services.AddScoped<ApiInvoker>();
 
             services.AddScoped<INotificationHelper, NotificationHelper>();
             services.AddScoped<IGetTurnaroundPointDataSource, GetTurnaroundPointDataSource>();
@@ -94,7 +101,6 @@ namespace SabreWebtopTicketingService
             services.AddScoped<IMerchantDataSource, MerchantDataSource>();
             services.AddScoped<IBCodeDataSource, BCodeDataSource>();
 
-            //services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<DbCache>();
             services.AddSingleton<ILogger, Logger>();
 

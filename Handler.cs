@@ -25,8 +25,6 @@ namespace SabreWebtopTicketingService
 
             sabreGDS = serviceProvider.GetService<SabreGDS>();
             logger = serviceProvider.GetService<ILogger>();
-
-            //AWSSDKHandler.RegisterXRayForAllServices();
         }
 
         public async Task<LambdaResponse> SearchPNR(SearchPNRRequest rq)
