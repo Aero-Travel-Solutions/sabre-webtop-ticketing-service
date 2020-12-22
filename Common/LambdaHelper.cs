@@ -31,19 +31,23 @@ namespace SabreWebtopTicketingService.Common
             {
                 logger.LogInformation($"***** Invoking lambda {functionName} *****");
 
+                string inputjson = JsonSerializer.Serialize(
+                            new { session_id = sessionid, data = input },
+                            new JsonSerializerOptions()
+                            {
+                                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                            });
+
                 var lambdaResponse = await client.InvokeAsync(new InvokeRequest
                 {
                     FunctionName = functionName,
                         InvocationType = InvocationType.RequestResponse,
-                        Payload = JsonSerializer.Serialize(
-                            new { session_id = sessionid, data = input }, 
-                            new JsonSerializerOptions() 
-                            { 
-                                PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
-                            })
+                        Payload = inputjson
                 });
 
-                using(var sr = new StreamReader(lambdaResponse.Payload))
+                logger.LogInformation($"Invoking lambda function {functionName} with {inputjson}");
+
+                using (var sr = new StreamReader(lambdaResponse.Payload))
                 {
                     var data = await sr.ReadToEndAsync();
                     logger.LogInformation($"***** RS: {functionName} => {data} ******");

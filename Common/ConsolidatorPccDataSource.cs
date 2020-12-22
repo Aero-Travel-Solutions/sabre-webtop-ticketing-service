@@ -33,13 +33,13 @@ namespace SabreWebtopTicketingService.Common
                 //    GdsCode = "1W"
                 //};
                 //ETG
-                return new Pcc()
-                {
-                    Username = "381507",
-                    Password = "EVAQWE20",
-                    PccCode = "F7Z7",
-                    GdsCode = "1W"
-                };
+                //return new Pcc()
+                //{
+                //    Username = "381507",
+                //    Password = "EVAQWE20",
+                //    PccCode = "F7Z7",
+                //    GdsCode = "1W"
+                //};
                 //Global Travel
                 //return new Pcc()
                 //{
