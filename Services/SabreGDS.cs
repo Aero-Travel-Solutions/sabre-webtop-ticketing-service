@@ -1230,7 +1230,7 @@ namespace SabreWebtopTicketingService.Services
             catch { }//Do not error as INF dob is not critical to issue tickets
 
             passengers.
-                ForEach(f => f.SelectPassengerKey = JsonConvert.
+                ForEach(f => f.PassengerKey = JsonConvert.
                                                         SerializeObject( new QuotePassenger()
                                                         {
                                                             NameNumber = f.NameNumber,

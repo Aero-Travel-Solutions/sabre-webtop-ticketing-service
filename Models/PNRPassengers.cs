@@ -16,7 +16,7 @@ namespace SabreWebtopTicketingService.Models
         public bool AccompaniedByInfant { get; set; }
         public bool SecureFlightDataExist { get; set; }
         public List<FrequentFlyer> FrequentFlyerDetails { get; set; }
-        public string SelectPassengerKey { get; set; }
+        public string PassengerKey { get; set; }
     }
 
     public class FOP
