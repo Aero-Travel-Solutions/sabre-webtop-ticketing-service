@@ -2,27 +2,28 @@
   "SessionID": "4fb13cb37b80cba6b2372f25f35e225d9d065057f6605d7ada5e35a45733f6ee",
   "platform": 0,
   "gdsCode": "1W",
-  "locator": "CWISLB",
-  "selectedPassengers": [
+  "locator": "IKYQCU",
+  "SelectedPassengerKeys": [
     {
-      "nameNumber": "1.1",
-      "passengerName": "CHUNG/KEN MR",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvU0hBV04gTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
       "paxType": "ADT",
       "formOfPayment": { "paymentType": 0 }
     },
     {
-      "nameNumber": "1.2",
-      "passengerName": "CHUNG/FEDERICK MSTR",
-      "paxType": "ADT",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvVklDVE9SIE1TVFIiLCJOYW1lTnVtYmVyIjoiMS4yIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
+      "paxType": "CHD",
       "formOfPayment": { "paymentType": 0 }
     },
     {
-      "nameNumber": "2.1",
-      "passengerName": "CHUNG/GULSAH MISS",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvTUlDSE9OTkUgTUlTUyIsIk5hbWVOdW1iZXIiOiIyLjEiLCJQYXhUeXBlIjoiSU5GIiwiRE9CIjoiMDAwMS0wMS0wMVQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
       "paxType": "INF",
       "formOfPayment": { "paymentType": 0 }
     }
   ],
-  "selectedSectors": [{ "sectorNo": 1 }, { "sectorNo": 2 }, { "sectorNo": 3 }],
+  "selectedSectors": [
+    { "sectorNo": 1 },
+    { "sectorNo": 2 },
+    { "sectorNo": 3 }
+  ],
   "agentID": "1234567891"
 }

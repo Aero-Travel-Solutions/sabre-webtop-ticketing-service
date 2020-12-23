@@ -2,19 +2,37 @@
   "SessionID": "ece165f909d22dfa59bf9e4c8897627391c3f0894d5ccaff1051fe035ed14b13",
   "platform": 0,
   "gdsCode": "1W",
-  "locator": "FYLYWK",
-  "selectedPassengers": [
+  "locator": "IKYQCU",
+  "SelectedPassengerKeys": [
     {
-      "nameNumber": "1.1",
-      "passengerName": "CHUNG/EASON MR",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvU0hBV04gTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
       "paxType": "ADT",
+      "formOfPayment": { "paymentType": 0 }
+    },
+    {
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvVklDVE9SIE1TVFIiLCJOYW1lTnVtYmVyIjoiMS4yIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
+      "paxType": "CHD",
+      "formOfPayment": { "paymentType": 0 }
+    },
+    {
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvTUlDSE9OTkUgTUlTUyIsIk5hbWVOdW1iZXIiOiIyLjEiLCJQYXhUeXBlIjoiSU5GIiwiRE9CIjoiMDAwMS0wMS0wMVQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
+      "paxType": "INF",
       "formOfPayment": { "paymentType": 0 }
     }
   ],
   "selectedSectors": [
-    { "sectorNo": 1, "fareBasis": "O14SA" },
-    { "sectorNo": 2, "fareBasis": "O14SA" },
-    { "sectorNo": 3, "fareBasis": "NIQW" }
+    {
+      "sectorNo": 1,
+      "fareBasis": "O14SA"
+    },
+    {
+      "sectorNo": 2,
+      "fareBasis": "O14SA"
+    },
+    {
+      "sectorNo": 3,
+      "fareBasis": "NIQW"
+    }
   ],
   "agentID": "1234567891"
 }

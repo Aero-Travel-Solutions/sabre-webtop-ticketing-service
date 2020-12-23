@@ -135,9 +135,12 @@ namespace SabreWebtopTicketingService.Services
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
                 TicketingPcc = await GetTicketingPCC(sessionid)
-            };       
+            };
 
-            user.Agent.CustomerNo = agent.CustomerNo;
+            if (user?.Agent != null)
+            {
+                user.Agent.CustomerNo = agent.CustomerNo;
+            }
             return agent;
         }
 
