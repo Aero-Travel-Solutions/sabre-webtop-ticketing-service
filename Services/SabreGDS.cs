@@ -252,10 +252,6 @@ namespace SabreWebtopTicketingService.Services
             if (agent == null)
             {
                 agents = GetAgents(sessionid, bookingpcc);
-                if (!agents.IsNullOrEmpty())
-                {
-                    pnr.Agents = agents;
-                }
             }
 
             if (agents.IsNullOrEmpty() || agents.Count() == 1)
@@ -275,6 +271,11 @@ namespace SabreWebtopTicketingService.Services
                 {
                     //PNR validation
                     pnr.InvokePostPNRRetrivalActions();
+                }
+
+                if (!agents.IsNullOrEmpty())
+                {
+                    pnr.Agents = agents;
                 }
 
                 //Save PNR in cache
@@ -2626,6 +2627,21 @@ namespace SabreWebtopTicketingService.Services
                 command += string.Join("/", quote.First().Sectors.Select(s => s.PQSectorNo));
                 //validating carrier
                 command += $"¥A{quote.First().PlatingCarrier}";
+                //faretype - IT
+                if (quote.First().FareType == FareType.IT)
+                {
+                    command += "¥UX*";
+                }
+                //faretype - BT
+                else if(quote.First().FareType == FareType.BT)
+                {
+                    command += "¥UB*";
+                }
+                //tourcode
+                if (!string.IsNullOrEmpty(quote.First().TourCode))
+                {
+                    command += $"¥{quote.First().TourCode}";
+                }
 
                 //Create manual price quote shell
                 string mask1 = await _sabreCommandService.

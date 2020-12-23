@@ -76,4 +76,12 @@ namespace SabreWebtopTicketingService.Models
         PriceOverride,
         Manual
     }
+
+    public enum FareType
+    {
+        Published,
+        IT,
+        BT,
+        NR
+    }
 }
