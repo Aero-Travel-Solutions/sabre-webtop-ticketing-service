@@ -1,24 +1,21 @@
 {
-  "SessionID": "acd23a99f9c1c3171ecf3b15daff35f4e0109eb9030cd2c7f832701ec031cb88",
+  "SessionID": "d792b5c7baf48261121644ef1612155692cf71b977f1a060b9fa13a090c7bad6",
   "platform": 0,
   "gdsCode": "1W",
-  "locator": "CWISLB",
-  "selectedPassengers": [
+  "locator": "IKYQCU",
+  "SelectedPassengerKeys": [
     {
-      "nameNumber": "1.1",
-      "passengerName": "CHUNG/KEN MR",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvU0hBV04gTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
       "paxType": "ADT",
       "formOfPayment": { "paymentType": 0 }
     },
     {
-      "nameNumber": "1.2",
-      "passengerName": "CHUNG/FEDERICK MSTR",
-      "paxType": "ADT",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvVklDVE9SIE1TVFIiLCJOYW1lTnVtYmVyIjoiMS4yIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
+      "paxType": "CHD",
       "formOfPayment": { "paymentType": 0 }
     },
     {
-      "nameNumber": "2.1",
-      "passengerName": "CHUNG/GULSAH MISS",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvTUlDSE9OTkUgTUlTUyIsIk5hbWVOdW1iZXIiOiIyLjEiLCJQYXhUeXBlIjoiSU5GIiwiRE9CIjoiMDAwMS0wMS0wMVQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
       "paxType": "INF",
       "formOfPayment": { "paymentType": 0 }
     }

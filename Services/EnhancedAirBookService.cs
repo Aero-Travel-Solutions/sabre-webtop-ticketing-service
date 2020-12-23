@@ -224,16 +224,18 @@ namespace SabreWebtopTicketingService.Services
                                                          }
                                                      }:
                                                      null,
-                                    FlightQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
-                                    {
-                                        VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
-                                        {
-                                            Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
-                                            {
-                                                Code = quoteRequest.PlatingCarrier
-                                            }
-                                        }
-                                    }
+                                    FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ? 
+                                                                null :
+                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
+                                                                {
+                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                                                    {
+                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                                                        {
+                                                                            Code = quoteRequest.PlatingCarrier
+                                                                        }
+                                                                    }
+                                                                }
                                 }
                             }
                         }
@@ -299,7 +301,7 @@ namespace SabreWebtopTicketingService.Services
                                             GroupBy(g => g.PaxType.StartsWith("C") ?
                                                             g.PaxType.IsMatch(@"C\d+") ?
                                                                 g.PaxType :
-                                                                g.DOB.HasValue && FirstDepartureDate != DateTime.MinValue ?
+                                                                g.DOB.HasValue && g.DOB.Value != DateTime.MinValue && FirstDepartureDate != DateTime.MinValue ?
                                                                     "C" + GetAge(FirstDepartureDate, g.DOB.Value).ToString().PadLeft(2, '0') :
                                                                     "CNN" :
                                                             g.PaxType).
