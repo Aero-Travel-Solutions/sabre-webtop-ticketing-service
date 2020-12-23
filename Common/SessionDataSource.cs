@@ -31,6 +31,10 @@ namespace SabreWebtopTicketingService.Common
         {
             var sessionUser = await GetFromDb<SessionUser>(sessionID);
 
+            if(sessionUser != null && !string.IsNullOrEmpty(sessionUser.User?.ConsolidatorId) && sessionUser.User.ConsolidatorId == "internal")
+            {
+                sessionUser.User.ConsolidatorId = "acn";
+            }
             return sessionUser?.User;
         }
 
