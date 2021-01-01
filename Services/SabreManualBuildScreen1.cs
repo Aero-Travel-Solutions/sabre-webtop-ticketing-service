@@ -26,7 +26,7 @@ namespace SabreWebtopTicketingService.Services
     //ENTER X IF MORE THAN 6 TAXES <> IF ALL TAXES EXEMPT ENTER X<>
     //COMMISSION PCT <> TOUR CODE<>
     //OR AMT<>
-    public class SabreManualBuildScreen1
+    internal class SabreManualBuildScreen1
     {
         string mask = "";
         IssueExpressTicketQuote quote;
@@ -41,7 +41,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        public bool Success => mask.IsMatch("FARE AMOUNT MASK - DEPRESS ENTER TO CONTINUE");
+        internal bool Success => mask.IsMatch("FARE AMOUNT MASK - DEPRESS ENTER TO CONTINUE");
 
         internal string[] Lines => mask.SplitOn("\n");
 

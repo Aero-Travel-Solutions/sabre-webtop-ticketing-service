@@ -2627,21 +2627,7 @@ namespace SabreWebtopTicketingService.Services
                 command += string.Join("/", quote.First().Sectors.Select(s => s.PQSectorNo));
                 //validating carrier
                 command += $"¥A{quote.First().PlatingCarrier}";
-                //faretype - IT
-                if (quote.First().FareType == FareType.IT)
-                {
-                    command += "¥UX*";
-                }
-                //faretype - BT
-                else if(quote.First().FareType == FareType.BT)
-                {
-                    command += "¥UB*";
-                }
-                //tourcode
-                if (!string.IsNullOrEmpty(quote.First().TourCode))
-                {
-                    command += $"¥{quote.First().TourCode}";
-                }
+
 
                 //Create manual price quote shell
                 string mask1 = await _sabreCommandService.
@@ -2661,31 +2647,116 @@ namespace SabreWebtopTicketingService.Services
                                             command,
                                             ticketingpcc);
 
-                if(screen1.AdditionalTaxPresent)
+                string mask3 = "";
+                if (screen1.AdditionalTaxPresent)
                 {
-                    SabreManualBuildAdditinalTax screen2 = HandleAdditionalTax(quote, mask2);
+                    //Additional taxes
+                    List<Tax> taxes = quote.
+                                        First().
+                                        Taxes.
+                                        GroupBy(grp => grp.Code).
+                                        Skip(6).
+                                        Select(tax => new Tax()
+                                        {
+                                            Code = tax.Key,
+                                            Amount = tax.Sum(s => s.Amount)
+                                        }).
+                                        ToList();
+
+                    int additionaltaxcount = (int)Math.Ceiling((decimal)(taxes.Count() / 22));
+
+                    for (int i = 0; i < additionaltaxcount; i++)
+                    {
+                        int skipcount = additionaltaxcount > 1 ? (22 * (additionaltaxcount - i)) : 0;
+                        List<Tax> selectedtaxes = taxes.
+                                                    Skip(skipcount).
+                                                    Take(22).
+                                                    ToList();
+
+                        mask3 = await HandleAdditionalTax(
+                                                                            selectedtaxes, 
+                                                                            mask2,
+                                                                            statefultoken,
+                                                                            pcc,
+                                                                            ticketingpcc);
+                    }
+                }
+
+                //connectionindicator, farebasis, NVA, NVB, baggage, farecalc
+                SabreManualBuildScreen3 screen3 = new SabreManualBuildScreen3(string.IsNullOrEmpty(mask3) ? mask2 : mask3, quote.First());
+                command = screen3.Command;
+
+                string mask4 = await _sabreCommandService.
+                                        ExecuteCommand(
+                                            statefultoken,
+                                            pcc,
+                                            command,
+                                            ticketingpcc);
+
+                if (quote.First().FareType == FareType.IT ||
+                   quote.First().FareType == FareType.BT ||
+                   !string.IsNullOrEmpty(quote.First().TourCode))
+                {
+                    command = "W¥I¥";
+                    //faretype - IT
+                    if (quote.First().FareType == FareType.IT)
+                    {
+                        command += "¥UX*";
+                    }
+                    //faretype - BT
+                    else if (quote.First().FareType == FareType.BT)
+                    {
+                        command += "¥UB*";
+                    }
+                    else
+                    {
+                        command += "¥UN*";
+                    }
+                    //tourcode
+                    if (!string.IsNullOrEmpty(quote.First().TourCode))
+                    {
+                        command += $"{quote.First().TourCode}";
+                    }
+
+                    string response = await _sabreCommandService.
+                                                ExecuteCommand(
+                                                    statefultoken,
+                                                    pcc,
+                                                    command,
+                                                    ticketingpcc);
                 }
             }
-            throw new NotImplementedException();
+
+
+            //saving the masks
+            string savemask = await _sabreCommandService.
+                                        ExecuteCommand(
+                                            statefultoken,
+                                            pcc,
+                                            "*A",
+                                            ticketingpcc);
+
+            //receieve and end transact
+            await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true);
         }
 
-        private SabreManualBuildAdditinalTax HandleAdditionalTax(IGrouping<string, IssueExpressTicketQuote> quote, string mask2)
+        private async Task<string> HandleAdditionalTax(
+                List<Tax> taxes, 
+                string mask2,
+                string statefultoken,
+                Pcc pcc,
+                string ticketingpcc)
         {
             SabreManualBuildAdditinalTax screen2 = new SabreManualBuildAdditinalTax(
                                                                 mask2,
-                                                                quote.
-                                                                    First().
-                                                                    Taxes.
-                                                                    GroupBy(grp => grp.Code).
-                                                                    Skip(6).
-                                                                    Select(tax => new Tax()
-                                                                    {
-                                                                        Code = tax.Key,
-                                                                        Amount = tax.Sum(s => s.Amount)
-                                                                    }).
-                                                                    ToList());
+                                                                taxes);
 
-            return screen2;
+            return await _sabreCommandService.
+                            ExecuteCommand(
+                                statefultoken,
+                                pcc,
+                                screen2.Command,
+                                ticketingpcc);
         }
 
         private static void ReconstructRequestFromKeys(IssueExpressTicketRQ request)

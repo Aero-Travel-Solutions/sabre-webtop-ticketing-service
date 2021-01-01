@@ -3,6 +3,7 @@
     public class QuoteSector
     {
         public int PQSectorNo { get; set; }
+        public bool ConnectionIndicator { get; set; }
         public string DepartureCityCode { get; set; }
         public string ArrivalCityCode { get; set; }
         public string DepartureDate { get; set; }

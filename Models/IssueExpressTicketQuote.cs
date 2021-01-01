@@ -42,6 +42,7 @@ namespace SabreWebtopTicketingService.Models
         public int SectorCount { get; set; }
         public string PlatingCarrier { get; set; }
         public string Route { get; set; }
+        public string FareCalculation { get; set; }
         public decimal PriceIt { get; set; }
         public string PriceCode { get; set; }
         public string TourCode { get; set; }
