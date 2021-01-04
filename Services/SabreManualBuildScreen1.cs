@@ -9,23 +9,24 @@ using System.Text;
 namespace SabreWebtopTicketingService.Services
 {
     //WI - TICKET FARE AMOUNT MASK - DEPRESS ENTER TO CONTINUE OR
-    //RESET AND CLEAR TO RETURN TO PNR
-    //TKT RECORD NBR <2>
+    //   RESET AND CLEAR TO RETURN TO PNR
+    //TKT RECORD NBR<1          >
     //PASSENGER TYPE ADT
 
+
     //ENDORSEMENT ENTER X IF SUBJ GOVT APRVL<>
-    //<>
+    //<                                                          >
+ 
+    //BASE FARE - CURRENCY CODE/AMOUNT<><        >
+    //      INTL EQUIV CURRENCY/AMOUNT<><        > IF APPLICABLE
 
 
-    //BASE FARE - CURRENCY CODE/AMOUNT <><>
-    //INTL EQUIV CURRENCY/AMOUNT IF APPLICABLE <><>
-
-    //TAX AMOUNT/CODE 1<><> TAX AMOUNT/CODE 2<><>
-    //TAX AMOUNT/CODE 3<><> TAX AMOUNT/CODE 4<><>
-    //TAX AMOUNT/CODE 5<><> TAX AMOUNT/CODE 6<><>
-    //ENTER X IF MORE THAN 6 TAXES <> IF ALL TAXES EXEMPT ENTER X<>
-    //COMMISSION PCT <> TOUR CODE<>
-    //OR AMT<>
+    //TAX AMOUNT/CODE 1 <       ><  >TAX AMOUNT/CODE 2 <       ><  >
+    //TAX AMOUNT/CODE 3 <       ><  >TAX AMOUNT/CODE 4 <       ><  >
+    //TAX AMOUNT/CODE 5 <       ><  >TAX AMOUNT/CODE 6 <       ><  >
+    //ENTER X IF MORE THAN 6 TAXES<> IF ALL TAXES EXEMPT ENTER X<>
+    //COMMISSION  PCT<> TOUR CODE<>
+    //OR     AMT<>
     internal class SabreManualBuildScreen1
     {
         string mask = "";
@@ -52,9 +53,9 @@ namespace SabreWebtopTicketingService.Services
                 string returncommand = "WI";
 
                 //TKT RECORD RECORD
-                if (Lines.Any(a => a.Contains("TKT RECORD RECORD")))
+                if (!Lines.Any(a => a.Contains(@"TKT RECORD NBR<")))
                 {
-                    string value = Lines.First(f => f.IsMatch(@"TKT\RECORD\sRECORD\s+<")).LastMatch(@"TKT\RECORD\sRECORD\s+<([\s\d]*)>");
+                    string value = Lines.First(f => f.IsMatch(@"TKT\sRECORD\s+NBR\s+<")).LastMatch(@"TKT\sRECORD\sNBR\s+<([\s\d]*)>");
                     returncommand += string.IsNullOrWhiteSpace(value) ? "<>" : $"<{value.Trim()}>";
                 }
 

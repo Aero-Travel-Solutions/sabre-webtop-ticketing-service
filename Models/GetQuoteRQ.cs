@@ -14,7 +14,6 @@ namespace SabreWebtopTicketingService.Models
         public string AgentID { get; set; }
         public string GDSCode { get; set; }
         public string Locator { get; set; }
-        public string AccessKey { get; set; }
         public List<SelectedPassengerData> SelectedPassengerKeys { get; set; }
         [JsonIgnore]
         public List<QuotePassenger> SelectedPassengers

@@ -1333,10 +1333,8 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //Populate request collections
-                if (!(request.IssueTicketQuoteKeys.IsNullOrEmpty() || request.IssueTicketEMDKeys.IsNullOrEmpty()))
-                {
-                    ReconstructRequestFromKeys(request);
-                }
+                ReconstructRequestFromKeys(request);
+
                 string ticketingpcc = request.Quotes.IsNullOrEmpty() ? GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) : request.Quotes.First().TicketingPCC;
                 if (string.IsNullOrEmpty(ticketingpcc))
                 {
@@ -2621,10 +2619,10 @@ namespace SabreWebtopTicketingService.Services
             {
                 string command = "W¥CTKT";
                 //pax type and quantity added
-                command += $"¥P{quote.First().Passenger.PaxType}¥" +
-                           $"N{string.Join("/", quote.Select(quo => quo.Passenger.NameNumber).Distinct())}";
+                command += $"¥P{quote.First().Passenger.PaxType}" +
+                           $"¥N{string.Join("/", quote.Select(quo => quo.Passenger.NameNumber).Distinct())}";
                 //sector no
-                command += string.Join("/", quote.First().Sectors.Select(s => s.PQSectorNo));
+                command += $"¥S{string.Join("/", quote.First().Sectors.Select(s => s.PQSectorNo))}";
                 //validating carrier
                 command += $"¥A{quote.First().PlatingCarrier}";
 
@@ -2774,7 +2772,6 @@ namespace SabreWebtopTicketingService.Services
                                     DeserializeObject<IssueExpressTicketQuote>(key));
                     });
 
-
                 var quotequery = from quo in request.Quotes
                                  let rqquo = requestquotes.First(f => quo.QuoteNo == f.QuoteNo &&
                                                                       quo.Passenger.PassengerName == f.Passenger.PassengerName &&
@@ -2831,7 +2828,9 @@ namespace SabreWebtopTicketingService.Services
                                                                 f.DocumentType == Models.DocumentType.Quote &&
                                                                 f.DocumentNumber == rqquo.QuoteNo).
                                                             MerchantFee,
-                                     ApplySupressITFlag = rqquo.ApplySupressITFlag
+                                     ApplySupressITFlag = rqquo.ApplySupressITFlag,
+                                     PriceType = rqquo.PriceType,
+                                     Taxes = rqquo.Taxes
                                  };
 
                 request.Quotes = quotequery.ToList();
@@ -3813,7 +3812,9 @@ namespace SabreWebtopTicketingService.Services
                                 TicketingPCC = quote.TicketingPCC,
                                 BCode = bcode,
                                 Endorsements = quote.Endorsements,
-                                ApplySupressITFlag = applySupressITFlag
+                                ApplySupressITFlag = applySupressITFlag,
+                                Taxes = quote.Taxes,
+                                PriceType = quote.PriceType
                             }
                         ).
                         EncodeBase64();

@@ -1,37 +1,27 @@
 {
-  "SessionID": "ece165f909d22dfa59bf9e4c8897627391c3f0894d5ccaff1051fe035ed14b13",
+  "SessionID": "b7a01e7f7b0ba905645728b61734c99069aa375567f90a828a25e364d6875918",
   "platform": 0,
   "gdsCode": "1W",
-  "locator": "IKYQCU",
+  "locator": "FLYYSD",
   "SelectedPassengerKeys": [
     {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvU0hBV04gTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
+      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvSEVOUlkgTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
       "paxType": "ADT",
-      "formOfPayment": { "paymentType": 0 }
-    },
-    {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvVklDVE9SIE1TVFIiLCJOYW1lTnVtYmVyIjoiMS4yIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
-      "paxType": "CHD",
-      "formOfPayment": { "paymentType": 0 }
-    },
-    {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvTUlDSE9OTkUgTUlTUyIsIk5hbWVOdW1iZXIiOiIyLjEiLCJQYXhUeXBlIjoiSU5GIiwiRE9CIjoiMDAwMS0wMS0wMVQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
-      "paxType": "INF",
       "formOfPayment": { "paymentType": 0 }
     }
   ],
   "selectedSectors": [
     {
       "sectorNo": 1,
-      "fareBasis": "O14SA"
+      "fareBasis": "NRHK"
     },
     {
       "sectorNo": 2,
-      "fareBasis": "O14SA"
+      "fareBasis": "NRHK"
     },
     {
       "sectorNo": 3,
-      "fareBasis": "NIQW"
+      "fareBasis": "NSA"
     }
   ],
   "agentID": "1234567891"
