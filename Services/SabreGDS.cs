@@ -3796,6 +3796,9 @@ namespace SabreWebtopTicketingService.Services
                             new IssueExpressTicketQuote()
                             {
                                 BaseFare = quote.BaseFare,
+                                BaseFareCurrency = quote.CurrencyCode ?? "AUD",
+                                EquivFare = quote.EquivFare,
+                                EquivFareCurrency = quote.EquivFareCurrencyCode,
                                 AgentCommissions = quote.AgentCommissions,
                                 AgentCommissionRate = quote.AgentCommissionRate,
                                 BSPCommissionRate = quote.BspCommissionRate,
