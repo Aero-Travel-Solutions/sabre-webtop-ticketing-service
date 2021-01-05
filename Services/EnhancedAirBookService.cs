@@ -1112,20 +1112,30 @@ namespace SabreWebtopTicketingService.Services
 
         private static List<QuoteSector> GetQuoteSectors(List<SectorData> sectors, PNR pnr, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)
         {
-            var validpqs = pqs.FareCalculationBreakdown.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment)).ToList();
+            List<QuoteSector> quoteSectors = new List<QuoteSector>();
 
-            return sectors.
-                    //Where(w => pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK").
-                    Select((s, index) => new QuoteSector()
-                    {
-                        PQSectorNo = s.SectorNo,
-                        DepartureCityCode = validpqs[index].Departure.AirportCode,
-                        ArrivalCityCode = validpqs[index].Departure.ArrivalAirportCode,
-                        DepartureDate = pnr.Sectors.First(f => f.SectorNo == s.SectorNo).DepartureDate,
-                        FareBasis = validpqs[index].FareBasis.Code,
-                        Baggageallowance = SabreSharedServices.GetBaggageDiscription(validpqs[index].FreeBaggageAllowance)
-                    }).
-                    ToList();
+            var validpqs = pqs.FareCalculationBreakdown.ToList();//.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment))
+
+            int index = 0;
+            foreach (var s in sectors)
+            {
+                bool isARUNK = pnr.Sectors.First(f => f.SectorNo == s.SectorNo).From == "ARUNK";
+                QuoteSector sec = new QuoteSector()
+                {
+                    PQSectorNo = s.SectorNo,
+                    DepartureCityCode = isARUNK ? "ARUNK" : validpqs[index].Departure.AirportCode,
+                    ArrivalCityCode = isARUNK ? "" : validpqs[index].Departure.ArrivalAirportCode,
+                    DepartureDate = isARUNK ? "" : pnr.Sectors.First(f => f.SectorNo == s.SectorNo).DepartureDate,
+                    FareBasis = isARUNK ? "" : validpqs[index].FareBasis.Code,
+                    Baggageallowance = isARUNK ? "" : SabreSharedServices.GetBaggageDiscription(validpqs[index].FreeBaggageAllowance)
+                };
+
+                quoteSectors.Add(sec);
+
+                if (!isARUNK) { index++; }
+            }
+
+            return quoteSectors;
         }
 
         private List<QuotePassenger> MatchPaxTypes(string quotepaxType, PNR pnr, List<QuotePassenger> quotepaxs)

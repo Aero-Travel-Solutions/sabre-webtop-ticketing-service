@@ -3559,10 +3559,12 @@ namespace SabreWebtopTicketingService.Services
             {
                 var secs = quote.
                             QuoteSectors.
-                            Select(s => pnr.Sectors.First(f =>
-                                        f.From == s.DepartureCityCode &&
-                                        f.To == s.ArrivalCityCode &&
-                                        f.DepartureDate == s.DepartureDate)).
+                            Where(w => w.DepartureCityCode != "ARUNK").
+                            Select(s => pnr.
+                                            Sectors.
+                                            First(f =>  f.From == s.DepartureCityCode &&
+                                                        f.To == s.ArrivalCityCode &&
+                                                        f.DepartureDate == s.DepartureDate)).
                             Select(s => new TPSector()
                             {
                                 From = s.From,
@@ -3594,7 +3596,7 @@ namespace SabreWebtopTicketingService.Services
                     Destination = quote.TurnaroundPoint,
                     DocumnentType = "TKT",
                     TourCode = quote.TourCode,
-                    Sectors = (from pqsecs in quote.QuoteSectors
+                    Sectors = (from pqsecs in quote.QuoteSectors.Where(w => w.DepartureCityCode != "ARUNK")
                                let sec = pnr.Sectors.First(f => f.SectorNo == pqsecs.PQSectorNo)
                                select new CalculateCommissionSectorRequest()
                                {

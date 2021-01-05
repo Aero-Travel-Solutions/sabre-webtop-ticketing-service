@@ -1,15 +1,35 @@
 {
-  "SessionID": "b7a01e7f7b0ba905645728b61734c99069aa375567f90a828a25e364d6875918",
-  "platform": 0,
-  "gdsCode": "1W",
-  "locator": "FLYYSD",
-  "SelectedPassengerKeys": [
-    {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvSEVOUlkgTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
-      "paxType": "ADT",
-      "formOfPayment": { "paymentType": 0 }
-    }
-  ],
-  "selectedSectors": [{ "sectorNo": 1 }, { "sectorNo": 2 }, { "sectorNo": 3 }],
-  "agentID": "1234567891"
+  "SessionID": "200d116adef3df75bd1612e3942b2606cd1b9ce64357a0e8609100be90b361cc",
+  "agentId": "1234567891",
+      "locator": "FNWWRQ",
+      "GDSCode": "1W",
+      "selectedSectors": [
+        { "sectorNo": 1 },
+        { "sectorNo": 2 },
+        { "sectorNo": 3 },
+        { "sectorNo": 4 },
+        { "sectorNo": 5 }
+      ],
+      "selectedPassengerKeys": [
+        {
+          "passengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvUVVFTk5JRSBNUyIsIk5hbWVOdW1iZXIiOiIxLjEiLCJQYXhUeXBlIjoiQURUIiwiRE9CIjoiMDAwMS0wMS0wMVQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
+          "formOfPayment": {
+            "paymentType": 0
+          }
+        },
+        {
+          "passengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvQURSSUFOIE1BU1RFUiIsIk5hbWVOdW1iZXIiOiIyLjEiLCJQYXhUeXBlIjoiQ0hEIiwiRE9CIjoiMjAxMi0xMC0wOFQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
+          "formOfPayment": {
+            "paymentType": 0
+          }
+        },
+        {
+          "passengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvWk9SQU4gTUFTVEVSIiwiTmFtZU51bWJlciI6IjMuMSIsIlBheFR5cGUiOiJJTkYiLCJET0IiOiIyMDIwLTA3LTAxVDAwOjAwOjAwIiwiRm9ybU9mUGF5bWVudCI6bnVsbCwiUGFzc3BvcnQiOm51bGwsIlByaWNlSXQiOjAuMCwiRE9CQ2hhbmdlZCI6ZmFsc2V9",
+          "formOfPayment": {
+            "paymentType": 1,
+            "cardNumber": "4065871304753211",
+            "expiryDate": "0722"
+          }
+        }
+      ]
 }
