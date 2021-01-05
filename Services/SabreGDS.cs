@@ -434,7 +434,7 @@ namespace SabreWebtopTicketingService.Services
             }
             finally
             {
-                if (token.IsLimitReached)
+                if (token != null && token.IsLimitReached)
                 {
                     await _sessionCloseService.SabreSignout(token.SessionID, pcc);
                 }
@@ -805,6 +805,7 @@ namespace SabreWebtopTicketingService.Services
                           ValidatingCarrier = platingcarrier,
                           SectorCount = request.SelectedSectors.Count,
                           Route = GetRoute(pnr.Sectors.Where(w=> request.SelectedSectors.Select(s=> s.SectorNo).Contains(w.SectorNo)).ToList()),
+                          PriceType = Models.PriceType.Manual
                       }).
                       ToList();
             return quotes;

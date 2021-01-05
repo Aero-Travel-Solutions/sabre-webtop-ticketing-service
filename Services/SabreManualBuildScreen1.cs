@@ -59,19 +59,23 @@ namespace SabreWebtopTicketingService.Services
                     returncommand += string.IsNullOrWhiteSpace(value) ? "<>" : $"<{value.Trim()}>";
                 }
 
-                //ENDORSEMENT
-                returncommand += quote.Endorsements.IsNullOrEmpty() ? "<>" : $"<{string.Join(" ", quote.Endorsements)}>";
-
                 //IF SUBJ GOVT APRVL
                 returncommand += "<>";
 
+                //ENDORSEMENT
+                returncommand += quote.Endorsements.IsNullOrEmpty() ? "<>" : $"<{string.Join(" ", quote.Endorsements)}>";
+
                 //BASE FARE
-                returncommand += $"<{quote.BaseFareCurrency}><{quote.BaseFare}";
+                returncommand += $"<{quote.BaseFareCurrency}><{quote.BaseFare}>";
 
                 //EQUIV FARE
                 if (quote.EquivFare.HasValue)
                 {
                     returncommand += $"<{quote.EquivFareCurrency}><{quote.EquivFare}";
+                }
+                else
+                {
+                    returncommand += "<><>";
                 }
 
                 //TAX
@@ -113,7 +117,7 @@ namespace SabreWebtopTicketingService.Services
                 returncommand += "<>";
 
                 //COMMISSION PCT
-                returncommand += quote.BSPCommissionRate.HasValue ? $"<{quote.BSPCommissionRate}>" : "<>";
+                returncommand += "<>";
 
                 //TOUR CODE
                 returncommand += string.IsNullOrEmpty(quote.TourCode) ? "<>" : $"<{quote.TourCode.Trim().ToUpper()}>";

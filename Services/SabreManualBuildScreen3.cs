@@ -5,6 +5,26 @@ using System.Linq;
 
 namespace SabreWebtopTicketingService.Services
 {
+    //WI - TICKET FARE INFO - DEPRESS ENTER WHEN COMPLETE
+    //                                 NOT VALID  NOT VALID      BAG
+    //                                  BEFORE      AFTER ALLOW
+    // 01 <O> MEL QF   29 V 01SEP OK<       >  <       >     <   >
+    //                         FARE BASIS/TKT DESIG <               >
+    // 02 < > HKG<>  <       >     <   >
+    //                         FARE BASIS/TKT DESIG <VOID           >
+    // 03 <O> SIN QF   36 L 15SEP OK   <       >  <       >     <   >
+    //        MEL FARE BASIS/TKT DESIG <               >
+
+
+
+
+
+    //FARE CALCULATION - LEAVE BLANK TO BUILD AUTO FARE CALCULATION
+    //<                                                             >
+    //<                                                             >
+    //<                                                             >
+    //<                                                             >
+
     internal class SabreManualBuildScreen3
     {
         string mask = "";
@@ -20,7 +40,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        internal bool Success => mask.IsMatch("FARE AMOUNT MASK - DEPRESS ENTER TO CONTINUE");
+        internal bool Success => mask.IsMatch("TICKET  FARE INFO - DEPRESS ENTER WHEN COMPLETE");
 
         internal string[] Lines => mask.SplitOn("\n");
 
@@ -34,21 +54,20 @@ namespace SabreWebtopTicketingService.Services
                                     Join("",
                                         quote.
                                         Sectors.
-                                        Where(w => !w.Arunk && !w.Void).
                                         Select(s => new
                                         {
-                                            connectionindicator = s.ConnectionIndicator ? "<X>" : "<>",
-                                            s.NVA,
-                                            s.NVB,
-                                            s.Baggageallowance,
-                                            s.FareBasis
+                                            connectionindicator = s.Arunk ?  "<>":"<O>",
+                                            NVA = s.Arunk ? "" : s.NVA,
+                                            NVB = s.Arunk ? "" : s.NVB,
+                                            Baggageallowance = s.Arunk ? "" : s.Baggageallowance,
+                                            FareBasis = s.Arunk ? "VOID" : s.FareBasis
                                         }).
                                         Select(s => $"<{s.connectionindicator}><{s.NVB}><{s.NVA}><{s.Baggageallowance}><{s.FareBasis}>"));
 
                 //FARE CALCULATION
                 if (Lines.Any(a => a.Contains("FARE CALCULATION")))
                 {
-                    returncommand += string.Join("", quote.FareCalculation.Trim().SplitInChunk(59).Select(s => $"<{s}>"));
+                    returncommand += string.Join("", quote.FareCalculation.Trim().SplitInChunk(246).Select(s => $"<{s}>"));
                 }
 
                 return returncommand;

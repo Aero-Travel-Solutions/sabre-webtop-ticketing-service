@@ -1,29 +1,20 @@
 {
-  "SessionID": "4fb13cb37b80cba6b2372f25f35e225d9d065057f6605d7ada5e35a45733f6ee",
-  "platform": 0,
+  "SessionID": "0d7ef07cc774481d02b248ef8a40b627d6c398f28c8cb8979e9408d59bab7aa7",
+  "agentID": "1234567891",      
+  "locator": "IYIZER",
   "gdsCode": "1W",
-  "locator": "IKYQCU",
-  "SelectedPassengerKeys": [
-    {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvU0hBV04gTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
-      "paxType": "ADT",
-      "formOfPayment": { "paymentType": 0 }
-    },
-    {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvVklDVE9SIE1TVFIiLCJOYW1lTnVtYmVyIjoiMS4yIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
-      "paxType": "CHD",
-      "formOfPayment": { "paymentType": 0 }
-    },
-    {
-      "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvTUlDSE9OTkUgTUlTUyIsIk5hbWVOdW1iZXIiOiIyLjEiLCJQYXhUeXBlIjoiSU5GIiwiRE9CIjoiMDAwMS0wMS0wMVQwMDowMDowMCIsIkZvcm1PZlBheW1lbnQiOm51bGwsIlBhc3Nwb3J0IjpudWxsLCJQcmljZUl0IjowLjAsIkRPQkNoYW5nZWQiOmZhbHNlfQ==",
-      "paxType": "INF",
-      "formOfPayment": { "paymentType": 0 }
-    }
-  ],
-  "selectedSectors": [
-    { "sectorNo": 1 },
-    { "sectorNo": 2 },
-    { "sectorNo": 3 }
-  ],
-  "agentID": "1234567891"
+      "selectedSectors": [
+        { "sectorNo": 1 },
+        { "sectorNo": 2 }
+      ],
+      "SelectedPassengerKeys": [
+        {
+          "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvSEVOUlkgTVIiLCJOYW1lTnVtYmVyIjoiMS4xIiwiUGF4VHlwZSI6IkFEVCIsIkRPQiI6IjAwMDEtMDEtMDFUMDA6MDA6MDAiLCJGb3JtT2ZQYXltZW50IjpudWxsLCJQYXNzcG9ydCI6bnVsbCwiUHJpY2VJdCI6MC4wLCJET0JDaGFuZ2VkIjpmYWxzZX0=",
+          "formOfPayment": { "paymentType": 1, "cardNumber": "4065871304753211", "expiryDate": "0722"  }
+        },
+        {
+          "PassengerKey": "eyJQYXNzZW5nZXJOYW1lIjoiQ0hVTkcvREFOSUVMIE1SIiwiTmFtZU51bWJlciI6IjEuMiIsIlBheFR5cGUiOiJBRFQiLCJET0IiOiIwMDAxLTAxLTAxVDAwOjAwOjAwIiwiRm9ybU9mUGF5bWVudCI6bnVsbCwiUGFzc3BvcnQiOm51bGwsIlByaWNlSXQiOjAuMCwiRE9CQ2hhbmdlZCI6ZmFsc2V9",
+          "formOfPayment": { "paymentType": 1, "cardNumber": "4065871304753211", "expiryDate": "0722"  }
+        }
+      ]
 }

@@ -64,19 +64,21 @@ namespace SabreWebtopTicketingService.Services
                         response.OTA_AirPriceRS, 
                         quoteRequest.SelectedPassengers,
                         quoteRequest.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
-                        pnr, 
+                        pnr,
+                        Models.PriceType.Published,
                         quotenos);
         }
 
         public async Task<List<Quote>> PricePNR(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc, bool IsPriceOverride)
         {
-            var response = await PricePNR(CreatePriceByPaxRequest(quoteRequest, pnr), token, pcc, ticketingpcc);
+            var response = await PricePNR(CreatePriceByPaxRequest(quoteRequest, pnr, IsPriceOverride), token, pcc, ticketingpcc);
 
             return ParseSabreQuote(
                             response.OTA_AirPriceRS, 
                             quoteRequest.SelectedPassengers, 
                             quoteRequest.SelectedSectors.Select(s=> new SectorData() { SectorNo = s.SectorNo}).ToList(),
-                            pnr);
+                            pnr,
+                            Models.PriceType.Published);
         }
 
         private static MessageHeader CreateHeader(string pcc, string ticketingpcc)
@@ -548,7 +550,8 @@ namespace SabreWebtopTicketingService.Services
                             response.OTA_AirPriceRS, 
                             request.SelectedPassengers,
                             request.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
-                            pnr);
+                            pnr,
+                            Models.PriceType.Manual);
         }
 
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
@@ -761,7 +764,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, List<QuotePassenger> paxsdata, List<SectorData> sectordata, PNR pnr, List<pnrquotedata> pqnos = null)
+        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, List<QuotePassenger> paxsdata, List<SectorData> sectordata, PNR pnr, Models.PriceType priceType, List<pnrquotedata> pqnos = null)
         {
             int index = pqnos.IsNullOrEmpty() ?
                             1 :
@@ -842,6 +845,9 @@ namespace SabreWebtopTicketingService.Services
                                       EquivFare = pqs.ItinTotalFare.EquivFare == null ?
                                                     0.00M :
                                                     decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
+                                      EquivFareCurrencyCode = pqs.ItinTotalFare.EquivFare == null ?
+                                                        "" :
+                                                        pqs.ItinTotalFare.EquivFare.CurrencyCode,
                                       QuoteSectors = sectors,
                                       CreditCardFee = string.IsNullOrEmpty(obfee) ? 0.00M : decimal.Parse(obfee),
                                       CreditCardFeeRate = string.IsNullOrEmpty(obfeerate) ?
@@ -961,6 +967,10 @@ namespace SabreWebtopTicketingService.Services
                     quotes.Add(multipaxquotes.Quote);
                 }
             }
+
+            //set PriceType
+            quotes.
+                ForEach(f => f.PriceType = priceType);
 
             //Order quotes
             quotes = quotes.
@@ -1105,7 +1115,7 @@ namespace SabreWebtopTicketingService.Services
             var validpqs = pqs.FareCalculationBreakdown.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment)).ToList();
 
             return sectors.
-                    Where(w => pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK").
+                    //Where(w => pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK").
                     Select((s, index) => new QuoteSector()
                     {
                         PQSectorNo = s.SectorNo,
