@@ -298,6 +298,58 @@ namespace SabreWebtopTicketingService.Services
             return pnr;
         }
 
+        //public async Task<string> GetPNRText(GetPNRRQ rq)
+        //{
+        //    SabreSession sabreSession = null;
+        //    try
+        //    {
+        //        //Obtain session
+        //        sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator, true);
+        //        string token = sabreSession.SessionID;
+        //        Task<string> pnrtext = _sabreCommandService.
+        //                                        GetPNRText(token, pcc, rq, pcc.PccCode);
+
+        //        Task<GetQuoteTextResponse> getQuoteTextResponse = GetQuoteText(new GetQuoteTextRequest()
+        //        {
+        //            GDSCode = rq.GDSCode,
+        //            Locator = rq.Locator,
+        //            Platform = rq.Platform,
+        //            EMDNo = 0
+        //        });
+
+        //        await Task.WhenAll(pnrtext, getQuoteTextResponse);
+
+        //        string text = pnrtext.Result;
+        //        GetQuoteTextResponse quotetextres = getQuoteTextResponse == null ? null : getQuoteTextResponse.Result;
+
+        //        if (quotetextres != null &&
+        //           string.IsNullOrEmpty(quotetextres.QuoteError) &&
+        //           !quotetextres.QuoteData.IsNullOrEmpty() &&
+        //           quotetextres.QuoteData.Any(a => !a.Expired))
+        //        {
+        //            text += Environment.NewLine;
+        //            text += Environment.NewLine;
+        //            text += Environment.NewLine;
+        //            text += string.
+        //                        Join(
+        //                            Environment.NewLine,
+        //                            quotetextres.
+        //                            QuoteData.
+        //                            Where(w => !w.Expired).
+        //                            Select(s => s.QuoteText));
+        //        }
+
+        //        return text.ReplaceAllSabreSpecialChar().Mask();
+        //    }
+        //    finally
+        //    {
+        //        if (sabreSession != null && string.IsNullOrEmpty(sabreSession.SessionID))
+        //        {
+        //            await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
+        //        }
+        //    }
+        //}
+
         public async Task<List<Quote>> BestBuy(GetQuoteRQ request, string contextID)
         {
             request.Validate();
