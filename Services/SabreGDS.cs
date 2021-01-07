@@ -1330,8 +1330,7 @@ namespace SabreWebtopTicketingService.Services
                     throw new ExpiredSessionException(request.SessionID, "50000401", "Invalid session.");
                 }
 
-                if (!((agent?.Agent?.Permission?.AllowTicketing ?? false) &&
-                      (user.Permissions?.AllowTicketing ?? false)))
+                if (!agent?.Agent?.Permission?.AllowTicketing ?? false)
                 {
                     throw new AeronologyException("50000020", "Ticketing access is not provided for your account. Please contact your consolidator to request access.");
                 }
@@ -2698,6 +2697,13 @@ namespace SabreWebtopTicketingService.Services
                 SabreManualBuildScreen4 screen4 = new SabreManualBuildScreen4(mask4, quote.First());
                 command = screen4.Command;
 
+                string mask5 = await _sabreCommandService.
+                                        ExecuteCommand(
+                                            statefultoken,
+                                            pcc,
+                                            command,
+                                            ticketingpcc);
+
                 if (quote.First().FareType == FareType.IT ||
                    quote.First().FareType == FareType.BT ||
                    !string.IsNullOrEmpty(quote.First().TourCode))
@@ -2766,7 +2772,7 @@ namespace SabreWebtopTicketingService.Services
 
         private static void ReconstructRequestFromKeys(IssueExpressTicketRQ request)
         {
-            if (request.IssueTicketQuoteKeys.IsNullOrEmpty())
+            if (!request.IssueTicketQuoteKeys.IsNullOrEmpty())
             {
                 List<IssueExpressTicketQuote> requestquotes = new List<IssueExpressTicketQuote>();
                 request.
@@ -2808,6 +2814,9 @@ namespace SabreWebtopTicketingService.Services
                                      PriceIt = quo.PriceIt,
                                      PartialIssue = quo.PartialIssue,
                                      BaseFare = rqquo.BaseFare,
+                                     BaseFareCurrency = rqquo.BaseFareCurrency,
+                                     EquivFare = rqquo.EquivFare,
+                                     EquivFareCurrency = rqquo.EquivFareCurrency,
                                      FiledFare = rqquo.FiledFare,
                                      PendingSfData = rqquo.PendingSfData,
                                      PlatingCarrier = rqquo.PlatingCarrier,
@@ -3450,7 +3459,7 @@ namespace SabreWebtopTicketingService.Services
                             Endorsements = q.PQ.Endosements,
                             EquivFare = q.PQ.BaseFare,
                             FareCalculation = q.PQ.FareCalculation,
-                            ROE = q.PQ.FareCalculation.LastMatch(@"ROE\s*([\d\.]+)", "1"),
+                            ROE = string.IsNullOrEmpty(q.PQ.FareCalculation) ? "1" : q.PQ.FareCalculation.LastMatch(@"ROE\s*([\d\.]+)", "1"),
                             QuotePassenger = new QuotePassenger()
                             {
                                 PassengerName = q.PQSummary.Passenger.LastName + "/" + q.PQSummary.Passenger.FisrtName,

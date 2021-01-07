@@ -69,7 +69,7 @@ namespace SabreWebtopTicketingService.Services
                 returncommand += $"<{quote.BaseFareCurrency}><{quote.BaseFare}>";
 
                 //EQUIV FARE
-                if (quote.EquivFare.HasValue)
+                if (quote.EquivFare.HasValue && quote.EquivFare.Value != 0.00M)
                 {
                     returncommand += $"<{quote.EquivFareCurrency}><{quote.EquivFare}";
                 }

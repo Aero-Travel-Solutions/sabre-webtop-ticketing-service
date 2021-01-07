@@ -86,7 +86,7 @@ namespace SabreWebtopTicketingService.Models
 
         public string FareCalculation => pq.
                             GetFirstElement("FareInfo").
-                            GetFirstElement("FareCalculation").
+                            GetFirstElement("FareCalculation")?.
                             Value;
 
 
@@ -252,7 +252,7 @@ namespace SabreWebtopTicketingService.Models
         //                    false :
         //                    pq.GetFirstElement("MiscellaneousInfo").GetFirstElement("TourNumber").GetAttribute("code").Value == "BT";
 
-        public string PriceCode => pq.GetFirstElement("FareInfo").GetFirstElement("FareComponent").GetFirstElement("CorpIdOrAcctCd") == null ?
+        public string PriceCode => pq.GetFirstElement("FareInfo").GetFirstElement("FareComponent")?.GetFirstElement("CorpIdOrAcctCd") == null ?
                                         "" :
                                         pq.GetFirstElement("FareInfo").GetFirstElement("FareComponent").GetFirstElement("CorpIdOrAcctCd").Value;
     }
