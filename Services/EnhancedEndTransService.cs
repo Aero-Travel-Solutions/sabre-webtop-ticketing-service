@@ -30,7 +30,7 @@ namespace SabreWebtopTicketingService.Services
             url = Constants.GetSoapUrl();
         }
 
-        public async Task EndTransaction(string token, string contextID, string receivedby, bool receiveChanges = false)
+        public async Task EndTransaction(string token, string contextID, string receivedby, bool receiveChanges = false, Models.Pcc webservicepcc = null)
         {
             EnhancedEndTransactionPortTypeClient client = null;
             try
@@ -38,7 +38,7 @@ namespace SabreWebtopTicketingService.Services
                 EnableTLS();
 
                 var user = sessionData.GetSessionUser(token);
-                var pcc = await pccSource.GetWebServicePccByGdsCode("1W", contextID, token);
+                var pcc = webservicepcc == null ? await pccSource.GetWebServicePccByGdsCode("1W", contextID, token) : webservicepcc;
 
                 client = new EnhancedEndTransactionPortTypeClient(GetBasicHttpBinding(), new EndpointAddress(url));
                 
@@ -82,25 +82,38 @@ namespace SabreWebtopTicketingService.Services
             catch (TimeoutException timeProblem)
             {
                 logger.LogError(timeProblem.Message);
-                client.Abort();
+                if (client != null)
+                {
+                    client.Abort();
+                }
                 throw new GDSException("30000025", "Sabre system timeout. Please try again!");
             }
             catch (FaultException unknownFault)
             {
                 logger.LogError(unknownFault.Message);
-                client.Abort();
+                if (client != null)
+                {
+                    client.Abort();
+                }
                 throw new GDSException("30000026", $"Sabre System Exception: {unknownFault.Message + (unknownFault.InnerException == null ? "" : Environment.NewLine + unknownFault.InnerException.Message)}");
             }
             catch (CommunicationException commProblem)
             {
                 logger.LogError(commProblem.Message);
-                client.Abort();
+                if (client != null)
+                {
+                    client.Abort();
+                }
                 throw new GDSException("30000027", "There is a communication issue with Sabre. Please try again later!");
             }
             catch (Exception ex)
             {
-                logger.LogError("End Transaction failed");
-                client.Abort();
+                logger.LogError("End Transaction failed.");
+                logger.LogError(ex);
+                if (client != null)
+                {
+                    client.Abort();
+                }
                 throw;
             }
         }

@@ -1,6 +1,7 @@
 ﻿using SabreWebtopTicketingService.Common;
 using SabreWebtopTicketingService.CustomException;
 using SabreWebtopTicketingService.Models;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SabreWebtopTicketingService.Services
@@ -56,18 +57,23 @@ namespace SabreWebtopTicketingService.Services
                                         Sectors.
                                         Select(s => new
                                         {
-                                            connectionindicator = s.Arunk ?  "<>":"<O>",
-                                            NVA = s.Arunk ? "" : s.NVA,
-                                            NVB = s.Arunk ? "" : s.NVB,
-                                            Baggageallowance = s.Arunk ? "" : s.Baggageallowance,
-                                            FareBasis = s.Arunk ? "VOID" : s.FareBasis
+                                            connectionindicator = s.DepartureCityCode == "ARUNK" ?  "":"O",
+                                            NVA = s.DepartureCityCode == "ARUNK" ? "" : s.NVA,
+                                            NVB = s.DepartureCityCode == "ARUNK" ? "" : s.NVB,
+                                            Baggageallowance = s.DepartureCityCode == "ARUNK" ? "" : s.Baggageallowance.RegexReplace(@"\s+","").Replace("KG", "K"),
+                                            FareBasis = s.DepartureCityCode == "ARUNK" ? "VOID" : s.FareBasis
                                         }).
                                         Select(s => $"<{s.connectionindicator}><{s.NVB}><{s.NVA}><{s.Baggageallowance}><{s.FareBasis}>"));
 
                 //FARE CALCULATION
                 if (Lines.Any(a => a.Contains("FARE CALCULATION")))
                 {
-                    returncommand += string.Join("", quote.FareCalculation.Trim().SplitInChunk(246).Select(s => $"<{s}>"));
+                    List<string> farecalcchunks = quote.FareCalculation.Trim().SplitInChunk(246);
+                    returncommand += string.Join("", farecalcchunks.Select(s => $"<{s}>"));
+                    for (int i = 0; i < 4 - farecalcchunks.Count; i++)
+                    {
+                        returncommand += "<>";
+                    }
                 }
 
                 return returncommand;

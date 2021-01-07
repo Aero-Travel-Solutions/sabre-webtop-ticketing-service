@@ -249,10 +249,13 @@ namespace SabreWebtopTicketingService.Services
 
             PNR pnr = new PNR();
             List<PNRAgent> agents = new List<PNRAgent>();
-            if (agent == null)
+            if (agent == null || string.IsNullOrEmpty(agent.AgentId))
             {
+                logger.LogInformation("Invoke GetAgents()");
                 agents = GetAgents(sessionid, bookingpcc);
             }
+
+            logger.LogInformation($"{agents.Count()} found.");
 
             if (agents.IsNullOrEmpty() || agents.Count() == 1)
             {
@@ -1362,7 +1365,7 @@ namespace SabreWebtopTicketingService.Services
                 //Stored cards
                 GetStoredCards(request, getReservationRS);
 
-                var pendingquotes = request.Quotes.Where(w => !w.FiledFare|| w.PriceType != Models.PriceType.Manual);
+                var pendingquotes = request.Quotes.Where(w => !w.FiledFare && w.PriceType != Models.PriceType.Manual);
                 var manualquotes = request.Quotes.Where(w => w.PriceType == Models.PriceType.Manual);
                 var pendingsfdata = request.Quotes.Where(a => a.PendingSfData);
 
@@ -2692,6 +2695,9 @@ namespace SabreWebtopTicketingService.Services
                                             command,
                                             ticketingpcc);
 
+                SabreManualBuildScreen4 screen4 = new SabreManualBuildScreen4(mask4, quote.First());
+                command = screen4.Command;
+
                 if (quote.First().FareType == FareType.IT ||
                    quote.First().FareType == FareType.BT ||
                    !string.IsNullOrEmpty(quote.First().TourCode))
@@ -2728,15 +2734,15 @@ namespace SabreWebtopTicketingService.Services
 
 
             //saving the masks
-            string savemask = await _sabreCommandService.
-                                        ExecuteCommand(
-                                            statefultoken,
-                                            pcc,
-                                            "*A",
-                                            ticketingpcc);
+            //string savemask = await _sabreCommandService.
+            //                            ExecuteCommand(
+            //                                statefultoken,
+            //                                pcc,
+            //                                "*A",
+            //                                ticketingpcc);
 
             //receieve and end transact
-            await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true);
+            await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true, pcc);
         }
 
         private async Task<string> HandleAdditionalTax(
@@ -2760,7 +2766,7 @@ namespace SabreWebtopTicketingService.Services
 
         private static void ReconstructRequestFromKeys(IssueExpressTicketRQ request)
         {
-            if (!request.IssueTicketQuoteKeys.IsNullOrEmpty())
+            if (request.IssueTicketQuoteKeys.IsNullOrEmpty())
             {
                 List<IssueExpressTicketQuote> requestquotes = new List<IssueExpressTicketQuote>();
                 request.
@@ -2807,7 +2813,7 @@ namespace SabreWebtopTicketingService.Services
                                      PlatingCarrier = rqquo.PlatingCarrier,
                                      Route = rqquo.Route,
                                      SectorCount = rqquo.SectorCount,
-                                     Sectors = rqquo.Sectors,
+                                     Sectors = quo.Sectors.IsNullOrEmpty() ? rqquo.Sectors: quo.Sectors,
                                      TotalFare = rqquo.TotalFare,
                                      TotalTax = rqquo.TotalTax,
                                      AgentCommissionRate = rqquo.AgentCommissionRate,
@@ -2831,7 +2837,8 @@ namespace SabreWebtopTicketingService.Services
                                                             MerchantFee,
                                      ApplySupressITFlag = rqquo.ApplySupressITFlag,
                                      PriceType = rqquo.PriceType,
-                                     Taxes = rqquo.Taxes
+                                     Taxes = rqquo.Taxes,
+                                     FareCalculation = quo.FareCalculation
                                  };
 
                 request.Quotes = quotequery.ToList();
@@ -3796,7 +3803,7 @@ namespace SabreWebtopTicketingService.Services
                             new IssueExpressTicketQuote()
                             {
                                 BaseFare = quote.BaseFare,
-                                BaseFareCurrency = quote.CurrencyCode ?? "AUD",
+                                BaseFareCurrency = string.IsNullOrEmpty(quote.CurrencyCode) ? "AUD" : quote.CurrencyCode,
                                 EquivFare = quote.EquivFare,
                                 EquivFareCurrency = quote.EquivFareCurrencyCode,
                                 AgentCommissions = quote.AgentCommissions,

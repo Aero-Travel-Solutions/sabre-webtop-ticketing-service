@@ -56,7 +56,6 @@ namespace SabreWebtopTicketingService.Models
         //Commision and fees
         public string ContextID { get; set; }
         public decimal? AgentCommissionRate => AgentCommissions?.FirstOrDefault()?.AgtCommRate;
-        [JsonIgnore]
         public decimal? BspCommissionRate { get; set; }
         [JsonIgnore]
         public decimal? GSTRate { get; set; }
