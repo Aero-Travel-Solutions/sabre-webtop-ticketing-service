@@ -154,6 +154,7 @@ namespace SabreWebtopTicketingService.Services
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
             if (!string.IsNullOrEmpty(request.AgentID))
             {
+                logger.LogInformation($"AgentID not null. {request.AgentID}");
                 agent = await getAgentData(
                             request.SessionID,
                             user.ConsolidatorId,
@@ -298,23 +299,21 @@ namespace SabreWebtopTicketingService.Services
             return pnr;
         }
 
-        //public async Task<string> GetPNRText(GetPNRRQ rq)
+        //public async Task<string> GetPNRText(SearchPNRRequest request, string contextID)
         //{
         //    SabreSession sabreSession = null;
         //    try
         //    {
         //        //Obtain session
-        //        sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator, true);
+        //        sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.SearchText, true);
         //        string token = sabreSession.SessionID;
         //        Task<string> pnrtext = _sabreCommandService.
-        //                                        GetPNRText(token, pcc, rq, pcc.PccCode);
+        //                                        GetPNRText(token, pcc, request.SearchText, pcc.PccCode);
 
         //        Task<GetQuoteTextResponse> getQuoteTextResponse = GetQuoteText(new GetQuoteTextRequest()
         //        {
-        //            GDSCode = rq.GDSCode,
-        //            Locator = rq.Locator,
-        //            Platform = rq.Platform,
-        //            EMDNo = 0
+        //            GDSCode = request.GDSCode,
+        //            Locator = request.SearchText
         //        });
 
         //        await Task.WhenAll(pnrtext, getQuoteTextResponse);
