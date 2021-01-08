@@ -254,13 +254,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 logger.LogInformation("Invoke GetAgents()");
                 agents = GetAgents(sessionid, bookingpcc);
-            }
-
-            logger.LogInformation($"{agents.Count()} found.");
-
-            if (agents.IsNullOrEmpty() || agents.Count() == 1)
-            {
-                if (!agents.IsNullOrEmpty())
+                if (agents.IsNullOrEmpty() || agents.Count() == 1)
                 {
                     agent = await getAgentData(
                                     sessionid,
@@ -269,6 +263,21 @@ namespace SabreWebtopTicketingService.Services
                                     pcc.PccCode);
                 }
 
+                logger.LogInformation($"{agents.Count()} found.");
+
+                if (agents.Count > 1)
+                {
+                    pnr.Agents = agents;
+                    return pnr;
+                }
+            }
+
+
+            logger.LogInformation($"Agent {agent.AgentId} found.");
+
+
+            if (agent != null && !string.IsNullOrEmpty(agent.AgentId))
+            {
                 pnr = ParseSabrePNR(response, sabresessionid, sessionid, includeQuotes, includeexpiredquote);
 
                 if (withpnrvalidation)
@@ -280,6 +289,17 @@ namespace SabreWebtopTicketingService.Services
                 if (!agents.IsNullOrEmpty())
                 {
                     pnr.Agents = agents;
+                }
+                else
+                {
+                    pnr.Agents = new List<PNRAgent>()
+                    {
+                        new PNRAgent()
+                        {
+                            AgentId = agent.AgentId,
+                            Name = agent.Name
+                        }
+                    };
                 }
 
                 //Save PNR in cache
@@ -2726,7 +2746,7 @@ namespace SabreWebtopTicketingService.Services
                 //taxes
                 List<Tax> taxes = quote.
                                     Taxes.
-                                    GroupBy(grp => grp.Code).
+                                    GroupBy(grp => grp.Code.Substring(0,2)).
                                     Select(s => new Tax()
                                     {
                                         Code = s.Key,
@@ -2755,19 +2775,26 @@ namespace SabreWebtopTicketingService.Services
                     command2 += $"¥{tourcodeprefix}*{quote.TourCode.Trim().ToUpper()}";
                 }
 
-                //farecalc
+                //farecalc  
+                //max char limit = 246
+                if(quote.FareCalculation.Trim().Count() > 246)
+                {
+                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
+                }
+
                 command2 += $"¥C{quote.FareCalculation.Trim().ToUpper()}";
 
                 //endorsements
+                //max char limit = 58
                 string endos = string.Join("/", quote.Endorsements).Trim().ToUpper();
-                if (endos.Length <= 58)
+                if (endos.Trim().Count() > 246)
                 {
+                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
+                }
+
                     command2 += $"¥EO/{endos}";
-                }
-                else
-                {
-                    command2 += $"¥EO/{endos.RegexReplace(@"\s*", "").Replace("NONREFUNDABLE", "NONREF").Replace("CARRIER", "CXR")}";
-                }
+                    //command2 += $"¥EO/{endos.RegexReplace(@"\s*", "").Replace("NONREFUNDABLE", "NONREF").Replace("CARRIER", "CXR").Substring(0, 58)}";
+
 
                 string response2 = await _sabreCommandService.
                                                 ExecuteCommand(
