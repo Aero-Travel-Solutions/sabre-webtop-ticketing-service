@@ -10,22 +10,20 @@ namespace SabreWebtopTicketingService.Common
 {
     public class SessionDataSource
     {
+        private readonly ILogger _logger;
         private readonly string CACHE_DB = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")??"stg"}-cache-data";
 
         private readonly AmazonDynamoDBClient dbClient;
 
         private readonly Table table;
 
-        public SessionDataSource()
+        public SessionDataSource(ILogger logger)
         {
             dbClient = new AmazonDynamoDBClient();
             table = Table.LoadTable(dbClient, CACHE_DB);
+            this._logger = logger;
         }
 
-        public string GetSessionId(string sessionID)
-        {
-            return sessionID;
-        }
 
         public async Task<User> GetSessionUser(string sessionID)
         {
@@ -40,6 +38,7 @@ namespace SabreWebtopTicketingService.Common
 
         private async Task<T> GetFromDb<T>(string key)
         {
+            _logger.LogInformation($"### RQ - GetFromDb('{key}') ###");
             var doc = await table.GetItemAsync(key);
 
             if (doc == null)
@@ -56,6 +55,7 @@ namespace SabreWebtopTicketingService.Common
                 return default(T);
             }
 
+            _logger.LogInformation($"### RS - {rs}') ###");
             return JsonSerializer.Deserialize<T>(rs);
         }
     }
