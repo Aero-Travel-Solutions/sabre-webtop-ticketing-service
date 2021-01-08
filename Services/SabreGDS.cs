@@ -152,6 +152,7 @@ namespace SabreWebtopTicketingService.Services
             SabreSession sabreSession = null;
             user = await session.GetSessionUser(request.SessionID);
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
+            agent = null;
             if (!string.IsNullOrEmpty(request.AgentID))
             {
                 logger.LogInformation($"AgentID not null. {request.AgentID}");

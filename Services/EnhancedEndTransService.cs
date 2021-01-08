@@ -37,7 +37,6 @@ namespace SabreWebtopTicketingService.Services
             {
                 EnableTLS();
 
-                var user = sessionData.GetSessionUser(token);
                 var pcc = webservicepcc == null ? await pccSource.GetWebServicePccByGdsCode("1W", contextID, token) : webservicepcc;
 
                 client = new EnhancedEndTransactionPortTypeClient(GetBasicHttpBinding(), new EndpointAddress(url));
