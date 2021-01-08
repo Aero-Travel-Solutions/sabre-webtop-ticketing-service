@@ -272,7 +272,7 @@ namespace SabreWebtopTicketingService.Services
                 }
             }
 
-
+            logger.LogInformation(sessionid);
             logger.LogInformation($"Agent {agent.AgentId} found.");
 
 
@@ -319,55 +319,123 @@ namespace SabreWebtopTicketingService.Services
             return pnr;
         }
 
-        //public async Task<string> GetPNRText(SearchPNRRequest request, string contextID)
-        //{
-        //    SabreSession sabreSession = null;
-        //    try
-        //    {
-        //        //Obtain session
-        //        sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.SearchText, true);
-        //        string token = sabreSession.SessionID;
-        //        Task<string> pnrtext = _sabreCommandService.
-        //                                        GetPNRText(token, pcc, request.SearchText, pcc.PccCode);
+        public async Task<string> GetPNRText(SearchPNRRequest request, string contextID)
+        {
+            SabreSession sabreSession = null;
+            try
+            {
+                //Obtain session
+                sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.SearchText, true);
+                string token = sabreSession.SessionID;
+                Task<string> pnrtext = _sabreCommandService.
+                                                GetPNRText(token, pcc, request.SearchText, pcc.PccCode);
 
-        //        Task<GetQuoteTextResponse> getQuoteTextResponse = GetQuoteText(new GetQuoteTextRequest()
-        //        {
-        //            GDSCode = request.GDSCode,
-        //            Locator = request.SearchText
-        //        });
+                Task<GetQuoteTextResponse> getQuoteTextResponse = GetQuoteText(new GetQuoteTextRequest()
+                {
+                    GDSCode = request.GDSCode,
+                    Locator = request.SearchText
+                }, 
+                sabreSession);
 
-        //        await Task.WhenAll(pnrtext, getQuoteTextResponse);
+                await Task.WhenAll(pnrtext, getQuoteTextResponse);
 
-        //        string text = pnrtext.Result;
-        //        GetQuoteTextResponse quotetextres = getQuoteTextResponse == null ? null : getQuoteTextResponse.Result;
+                string text = pnrtext.Result;
+                GetQuoteTextResponse quotetextres = getQuoteTextResponse == null ? null : getQuoteTextResponse.Result;
 
-        //        if (quotetextres != null &&
-        //           string.IsNullOrEmpty(quotetextres.QuoteError) &&
-        //           !quotetextres.QuoteData.IsNullOrEmpty() &&
-        //           quotetextres.QuoteData.Any(a => !a.Expired))
-        //        {
-        //            text += Environment.NewLine;
-        //            text += Environment.NewLine;
-        //            text += Environment.NewLine;
-        //            text += string.
-        //                        Join(
-        //                            Environment.NewLine,
-        //                            quotetextres.
-        //                            QuoteData.
-        //                            Where(w => !w.Expired).
-        //                            Select(s => s.QuoteText));
-        //        }
+                if (quotetextres != null &&
+                   string.IsNullOrEmpty(quotetextres.QuoteError) &&
+                   !quotetextres.QuoteData.IsNullOrEmpty() &&
+                   quotetextres.QuoteData.Any(a => !a.Expired))
+                {
+                    text += Environment.NewLine;
+                    text += Environment.NewLine;
+                    text += Environment.NewLine;
+                    text += string.
+                                Join(
+                                    Environment.NewLine,
+                                    quotetextres.
+                                    QuoteData.
+                                    Where(w => !w.Expired).
+                                    Select(s => s.QuoteText));
+                }
 
-        //        return text.ReplaceAllSabreSpecialChar().Mask();
-        //    }
-        //    finally
-        //    {
-        //        if (sabreSession != null && string.IsNullOrEmpty(sabreSession.SessionID))
-        //        {
-        //            await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
-        //        }
-        //    }
-        //}
+                return text.ReplaceAllSabreSpecialChar().Mask();
+            }
+            finally
+            {
+                if (sabreSession != null && string.IsNullOrEmpty(sabreSession.SessionID))
+                {
+                    await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
+                }
+            }
+        }
+
+        public async Task<GetQuoteTextResponse> GetQuoteText(GetQuoteTextRequest rq, SabreSession session = null)
+        {
+            SabreSession sabreSession = session;
+            try
+            {
+                //Obtain session
+                if (sabreSession == null)
+                {
+                    sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator, true);
+                }
+                string token = sabreSession.SessionID;
+
+                //GetPNR
+                GetReservationRS result = await _getReservationService.
+                                                    RetrievePNR(rq.Locator, token, pcc);
+
+                List<SegmentTypePNRBSegmentAir> airsegs = ((ReservationPNRB)result.Item).
+                                                                PassengerReservation?.
+                                                                Segments?.
+                                                                Segment?.
+                                                                Where(w => w.Item.GetType() == typeof(SegmentTypePNRBSegmentAir)).
+                                                                Select(s => (SegmentTypePNRBSegmentAir)s.Item).ToList();
+
+                if (airsegs.IsNullOrEmpty() ||
+                    !airsegs.Any(a => "HK,KK,KL,RR,TK,EK".Contains(a.ActionCode)))
+                {
+                    return null;
+                }
+
+                DateTime pcclocaldatetime = GetPCCLocalTime(token, result);
+
+                //Construct the response
+                return await _sabreCommandService.GetQuoteText(token, pcc, rq, agent?.AgentPCC, pcclocaldatetime);
+            }
+            finally
+            {
+                if (sabreSession != null && string.IsNullOrEmpty(sabreSession.SessionID))
+                {
+                    await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
+                }
+            }
+        }
+
+        private DateTime GetPCCLocalTime(string token, GetReservationRS result)
+        {
+            string pcccity = ((ReservationPNRB)result.Item).
+                                    PhoneNumbers.
+                                    FirstOrDefault().
+                                    CityCode;
+
+            string localdate = _sabreCommandService.
+                                    ExecuteCommand(token, pcc, $"T*{pcccity}").
+                                    GetAwaiter().
+                                    GetResult().
+                                    SplitOn("*").
+                                    Last().
+                                    Trim();
+
+            DateTime pcclocaldatetime = DateTime.
+                                            ParseExact(
+                                                localdate,
+                                                "HHmm ddMMM",
+                                                System.Globalization.CultureInfo.InvariantCulture);
+            return pcclocaldatetime;
+        }
+
 
         public async Task<List<Quote>> BestBuy(GetQuoteRQ request, string contextID)
         {

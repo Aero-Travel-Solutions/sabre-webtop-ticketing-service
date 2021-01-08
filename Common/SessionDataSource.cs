@@ -10,7 +10,7 @@ namespace SabreWebtopTicketingService.Common
 {
     public class SessionDataSource
     {
-        private readonly string CACHE_DB = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}-cache-data";
+        private readonly string CACHE_DB = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")??"stg"}-cache-data";
 
         private readonly AmazonDynamoDBClient dbClient;
 

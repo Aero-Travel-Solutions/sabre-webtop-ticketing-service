@@ -30,7 +30,7 @@ namespace SabreWebtopTicketingService.Common
 
             try
             {
-                _logger.LogInformation($"### DB cache get('{key}') ###");
+                _logger.LogInformation($"### RQ - DB cache get('{key}') ###");
 
                 var doc = await table.GetItemAsync(key);
 
@@ -41,6 +41,9 @@ namespace SabreWebtopTicketingService.Common
                 }
 
                 string jsonrs = doc.ToJson();
+
+                _logger.LogInformation($"### RS - DB cache get('{key}') => {jsonrs} ###");
+
 
                 return JsonSerializer.Deserialize<T>(jsonrs);
 
@@ -69,7 +72,7 @@ namespace SabreWebtopTicketingService.Common
 
                 if (result is { })
                 {
-                    _logger.LogInformation($"### DB cache get('{key}') => empty ###");
+                    _logger.LogInformation($"### DB cache set('{key}') => empty ###");
                     return default;
                 }
 
