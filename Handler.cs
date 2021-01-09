@@ -521,9 +521,124 @@ namespace SabreWebtopTicketingService
             return lambdaResponse;
         }
 
+        public async Task<LambdaResponse> GetPNRText(SearchPNRRequest rq)
+        {
+            logger.LogInformation("*****GetPNRText invoked *****");
+            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                }
+            };
+
+            string contextid = "";
+
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || string.IsNullOrEmpty(rq.SearchText) || string.IsNullOrEmpty(rq.AgentID))
+            {
+                lambdaResponse.statusCode = 400;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new GetPNRTextLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            else
+            {
+                contextid = $"1W-{rq.SearchText}-{rq.SessionID}-{Guid.NewGuid()}";
+                try
+                {
+                    string result = await sabreGDS.GetPNRText(rq, contextid);
+                    lambdaResponse.statusCode = 200;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new GetPNRTextLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>(),
+                                                        data = result
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+                catch (Exception ex)
+                {
+                    lambdaResponse.statusCode = 500;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new GetPNRTextLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>()
+                                                        {
+                                                            new WebtopError()
+                                                            {
+                                                                message = ex.Message,
+                                                                code = "UNKNOWN_ERROR",
+                                                                stack = ex.StackTrace.ToString()
+                                                            }
+                                                        },
+                                                        data = null
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+            }
+
+            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
+        }
+
         public async Task<LambdaResponse> ValidateCommission(GetQuoteRQ rq)
         {
-            logger.LogInformation("*****SearchPNR invoked *****");
+            logger.LogInformation("*****ValidateCommission invoked *****");
             logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()

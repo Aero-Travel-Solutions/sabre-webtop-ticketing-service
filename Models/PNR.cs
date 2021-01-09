@@ -14,8 +14,8 @@ namespace SabreWebtopTicketingService.Models
         public string CreatedDate { get; set; }
         public string BookingTTL { get; set; }
         public bool ExpiredQuotesExist { get; set; }
-        public bool UnconfirmedSectorsExist => Sectors.
-                                                Any(a => !(a.Status.IsNullOrEmpty() || "HK,KK,KL,RR,TK,EK".Contains(a.Status)));
+        public bool UnconfirmedSectorsExist => !Sectors.IsNullOrEmpty() && Sectors.
+                                                        Any(a => !(a.Status.IsNullOrEmpty() || "HK,KK,KL,RR,TK,EK".Contains(a.Status)));
         public List<PNRSector> Sectors { get; set; }
         public List<PNRPassengers> Passengers { get; set; }
         public List<PNRStoredCards> StoredCards { get; set; }
