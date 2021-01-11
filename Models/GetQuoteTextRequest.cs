@@ -1,14 +1,11 @@
 ﻿using FluentValidation;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Text;
 
 namespace SabreWebtopTicketingService.Models
 {
     public class GetQuoteTextRequest
     {
+        public string SessionID { get; set; }
         [DefaultValue("1W")]
         public string GDSCode { get; set; }
         public string Locator { get; set; }

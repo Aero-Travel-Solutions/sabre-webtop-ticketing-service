@@ -84,4 +84,13 @@ functions:
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
-      
+  GetPNRText:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::GetPNRText
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  GetQuoteText:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::GetQuoteText
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip    

@@ -70,7 +70,14 @@ namespace SabreWebtopTicketingService.Models
         public List<WebtopError> error { get; set; }
     }
 
-
+    public class GetQuoteTextLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public GetQuoteTextResponse data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
+ 
     public class MerchantLambdaResponse
     {
         public string ApprovalCode { get; set; }

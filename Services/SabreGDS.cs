@@ -233,9 +233,65 @@ namespace SabreWebtopTicketingService.Services
             return ticketingpcc;
         }
 
-        internal Task<List<WebtopWarning>> ValidateCommission(GetQuoteRQ rq, string contextid)
+        internal async Task<List<WebtopWarning>> ValidateCommission(ValidateCommissionRQ rq, string contextid)
         {
-            throw new NotImplementedException();
+            List<WebtopWarning> webtopWarnings = new List<WebtopWarning>();
+            user = await session.GetSessionUser(rq.SessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID);
+            agent = await getAgentData(
+                                    rq.SessionID,
+                                    user.ConsolidatorId,
+                                    rq.AgentID,
+                                    pcc.PccCode);
+            string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
+
+            List<CommissionData> oldcommdata = rq.
+                                                Quotes.
+                                                Select(q => new CommissionData()
+                                                {
+                                                    QuoteNo = q.QuoteNo,
+                                                    BspCommissionRate = q.BspCommissionRate,
+                                                    AgentCommissionRate = q.AgentCommissionRate
+                                                }).
+                                                ToList();
+
+            //workout fuel surcharge taxcode
+            GetFuelSurcharge(rq.Quotes);
+
+            //calculate commission
+            CalculateCommission(rq.Quotes, rq.Pnr, ticketingpcc, rq.SessionID);
+
+            //check for any missmatch in commission
+            rq.
+                Quotes.
+                ForEach(q => 
+                {
+                    CommissionData oldquotecomm = oldcommdata.First(f => f.QuoteNo == q.QuoteNo);
+
+                    if((oldquotecomm.BspCommissionRate.HasValue || q.BspCommissionRate.HasValue) &&
+                       oldquotecomm.BspCommissionRate.Value != q.BspCommissionRate.Value)
+                    {
+                        webtopWarnings.
+                            Add(new WebtopWarning()
+                            {
+                                code = "BSP_COMM_MISSMATCH",
+                                message = $"Bsp commission rate missmatch (system:{q.BspCommissionRate.Value}, user: {oldquotecomm.BspCommissionRate.Value}). Please verify before proceeding to ticketing."
+                            });
+                    }
+
+                    if((oldquotecomm.AgentCommissionRate.HasValue || q.AgentCommissionRate.HasValue) &&
+                       q.AgentCommissionRate.Value != oldquotecomm.AgentCommissionRate)
+                    {
+                        webtopWarnings.
+                            Add(new WebtopWarning()
+                            {
+                                code = "AGENT_COMM_MISSMATCH",
+                                message = $"Agency commission rate missmatch (system:{q.AgentCommissionRate.Value}, user: {oldquotecomm.AgentCommissionRate.Value}). Please verify before proceeding to ticketing."
+                            });
+                    }
+                });
+
+            return webtopWarnings;
         }
 
         public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
@@ -322,6 +378,7 @@ namespace SabreWebtopTicketingService.Services
 
         public async Task<string> GetPNRText(SearchPNRRequest request, string contextID)
         {
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
             SabreSession sabreSession = null;
             try
             {
@@ -335,8 +392,8 @@ namespace SabreWebtopTicketingService.Services
                 {
                     GDSCode = request.GDSCode,
                     Locator = request.SearchText
-                }, 
-                sabreSession);
+                },
+                contextID);
 
                 await Task.WhenAll(pnrtext, getQuoteTextResponse);
 
@@ -371,16 +428,15 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        public async Task<GetQuoteTextResponse> GetQuoteText(GetQuoteTextRequest rq, SabreSession session = null)
+        public async Task<GetQuoteTextResponse> GetQuoteText(GetQuoteTextRequest rq, string contextID)
         {
-            SabreSession sabreSession = session;
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, rq.SessionID);
+            SabreSession sabreSession = null;
             try
             {
                 //Obtain session
-                if (sabreSession == null)
-                {
-                    sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator, true);
-                }
+                sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator, true);
+
                 string token = sabreSession.SessionID;
 
                 //GetPNR
@@ -3928,7 +3984,7 @@ namespace SabreWebtopTicketingService.Services
                                         agent.Consolidator.CountryCode :
                                         "AU",
                     AgentIata = user?.Agent?.FinanceDetails?.IataNumber??"",
-                    BspCommission = quote.BspCommissionRate,
+                    BspCommission = quote.CAT35 ? quote.BspCommissionRate: default,
                     FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                         "CREDIT_CARD" :
                                         "CASH",
@@ -4328,6 +4384,13 @@ namespace SabreWebtopTicketingService.Services
 
             return !excludedrfiscs.Contains(rfisc);
         }
+    }
+
+    internal class CommissionData
+    {
+        public int QuoteNo { get; set; }
+        public decimal? AgentCommissionRate { get; set; }
+        public decimal? BspCommissionRate { get; set; }
     }
 
     internal class sectorinfo
