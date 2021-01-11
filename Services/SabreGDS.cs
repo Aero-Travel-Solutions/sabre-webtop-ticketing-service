@@ -3122,7 +3122,14 @@ namespace SabreWebtopTicketingService.Services
                                     DeserializeObject<IssueExpressTicketQuote>(key));
                     });
 
-                var quotequery = from quo in request.Quotes
+                IEnumerable<IssueExpressTicketQuote> quotequery = null;
+                if (request.Quotes.IsNullOrEmpty())
+                {
+                    quotequery = requestquotes;
+                }
+                else
+                {
+                    quotequery = from quo in request.Quotes
                                  let rqquo = requestquotes.First(f => quo.QuoteNo == f.QuoteNo &&
                                                                       quo.Passenger.PassengerName == f.Passenger.PassengerName &&
                                                                       quo.TotalTax == f.TotalTax)
@@ -3159,7 +3166,7 @@ namespace SabreWebtopTicketingService.Services
                                      PlatingCarrier = rqquo.PlatingCarrier,
                                      Route = rqquo.Route,
                                      SectorCount = rqquo.SectorCount,
-                                     Sectors = quo.Sectors.IsNullOrEmpty() ? rqquo.Sectors: quo.Sectors,
+                                     Sectors = quo.Sectors.IsNullOrEmpty() ? rqquo.Sectors : quo.Sectors,
                                      TotalFare = rqquo.TotalFare,
                                      TotalTax = rqquo.TotalTax,
                                      AgentCommissionRate = rqquo.AgentCommissionRate,
@@ -3186,6 +3193,7 @@ namespace SabreWebtopTicketingService.Services
                                      Taxes = rqquo.Taxes,
                                      FareCalculation = quo.FareCalculation
                                  };
+                }
 
                 request.Quotes = quotequery.ToList();
             }
