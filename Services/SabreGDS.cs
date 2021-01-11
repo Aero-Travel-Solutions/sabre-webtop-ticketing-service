@@ -325,6 +325,7 @@ namespace SabreWebtopTicketingService.Services
                 if (agents.Count > 1)
                 {
                     pnr.Agents = agents;
+                    pnr.BookedPCC = bookingpcc;
                     return pnr;
                 }
             }
