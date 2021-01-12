@@ -4211,7 +4211,8 @@ namespace SabreWebtopTicketingService.Services
                 BookingPcc = pnr.BookedPCC,
                 PlatingCarrier = quote.ValidatingCarrier,
                 Cabin = secs.First().Cabin,
-                BookingClass = secs.Select(s => s.Class).Distinct().ToArray()
+                BookingClass = secs.Select(s => s.Class).Distinct().ToArray(),
+                FareBasis = quote.QuoteSectors.Select(pqsec => pqsec.FareBasis).Distinct().ToArray()
             };
 
             PlateRuleTicketingPccResponse res = await _ticketingPccDataSource.GetTicketingPccFromRules(rq, sessionID);

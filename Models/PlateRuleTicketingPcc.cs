@@ -19,11 +19,13 @@ namespace SabreWebtopTicketingService.Models
         [JsonPropertyName("plating_carrier")]
         public string PlatingCarrier { get; set; }
 
-        [JsonPropertyName("Cabin")]
+        [JsonPropertyName("cabin")]
         public string Cabin { get; set; }
 
         [JsonPropertyName("booking_class")]
         public string[] BookingClass { get; set; }
+        [JsonPropertyName("fare_basis")]
+        public string[] FareBasis { get; set; }
     }
 
     public class PlateRuleTicketingPccResponse
