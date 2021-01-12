@@ -1542,7 +1542,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 agentpcc = (await getagentpccs(user?.AgentId, pcc.PccCode, request.SessionID)).FirstOrDefault();
-                user.Agent.CustomerNo = agent.CustomerNo;
+                if (user?.Agent != null) { user.Agent.CustomerNo = agent.CustomerNo; }
 
                 //Obtain SOAP session
                 sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
