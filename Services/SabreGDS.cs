@@ -1515,6 +1515,13 @@ namespace SabreWebtopTicketingService.Services
                                     user.ConsolidatorId,
                                     request.AgentID,
                                     pcc.PccCode);
+
+            if(agent != null)
+            {
+                logger.LogInformation($"AgentID: {agent.AgentId}");
+                logger.LogInformation($"Consolidator ID: {agent.ConsolidatorId}");
+            }
+
             string ticketingprinter = GetTicketingPrinter(pcc?.TicketPrinterAddress, pcc.PccCode);
             string printerbypass = GetPrinterByPass(string.IsNullOrEmpty(pcc?.CountryCode) ? "" : pcc?.CountryCode.SplitOn("|").First(), pcc.PccCode);
 
