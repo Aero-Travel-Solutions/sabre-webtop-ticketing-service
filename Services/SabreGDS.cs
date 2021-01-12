@@ -1,6 +1,7 @@
 ﻿using GetElectronicDocumentService;
 using GetReservation;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Polly;
 using SabreWebtopTicketingService.Common;
@@ -83,7 +84,9 @@ namespace SabreWebtopTicketingService.Services
             INotificationHelper notificationHelper,
             IMerchantDataSource _merchantDataSource,
             IBCodeDataSource _bCodeDataSource,
-            IBackofficeDataSource backofficeDataSource)
+            IBackofficeDataSource backofficeDataSource,
+            IOptions<BackofficeOptions> backofficeOptions,
+            IOrdersTransactionDataSource ordersTransactionDataSource)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -111,6 +114,8 @@ namespace SabreWebtopTicketingService.Services
             enhancedEndTransService = _enhancedEndTransService;
             voidTicketService = _voidTicketService;
             updatePNRService = _updatePNRService;
+            _backofficeOptions = backofficeOptions?.Value;
+            _ordersTransactionDataSource = ordersTransactionDataSource;
             this.session = session;
         }
 

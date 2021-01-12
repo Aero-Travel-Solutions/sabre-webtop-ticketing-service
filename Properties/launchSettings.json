@@ -3,13 +3,16 @@
     "SabreWebtopTicketingService": {
       "commandName": "Executable",
       "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-3.1.exe",
-      "commandLineArgs": "--port 5050"
-    },
-    "Mock Lambda Test Tool": {
-      "commandName": "Executable",
       "commandLineArgs": "--port 5050",
-      "workingDirectory": ".\\bin\\$(Configuration)\\netcoreapp3.1",
-      "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-3.1.exe"
+      "environmentVariables": {
+        "ENVIRONMENT": "dev"
+      }
+      },
+      "Mock Lambda Test Tool": {
+        "commandName": "Executable",
+        "commandLineArgs": "--port 5050",
+        "workingDirectory": ".\\bin\\$(Configuration)\\netcoreapp3.1",
+        "executablePath": "C:\\Users\\%USERNAME%\\.dotnet\\tools\\dotnet-lambda-test-tool-3.1.exe"
+      }
     }
-  }
 }

@@ -14,6 +14,7 @@ using SabreWebtopTicketingService.PollyPolicies;
 using System.Net.Http;
 using Amazon.S3;
 using Amazon.SQS;
+using SabreWebtopTicketingService.Models;
 
 namespace SabreWebtopTicketingService
 {
@@ -33,9 +34,11 @@ namespace SabreWebtopTicketingService
             //enabled GZip response compression
             //services.AddResponseCompression();
 
+            services.AddOptions();
+            services.Configure<BackofficeOptions>(Configuration.GetSection("config"));
+
             //AWS configuration
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
-
 
             services.AddAWSService<IAmazonDynamoDB>();
             services.AddAWSService<IAmazonS3>();
@@ -111,6 +114,7 @@ namespace SabreWebtopTicketingService
         {
             return new ConfigurationBuilder()
                 .AddEnvironmentVariables()
+                .AddSystemsManager($"/{Environment.GetEnvironmentVariable("ENVIRONMENT")}/backoffice", TimeSpan.FromMinutes(15))
                 .Build();
         }
     }    
