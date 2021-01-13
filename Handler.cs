@@ -492,7 +492,7 @@ namespace SabreWebtopTicketingService
             {
                 contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
                 IssueExpressTicketRS result = await sabreGDS.IssueExpressTicket(rq, contextid);
-                lambdaResponse.statusCode = result.Tickets.IsNullOrEmpty() ? 500 : 00;
+                lambdaResponse.statusCode = result.Tickets.IsNullOrEmpty() ? 500 : 200;
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
