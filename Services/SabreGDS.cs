@@ -1571,12 +1571,18 @@ namespace SabreWebtopTicketingService.Services
                 pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, true, true);
 
                 //Check if the filed fares are partially issued
-                //var filedfares = request.Quotes.Where(w => w.FiledFare).ToList();
-                //if(!filedfares.IsNullOrEmpty())
-                //{
-                //    filedfares.
-                //        ForEach(f=> )
-                //}
+                var filedfares = request.Quotes.Where(w => w.FiledFare).GroupBy(g=> g.QuoteNo).ToList();
+                if (!filedfares.IsNullOrEmpty())
+                {
+                    filedfares.
+                        ForEach(f =>
+                        {
+                            if (pnr.Quotes.Where(w => w.QuoteNo == f.Key).Count() > f.Count())
+                            {
+                                f.Select(s => s).ToList().ForEach(f => f.PartialIssue = true);
+                            }
+                        });
+                }
 
                 //Stored cards
                 GetStoredCards(request, getReservationRS);

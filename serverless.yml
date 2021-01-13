@@ -1,4 +1,4 @@
-service: sabrewebtopticketing
+﻿service: sabrewebtopticketing
 
 provider:
   name: aws
@@ -9,6 +9,7 @@ provider:
     APP_VERSION: ${opt:appversion, '0.0.0.0'}
     SABRE_URL: ${self:custom.sabre_soap_uri.${self:provider.stage}}
     REST_URL: ${self:custom.sabre_rest_uri.${self:provider.stage}}
+    SNS_TOPIC_TICKETS_ISSUED: ${self:custom.sns_topic_tickets_issued.${self:provider.stage}}
     ENVIRONMENT: ${self:provider.stage}
   tracing:
     lambda: true
@@ -42,7 +43,11 @@ custom:
     dev: ${ssm:/dev/sabre_rest/uri}
     stg: ${ssm:/stg/sabre_rest/uri}
     prod: ${ssm:/prod/sabre_rest/uri} 
-  
+  sns_topic_tickets_issued:
+    dev: ${​​​​​ssm:/dev/sns/tickets-issued}​​​​​
+    stg: ${​​​​​ssm:/stg/sns/tickets-issued}​​​​​
+    prod: ${​​​​​ssm:/prod/sns/tickets-issued}​​​​​
+
 functions:
   SearchPNR:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::SearchPNR
