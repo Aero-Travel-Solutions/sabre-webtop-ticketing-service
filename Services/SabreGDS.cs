@@ -1179,7 +1179,7 @@ namespace SabreWebtopTicketingService.Services
         {
             List<DataAgent> agents = _agentPccDataSource.RetrieveAgents(user?.ConsolidatorId, sessionid).GetAwaiter().GetResult();
             var agentlist = agents.
-                                Where(w => w.pcc_code == bookingpcc).
+                                Where(w => w.pcc_code == bookingpcc && w.gds_code == "1W").
                                 DistinctBy(d=> d.agent_id).
                                 Select(agt => new PNRAgent()
                                 {
@@ -1569,6 +1569,14 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS getReservationRS = null;
                 getReservationRS = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
                 pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, true, true);
+
+                //Check if the filed fares are partially issued
+                //var filedfares = request.Quotes.Where(w => w.FiledFare).ToList();
+                //if(!filedfares.IsNullOrEmpty())
+                //{
+                //    filedfares.
+                //        ForEach(f=> )
+                //}
 
                 //Stored cards
                 GetStoredCards(request, getReservationRS);
