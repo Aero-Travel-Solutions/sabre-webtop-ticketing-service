@@ -4246,6 +4246,8 @@ namespace SabreWebtopTicketingService.Services
                                 Cabin = s.CabinDescription,
                                 Farebasis = quote.QuoteSectors.First(f => f.PQSectorNo == s.SectorNo).FareBasis
                             }).
+                            GroupBy(grp => new {grp.Carrier, grp.Farebasis).
+                            Select(s=> s.First()).
                             ToList()
             };
 

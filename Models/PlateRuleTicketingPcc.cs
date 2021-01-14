@@ -26,9 +26,13 @@ namespace SabreWebtopTicketingService.Models
 
     public class SectorData
     {
+        [JsonPropertyName("carrier")]
         public string Carrier { get; set; }
+        [JsonPropertyName("cabin")]
         public string Cabin { get; set; }
+        [JsonPropertyName("booking_class")]
         public string BookingClass { get; set; }
+        [JsonPropertyName("fare_basis")]
         public string Farebasis { get; set; }
     }
 
