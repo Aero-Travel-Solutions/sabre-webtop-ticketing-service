@@ -264,7 +264,7 @@ namespace SabreWebtopTicketingService.Services
             GetFuelSurcharge(rq.Quotes);
 
             //calculate commission
-            CalculateCommission(rq.Quotes, rq.Pnr, ticketingpcc, rq.SessionID);
+            CalculateCommission(rq.Quotes, rq.Pnr, ticketingpcc, rq.SessionID, agent);
 
             //check for any missmatch in commission
             rq.
@@ -341,7 +341,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (agent != null && !string.IsNullOrEmpty(agent.AgentId))
             {
-                pnr = ParseSabrePNR(response, sabresessionid, sessionid, includeQuotes, includeexpiredquote);
+                pnr = ParseSabrePNR(response, sabresessionid, sessionid, agent, includeQuotes, includeexpiredquote);
 
                 if (withpnrvalidation)
                 {
@@ -562,7 +562,7 @@ namespace SabreWebtopTicketingService.Services
                     GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                     //Parse PNR++
-                    pnr = ParseSabrePNR(result, token.SessionID, sessionID);
+                    pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent);
 
                     //Get stored card data
                     var maskedcards = request.
@@ -707,7 +707,7 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                 //Parse PNR++
-                pnr = ParseSabrePNR(result, token.SessionID, sessionID);
+                pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent);
 
                 //Get stored card data
                 var maskedcards = request.
@@ -768,7 +768,7 @@ namespace SabreWebtopTicketingService.Services
                 GetFuelSurcharge(quotes);
 
                 //Calculate Commission
-                CalculateCommission(quotes, pnr, ticketingpcc, sessionID);
+                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent);
 
                 //Agent Price
                 quotes.
@@ -787,7 +787,7 @@ namespace SabreWebtopTicketingService.Services
                 quotes.
                     ForEach(quote =>
                     {
-                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID).GetAwaiter().GetResult();
+                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
                         quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote);
                         quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
                     });
@@ -884,7 +884,7 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                 //Parse PNR++
-                pnr = ParseSabrePNR(result, token.SessionID, sessionID);
+                pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent);
 
                 //Get stored card data
                 var maskedcards = request.
@@ -945,7 +945,7 @@ namespace SabreWebtopTicketingService.Services
                 GetFuelSurcharge(quotes);
 
                 //Calculate Commission
-                CalculateCommission(quotes, pnr, ticketingpcc, sessionID);
+                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent);
 
                 //Agent Price
                 quotes.
@@ -964,7 +964,7 @@ namespace SabreWebtopTicketingService.Services
                 quotes.
                     ForEach(quote =>
                     {
-                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID).GetAwaiter().GetResult();
+                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
                         quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote);
                         quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
                     });
@@ -1199,7 +1199,7 @@ namespace SabreWebtopTicketingService.Services
             return agentlist;
         }
 
-        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, bool includeQuotes = false, bool includeexpiredquote = false)
+        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, Agent agent, bool includeQuotes = false, bool includeexpiredquote = false)
         {
             DateTime? pcclocaldatetime = null;
             SabrePNR sabrepnr = new SabrePNR(result);
@@ -1219,7 +1219,7 @@ namespace SabreWebtopTicketingService.Services
                                             System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid);
+            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid, agent);
 
             pnr.LastQuoteNumber = pnr.Quotes.IsNullOrEmpty() ? 0 : pnr.Quotes.OrderBy(l => l.QuoteNo).Last().QuoteNo;
             return pnr;
@@ -1294,7 +1294,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid)
+        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid, Agent agent)
         {
             List<PNRSector> secs = GetSectors(sabrepnr.AirSectors, sabrepnr.ArunkSectors);
             List<PNRPassengers> paxs = GetPassengers(sabrepnr.Passengers);
@@ -1352,7 +1352,7 @@ namespace SabreWebtopTicketingService.Services
             if (includeQuotes)
             {
                 //Quote
-                pnr.Quotes = GetQuotes(sabrepnr.PriceQuote, pnr, includeexpiredquotes, pcclocaldatetime.Value, token, sessionid);
+                pnr.Quotes = GetQuotes(sabrepnr.PriceQuote, pnr, includeexpiredquotes, pcclocaldatetime.Value, sessionid, agent);
             }
 
             //adding quote form of payments to stored cards
@@ -1482,6 +1482,7 @@ namespace SabreWebtopTicketingService.Services
                             Equipment = s.EquipmentType,
                             Mileage = s.Mileage,
                             Cabin = s.Cabin.CabinCode,
+                            CabinDescription = string.IsNullOrEmpty(s.Cabin.CabinShortName) ? s.Cabin.CabinName : s.Cabin.CabinShortName,
                             ArrivalDate = s.ArrivalDateTime.GetISODateString(),
                             ArrivalTime = s.ArrivalDateTime.GetISOTimeString(),
                             OperatingCarrier = s.OperatingAirlineCode,
@@ -1568,7 +1569,7 @@ namespace SabreWebtopTicketingService.Services
                 //Retrieve PNR
                 GetReservationRS getReservationRS = null;
                 getReservationRS = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
-                pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, true, true);
+                pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, true, true);
 
                 //Check if the filed fares are partially issued
                 var filedfares = request.Quotes.Where(w => w.FiledFare).GroupBy(g=> g.QuoteNo).ToList();
@@ -2686,7 +2687,7 @@ namespace SabreWebtopTicketingService.Services
             bool notourcode = quotes.All(a => string.IsNullOrEmpty(a.TourCode));
 
             //Get commission data
-            CalculateCommission(quotes, pnr, ticketingpcc, request.SessionID);
+            CalculateCommission(quotes, pnr, ticketingpcc, request.SessionID, agent);
 
             //commission or fee check
             if (!pendingquotes.Select(q => q.BSPCommissionRate).All(quotes.Select(s => s.BspCommissionRate).Contains))
@@ -3797,7 +3798,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sabresessionID, string sessionid)
+        private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sessionid, Agent agent)
         {
             if (sabrequotes == null) { return new List<Quote>(); }
 
@@ -3895,7 +3896,8 @@ namespace SabreWebtopTicketingService.Services
                                         ToList(),
                                     pnr,
                                     pcc.PccCode,
-                                    sessionid);
+                                    sessionid,
+                                    agent);
             }
             catch { } //Errors will not be thrown as we need file -ares with errors to be displayed
 
@@ -3935,7 +3937,7 @@ namespace SabreWebtopTicketingService.Services
                     ToList();
         }
 
-        private void CalculateCommission(List<Quote> quotes, PNR pnr, string ticketingpcc, string sessionID)
+        private void CalculateCommission(List<Quote> quotes, PNR pnr, string ticketingpcc, string sessionID, Agent agent)
         {
             var calculateCommissionTasks = new List<Task>();
             CancellationToken ct = new CancellationToken();
@@ -4169,7 +4171,7 @@ namespace SabreWebtopTicketingService.Services
 
             Parallel.ForEach(issuablequotes, options, (quote) =>
             {
-                quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID).GetAwaiter().GetResult();
+                quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
                 quote.Expired = quote.Expired || string.IsNullOrEmpty(quote.TicketingPCC);
                 quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote, quote.QuotePassenger.FormOfPayment.BCode, applySupressITFlag);
             });
@@ -4214,7 +4216,7 @@ namespace SabreWebtopTicketingService.Services
         }
 
 
-        private async Task<string> GetPlateManagementPCC(Quote quote, PNR pnr, string sessionID)
+        private async Task<string> GetPlateManagementPCC(Quote quote, PNR pnr, string sessionID, Agent agent)
         {
             List<PNRSector> secs = quote.
                                     QuoteSectors.
@@ -4231,14 +4233,20 @@ namespace SabreWebtopTicketingService.Services
 
             PlateRuleTicketingPccRequest rq = new PlateRuleTicketingPccRequest()
             {
-                GdsCode = "1W",
+                GdsCode = pnr.GDSCode,
                 AgentId = agent?.AgentId,
                 ConsolidatorId = agent?.ConsolidatorId ?? "acn",
                 BookingPcc = pnr.BookedPCC,
                 PlatingCarrier = quote.ValidatingCarrier,
-                Cabin = secs.First().Cabin,
-                BookingClass = secs.Select(s => s.Class).Distinct().ToArray(),
-                FareBasis = quote.QuoteSectors.Select(pqsec => pqsec.FareBasis).Distinct().ToArray()
+                Sectors = secs.
+                            Select(s => new Models.SectorData()
+                            {
+                                Carrier = s.Carrier,
+                                BookingClass = s.Class,
+                                Cabin = s.CabinDescription,
+                                Farebasis = quote.QuoteSectors.First(f => f.PQSectorNo == s.SectorNo).FareBasis
+                            }).
+                            ToList()
             };
 
             PlateRuleTicketingPccResponse res = await _ticketingPccDataSource.GetTicketingPccFromRules(rq, sessionID);

@@ -22,6 +22,7 @@ namespace SabreWebtopTicketingService.Models
         public string OperatingCarrier { get; set; }
         public string OperatingCarrierFlightNo { get; set; }
         public string Cabin { get; set; }
+        public string CabinDescription { get; set; }
         public string AirlineRecordLocator { get; set; }
         public bool CodeShare { get; set; }
         public string MarriageGroup { get; set; }

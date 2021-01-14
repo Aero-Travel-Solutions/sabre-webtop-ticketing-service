@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace SabreWebtopTicketingService.Models
@@ -19,13 +20,16 @@ namespace SabreWebtopTicketingService.Models
         [JsonPropertyName("plating_carrier")]
         public string PlatingCarrier { get; set; }
 
-        [JsonPropertyName("cabin")]
-        public string Cabin { get; set; }
+        [JsonPropertyName("sectors")]
+        public List<SectorData> Sectors { get; set; }
+    }
 
-        [JsonPropertyName("booking_class")]
-        public string[] BookingClass { get; set; }
-        [JsonPropertyName("fare_basis")]
-        public string[] FareBasis { get; set; }
+    public class SectorData
+    {
+        public string Carrier { get; set; }
+        public string Cabin { get; set; }
+        public string BookingClass { get; set; }
+        public string Farebasis { get; set; }
     }
 
     public class PlateRuleTicketingPccResponse
