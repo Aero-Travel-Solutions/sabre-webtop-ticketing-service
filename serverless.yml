@@ -42,11 +42,11 @@ custom:
   sabre_rest_uri:
     dev: ${ssm:/dev/sabre_rest/uri}
     stg: ${ssm:/stg/sabre_rest/uri}
-    prod: ${ssm:/prod/sabre_rest/uri} 
+    prod: ${ssm:/prod/sabre_rest/uri}
   sns_topic_tickets_issued:
-    dev: ${​​​​​ssm:/dev/sns/tickets-issued}​​​​​
-    stg: ${​​​​​ssm:/stg/sns/tickets-issued}​​​​​
-    prod: ${​​​​​ssm:/prod/sns/tickets-issued}​​​​​
+    dev: ${ssm:/dev/sns/tickets-issued}
+    stg: ${ssm:/stg/sns/tickets-issued}
+    prod: ${ssm:/prod/sns/tickets-issued}
 
 functions:
   SearchPNR:
