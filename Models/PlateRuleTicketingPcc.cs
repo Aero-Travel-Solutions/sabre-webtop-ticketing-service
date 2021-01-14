@@ -21,7 +21,7 @@ namespace SabreWebtopTicketingService.Models
         public string PlatingCarrier { get; set; }
 
         [JsonPropertyName("sectors")]
-        public List<SectorData> Sectors { get; set; }
+        public SectorData[] Sectors { get; set; }
     }
 
     public class SectorData

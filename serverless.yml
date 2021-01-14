@@ -22,12 +22,8 @@ provider:
         - lambda:*
         - sqs:*
         - ssm:*
-      Resource: "*"  
-    - Effect: 'Allow'
-      Action:
         - "sns:Publish"
-      Resource: "*"
- 
+      Resource: "*"  
 
 package:
   individually: true

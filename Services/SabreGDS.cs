@@ -1699,7 +1699,7 @@ namespace SabreWebtopTicketingService.Services
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"GETORDERSEQUENCE_ERROR : {ex.Message} : PNR : {transactionData.TicketingResult.Locator} [EXCEPTION]:", ex);
+                        logger.LogError($"GETORDERSEQUENCE_ERROR : {ex.Message} : PNR : {transactionData.TicketingResult.Locator} [EXCEPTION]:", ex.ToString());
                         transactionData.TicketingResult.OrderId = $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{new Random().Next(9000, 10000)}";
                     }
                 }
@@ -4248,7 +4248,7 @@ namespace SabreWebtopTicketingService.Services
                             }).
                             GroupBy(grp => new { grp.Carrier, grp.Farebasis }).
                             Select(s=> s.First()).
-                            ToList()
+                            ToArray()
             };
 
             PlateRuleTicketingPccResponse res = await _ticketingPccDataSource.GetTicketingPccFromRules(rq, sessionID);
