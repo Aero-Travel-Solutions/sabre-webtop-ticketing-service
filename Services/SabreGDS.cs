@@ -1699,7 +1699,7 @@ namespace SabreWebtopTicketingService.Services
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"GETORDERSEQUENCE_ERROR : {ex.Message} : PNR : {transactionData.TicketingResult.Locator} [EXCEPTION]:", ex.ToString());
+                        logger.LogError($"GETORDERSEQUENCE_ERROR : {ex.Message} : PNR : {transactionData.TicketingResult.Locator} [EXCEPTION]:{ex}");
                         transactionData.TicketingResult.OrderId = $"{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{new Random().Next(9000, 10000)}";
                     }
                 }
