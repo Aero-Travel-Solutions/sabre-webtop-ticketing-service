@@ -3927,7 +3927,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (!issuablequotes.IsNullOrEmpty())
             {
-                GetTicketingPCCExpiaryIssueTicketKey(pnr, issuablequotes, ApplySupressITFlag, sessionid);
+                GetTicketingPCCExpiaryIssueTicketKey(pnr, issuablequotes, ApplySupressITFlag, sessionid, agent);
             }
 
             //Remove quotes that have invalid sector information and sort by paxtype
@@ -4163,7 +4163,7 @@ namespace SabreWebtopTicketingService.Services
             };
         }
 
-        private void GetTicketingPCCExpiaryIssueTicketKey(PNR pnr, List<Quote> issuablequotes, bool applySupressITFlag, string sessionID)
+        private void GetTicketingPCCExpiaryIssueTicketKey(PNR pnr, List<Quote> issuablequotes, bool applySupressITFlag, string sessionID, Agent agent)
         {
             var resp = new List<Task>();
             CancellationToken ct = new CancellationToken();
