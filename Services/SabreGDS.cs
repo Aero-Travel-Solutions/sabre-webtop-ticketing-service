@@ -1542,6 +1542,8 @@ namespace SabreWebtopTicketingService.Services
                     throw new ExpiredSessionException(request.SessionID, "50000401", "Invalid session.");
                 }
 
+                user.AgentId = request.AgentID;
+
                 if (!agent?.Agent?.Permission?.AllowTicketing ?? false)
                 {
                     throw new AeronologyException("50000020", "Ticketing access is not provided for your account. Please contact your consolidator to request access.");
