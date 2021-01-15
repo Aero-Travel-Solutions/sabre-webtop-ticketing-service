@@ -86,7 +86,8 @@ namespace SabreWebtopTicketingService.Services
             IBCodeDataSource _bCodeDataSource,
             IBackofficeDataSource backofficeDataSource,
             IOptions<BackofficeOptions> backofficeOptions,
-            IOrdersTransactionDataSource ordersTransactionDataSource)
+            IOrdersTransactionDataSource ordersTransactionDataSource,
+            GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -116,6 +117,7 @@ namespace SabreWebtopTicketingService.Services
             updatePNRService = _updatePNRService;
             _backofficeOptions = backofficeOptions?.Value;
             _ordersTransactionDataSource = ordersTransactionDataSource;
+            _getOrderSequenceFailedRetryPolicy = getOrderSquenceRetryPolicy.CheckConditionFailedPolicy;
             this.session = session;
         }
 
