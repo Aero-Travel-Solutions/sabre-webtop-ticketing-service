@@ -18,7 +18,7 @@ namespace SabreWebtopTicketingService.Common
         public OrdersTransactionDataSource()
         {
             _amazonDynamoDBClient = new AmazonDynamoDBClient();
-            _tableName = Environment.GetEnvironmentVariable("TRANSACTION_DB_NAME");
+            _tableName = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")}-transactiondb";
         }
 
         public async Task<string> GetOrderSequence()
