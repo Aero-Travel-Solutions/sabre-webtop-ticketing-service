@@ -399,9 +399,11 @@ namespace SabreWebtopTicketingService.Services
                 Task<GetQuoteTextResponse> getQuoteTextResponse = GetQuoteText(new GetQuoteTextRequest()
                 {
                     GDSCode = request.GDSCode,
-                    Locator = request.SearchText
+                    Locator = request.SearchText,
+                    SessionID = request.SessionID
                 },
-                contextID);
+                contextID,
+                pcc);
 
                 await Task.WhenAll(pnrtext, getQuoteTextResponse);
 
@@ -436,9 +438,14 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        public async Task<GetQuoteTextResponse> GetQuoteText(GetQuoteTextRequest rq, string contextID)
+        public async Task<GetQuoteTextResponse> GetQuoteText(GetQuoteTextRequest rq, string contextID, Pcc webservicepcc= null)
         {
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, rq.SessionID);
+            pcc = webservicepcc;
+            if (pcc == null)
+            {
+                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, rq.SessionID);
+            }
+
             SabreSession sabreSession = null;
             try
             {
