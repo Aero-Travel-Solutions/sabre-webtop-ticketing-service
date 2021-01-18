@@ -6,6 +6,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using SabreWebtopTicketingService.Models;
 using System.Collections.Generic;
+using Amazon.DynamoDBv2.Model;
 
 namespace SabreWebtopTicketingService.Common
 {
@@ -21,6 +22,56 @@ namespace SabreWebtopTicketingService.Common
             table = Table.LoadTable(dynamoDbClient, CACHE_DB);
             _sessionRefreshService = sessionRefreshService;
             _logger = logger;
+        }
+
+        public async Task<List<SabreSession>> ListSabreSessions(string pccKey, string fieldValue)
+        {
+            var queryFilter = new QueryFilter("pcc_key", QueryOperator.Equal, new List<AttributeValue>() { new AttributeValue(pccKey) });
+            var queryConfig = new QueryOperationConfig()
+            {
+                IndexName = "pcc_key-index",
+                Filter = queryFilter
+            };
+            var searchResult = table.Query(queryConfig);
+
+            var sabreSessions = new List<SabreSession>();
+
+            if (searchResult.Count == 0) { return sabreSessions; }
+
+            do
+            {
+                var docSet = await searchResult.GetNextSetAsync();
+                docSet.ForEach(doc =>
+                {
+                    var sabreSession = JsonSerializer.Deserialize<SabreSession>(doc[fieldValue]);
+                    sabreSessions.Add(sabreSession);
+                });
+            }
+            while (!searchResult.IsDone);
+
+            return sabreSessions;
+        }
+
+
+        public async Task<int> SabreSessionCount(string pccKey)
+        {
+            try
+            {
+                var queryFilter = new QueryFilter("pcc_key", QueryOperator.Equal, new List<AttributeValue>() { new AttributeValue(pccKey) });
+                var queryConfig = new QueryOperationConfig()
+                {
+                    IndexName = "pcc_key-index",
+                    Filter = queryFilter
+                };
+                var searchResult = table.Query(queryConfig);
+
+                return searchResult.Count;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("An error occured counting sabre sessions in cache. {ErrorMessage} {Stacktrace}.", ex.Message, ex.StackTrace);
+                return 0;
+            }
         }
 
         public async Task<T> Get<T>(string key)

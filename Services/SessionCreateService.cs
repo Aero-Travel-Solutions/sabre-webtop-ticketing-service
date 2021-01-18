@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.ServiceModel;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using SabreWebtopTicketingService.Common;
 using SabreWebtopTicketingService.CustomException;
+using SabreWebtopTicketingService.Interface;
 using SabreWebtopTicketingService.Models;
 using SessionCreate;
 
@@ -18,15 +22,24 @@ namespace SabreWebtopTicketingService.Services
         private readonly DbCache _dbCache;
         private readonly SessionDataSource _sessionDataSource;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger logger;
+        private readonly ISessionManagementBackgroundTaskQueue _sessionTaskQueue;
+        private readonly SessionCloseService _sessionCloseService;
 
         public SessionCreateService(
                         DbCache dbCache,
+                        ILogger _logger,
                         SessionDataSource sessionDataSource,
-                        IHttpClientFactory httpClientFactory)
+                        IHttpClientFactory httpClientFactory,
+                        ISessionManagementBackgroundTaskQueue sessionTaskQueue,
+                        SessionCloseService sessionCloseService)
         {
             _dbCache = dbCache;
             _sessionDataSource = sessionDataSource;
             _httpClientFactory = httpClientFactory;
+            _sessionTaskQueue = sessionTaskQueue;
+            logger = _logger;
+            _sessionCloseService = sessionCloseService;
         }        
 
         public async Task<SabreSession> CreateStatefulSessionToken(Pcc defaultwspcc, string locator = "", bool NoCache = false)
@@ -89,7 +102,17 @@ namespace SabreWebtopTicketingService.Services
                     Locator = locator,
                 };
 
-                await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
+                if (!NoCache)
+                {
+                    //Check session limit and signout all expired if treshold is met
+                    await CheckSessionLimits(defaultwspcc, sabreSession);
+
+                    //Save to cache if session limit is not yet reached
+                    if (!sabreSession.IsLimitReached)
+                    {
+                        await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
+                    }
+                }
                 #endregion
 
                 return sabreSession;
@@ -99,6 +122,42 @@ namespace SabreWebtopTicketingService.Services
                 client.Abort();
                 throw ex;
             }
+        }
+
+        private async Task CheckSessionLimits(Pcc pcc, SabreSession sabreSession)
+        {
+            var pccKey = pcc.PccCode.EncodeBase64();
+            var sessionsCount = await _dbCache.SabreSessionCount(pccKey);
+            var sessionLimit = Convert.ToInt32(Environment.GetEnvironmentVariable(Constants.SABRE_SESSION_LIMIT) ?? "25");
+
+            logger.LogInformation($"Consolidator: {pcc.ConsolidatorId}. Pcc: {pcc.PccCode}. SesssionCount: {sessionsCount}. SessionLimit:{sessionLimit}");
+
+            if (sessionsCount >= sessionLimit)
+            {
+                sabreSession.IsLimitReached = true;
+            }
+
+            var sessionsInCache = await _dbCache.ListSabreSessions(pccKey, "sabre_session");
+            IEnumerable<SabreSession> expiredSessions = sessionsInCache.Where(x => x.Expired);
+
+            foreach (var sSession in expiredSessions)
+            {
+                _sessionTaskQueue.QueueBackgroundWorkItem(async signOut => {
+                    await CloseSession(pcc, sSession);
+                });
+            }
+        }
+
+        private async Task CloseSession(Pcc pcc, SabreSession sabreSession)
+        {
+            try
+            {
+                await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("An error occured closing the sabre session/removing from cache. {Errormessage} {Exception", ex.Message, ex);
+            };
         }
 
         public async Task<Token> CreateStatelessSessionToken(Pcc pcc)

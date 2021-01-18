@@ -97,15 +97,16 @@ namespace SabreWebtopTicketingService
             services.AddScoped<IGetTurnaroundPointDataSource, GetTurnaroundPointDataSource>();
             services.AddScoped<ICommissionDataService, CommissionDataService>();
             services.AddScoped<IAgentPccDataSource, AgentPccDataSource>();
-            services.AddSingleton<ExpiredTokenRetryPolicy>();
-            services.AddSingleton<GetOrderSquenceRetryPolicy>();
             services.AddScoped<IOrdersTransactionDataSource, OrdersTransactionDataSource>();
             services.AddScoped<IBackofficeDataSource, BackofficeDataSource>();
             services.AddScoped<IMerchantDataSource, MerchantDataSource>();
             services.AddScoped<IBCodeDataSource, BCodeDataSource>();
-
+            
+            services.AddSingleton<ISessionManagementBackgroundTaskQueue, SessionManagementBackgroundTaskQueue>();
             services.AddSingleton<DbCache>();
             services.AddSingleton<ILogger, Logger>();
+            services.AddSingleton<ExpiredTokenRetryPolicy>();
+            services.AddSingleton<GetOrderSquenceRetryPolicy>();
 
             return services.BuildServiceProvider();
         }
