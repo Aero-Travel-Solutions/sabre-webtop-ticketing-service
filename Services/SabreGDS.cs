@@ -4254,7 +4254,7 @@ namespace SabreWebtopTicketingService.Services
                             {
                                 Carrier = s.Carrier,
                                 BookingClass = s.Class,
-                                Cabin = s.CabinDescription,
+                                Cabin = GetCabin(s.CabinDescription),
                                 Farebasis = quote.QuoteSectors.First(f => f.PQSectorNo == s.SectorNo).FareBasis
                             }).
                             GroupBy(grp => new { grp.Carrier, grp.Farebasis }).
@@ -4265,6 +4265,16 @@ namespace SabreWebtopTicketingService.Services
             PlateRuleTicketingPccResponse res = await _ticketingPccDataSource.GetTicketingPccFromRules(rq, sessionID);
 
             return res.TicketingPccCode;
+        }
+
+        private string GetCabin(string cabinDescription)
+        {
+            string cabin = cabinDescription;
+            if (cabinDescription == "PRM ECON")
+            {
+                return "PREMIUMECONOMY";
+            }
+            return cabin;
         }
 
         private List<SSR> GetSSRs(List<SabreOpenSSR> openSSRs, List<PNRSector> sectors, List<PNRPassengers> paxs)
