@@ -104,14 +104,14 @@ namespace SabreWebtopTicketingService.Services
 
                 if (!NoCache)
                 {
-                    ////Check session limit and signout all expired if treshold is met
-                    //await CheckSessionLimits(defaultwspcc, sabreSession);
+                    //Check session limit and signout all expired if treshold is met
+                    await CheckSessionLimits(defaultwspcc, sabreSession);
 
-                    ////Save to cache if session limit is not yet reached
-                    //if (!sabreSession.IsLimitReached)
-                    //{
+                    //Save to cache if session limit is not yet reached
+                    if (!sabreSession.IsLimitReached)
+                    {
                         await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
-                    //}
+                    }
                 }
                 #endregion
 
