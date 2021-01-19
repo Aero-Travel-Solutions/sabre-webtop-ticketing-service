@@ -12,7 +12,7 @@ namespace SabreWebtopTicketingService.Common
 {
     public class DbCache
     {
-        private readonly string CACHE_DB = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}-sabre-sesion";
+        private readonly string CACHE_DB = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}-sabre-session";
         private readonly SessionRefreshService _sessionRefreshService;
         private readonly ILogger _logger;
         private readonly Table table;
