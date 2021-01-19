@@ -56,7 +56,7 @@ namespace SabreWebtopTicketingService.Services
                 SabreSession sabreSession;
                 if (!NoCache || !string.IsNullOrEmpty(locator))
                 {
-                    #region Retrieve ession from dynamo db
+                    #region Retrieve session from dynamo db
                     //Check token in cache
                     sabreSession = await _dbCache.Get<SabreSession>(accessKey);
 

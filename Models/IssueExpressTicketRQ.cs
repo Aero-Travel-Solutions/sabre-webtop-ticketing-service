@@ -6,6 +6,7 @@ namespace SabreWebtopTicketingService.Models
     {
         public string SessionID { get; set; }
         public string AgentID { get; set; }
+        public ContactDetails ContactDetails { get; set; }
         public string GDSCode { get; set; }
         public string Locator { get; set; }
         public string PriceCode { get; set; }
@@ -15,6 +16,13 @@ namespace SabreWebtopTicketingService.Models
         public List<IssueExpressTicketEMD> EMDs { get; set; }
         public decimal? GrandPriceItAmount { get; set; }
         public MerchantData MerchantData { get; set; }
+    }
+
+    public class ContactDetails
+    {
+        public string ContactName { get; set; }
+        public string PhoneNumber { get; set; }
+        public string Email { get; set; }
     }
 
     public class MerchantData

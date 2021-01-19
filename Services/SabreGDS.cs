@@ -1550,6 +1550,8 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 user.AgentId = request.AgentID;
+                user.Email = request.ContactDetails.Email;
+                user.Name = request.ContactDetails.ContactName;
 
                 if (!agent?.Agent?.Permission?.AllowTicketing ?? false)
                 {
