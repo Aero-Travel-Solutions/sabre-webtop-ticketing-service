@@ -23,8 +23,8 @@ provider:
         - sqs:*
         - ssm:*
         - "sns:Publish"
-      Resource: "*"  
-   vpc:
+      Resource: "*"
+  vpc:
     securityGroupIds: ${self:custom.security_group_ids.${self:provider.stage}}
     subnetIds: ${self:custom.subnet_ids.${self:provider.stage}}
 
@@ -51,14 +51,10 @@ custom:
     dev: ${ssm:/dev/sns/tickets-issued}
     stg: ${ssm:/stg/sns/tickets-issued}
     prod: ${ssm:/prod/sns/tickets-issued}
-    [6:41 PM] Ariel Balisi
   security_group_ids:
-    dev:
-    - ${​​​​​ssm:/dev/vpc/private-security-group}​​​​​
-    stg:
-    - ${​​​​​ssm:/stg/vpc/private-security-group}​​​​​
-    prod:
-    - ${​​​​​ssm:/prod/vpc/private-security-group}​​​​​
+    dev: ${​​​​​ssm:/dev/vpc/private-security-group}​​​​​
+    stg: ${​​​​​ssm:/stg/vpc/private-security-group}​​​​​
+    prod: ${​​​​​ssm:/prod/vpc/private-security-group}​​​​​
   subnet_ids:
     dev:
     - ${​​​​​ssm:/dev/vpc/private-subnet-1}​​​​​
@@ -69,7 +65,6 @@ custom:
     prod:
     - ${​​​​​ssm:/prod/vpc/private-subnet-1}​​​​​
     - ${​​​​​ssm:/prod/vpc/private-subnet-2}​​​​​
-
 
 functions:
   SearchPNR:
