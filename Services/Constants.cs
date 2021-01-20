@@ -53,6 +53,7 @@ namespace SabreWebtopTicketingService.Services
         public const string BACKOFFICE_URL = "BACKOFFICE_URL";
         public const string BACKOFFICE_SQS_URL = "BACKOFFICE_SQS_URL";
         public const string BACKOFFICE_VOID_SQS_URL = "BACKOFFICE_VOID_SQS_URL";
+        public const string CACHE_HOST = "CACHE_HOST";
     }
 
 }

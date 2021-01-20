@@ -19,7 +19,7 @@ namespace SabreWebtopTicketingService.Services
 {
     public class SessionCreateService : ConnectionStubs
     {
-        private readonly DbCache _dbCache;
+        private readonly IDbCache _dbCache;
         private readonly SessionDataSource _sessionDataSource;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger logger;
@@ -27,7 +27,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly SessionCloseService _sessionCloseService;
 
         public SessionCreateService(
-                        DbCache dbCache,
+                        IDbCache dbCache,
                         ILogger _logger,
                         SessionDataSource sessionDataSource,
                         IHttpClientFactory httpClientFactory,

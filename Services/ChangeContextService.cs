@@ -7,18 +7,19 @@ using System.Linq;
 using SabreWebtopTicketingService.Common;
 using SabreWebtopTicketingService.CustomException;
 using SabreWebtopTicketingService.Models;
+using SabreWebtopTicketingService.Interface;
 
 namespace SabreWebtopTicketingService.Services
 {
     public class ChangeContextService: ConnectionStubs
     {
         private readonly ILogger logger;
-        private readonly DbCache _dbCache;
+        private readonly IDbCache _dbCache;
         private readonly string url;
 
         public ChangeContextService(
             ILogger logger,
-            DbCache dbCache)
+            IDbCache dbCache)
         {
             this.logger = logger;
             _dbCache = dbCache;
@@ -75,7 +76,6 @@ namespace SabreWebtopTicketingService.Services
 
                 if (!string.IsNullOrEmpty(ticketnumber))
                 {
-
                     //remove current session
                     string accessKey = $"{pcc.PccCode}-{ticketnumber}";
                     accessKey = accessKey.EncodeBase64();

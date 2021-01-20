@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 using SabreWebtopTicketingService.Services;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
-using SabreWebtopTicketingService.Models;
 using System.Collections.Generic;
 using Amazon.DynamoDBv2.Model;
+using SabreWebtopTicketingService.Interface;
 
 namespace SabreWebtopTicketingService.Common
 {
-    public class DbCache
+    public class DbCache: IDbCache
     {
         private readonly string CACHE_DB = $"{Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}-sabre-session";
         private readonly SessionRefreshService _sessionRefreshService;
@@ -140,23 +140,6 @@ namespace SabreWebtopTicketingService.Common
             }
         }
 
-        public async Task<bool> InsertSabreSession(string sessionid, string cacheKey)
-        {
-            //insert
-            var newDoc = new Document();
-            newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(19).ToUnixTimeSeconds();
-            newDoc["cache_key"] = cacheKey;
-            newDoc["sabre_session_id"] = sessionid;
-
-            var result = await table.PutItemAsync(newDoc);
-            if (result is { })
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         public async Task<bool> DeleteSabreSession(string cacheKey)
         {
             var doc = await table.GetItemAsync(cacheKey);
@@ -167,23 +150,6 @@ namespace SabreWebtopTicketingService.Common
                 {
                     return true;
                 }
-            }
-
-            return false;
-        }
-
-        public async Task<bool> InsertPNR(string cacheKey, PNR pnr, int expiryinmins)
-        {
-            //insert
-            var newDoc = new Document();
-            newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(expiryinmins).ToUnixTimeSeconds();
-            newDoc["cache_key"] = cacheKey;
-            newDoc["pnr"] = JsonSerializer.Serialize(pnr);
-
-            var result = await table.PutItemAsync(newDoc);
-            if (result is { })
-            {
-                return true;
             }
 
             return false;

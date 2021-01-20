@@ -42,7 +42,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly ICommissionDataService _commissionDataService;
         private readonly IAgentPccDataSource _agentPccDataSource;
         private readonly ILogger logger;
-        private readonly DbCache _dbCache;
+        private readonly IDbCache _dbCache;
         private readonly IAsyncPolicy retryPolicy;
         private readonly IDataProtector dataProtector;
         private readonly SessionDataSource session;
@@ -62,7 +62,7 @@ namespace SabreWebtopTicketingService.Services
         public SabreGDS(
             SessionCreateService sessionCreateService,
             ILogger logger,
-            DbCache dbCache,
+            IDbCache dbCache,
             ConsolidatorPccDataSource consolidatorPccDataSource,
             TicketingPccDataSource ticketingPccDataSource,
             IgnoreTransactionService ignoreTransactionService,
@@ -767,7 +767,7 @@ namespace SabreWebtopTicketingService.Services
                     pnr.Quotes.AddRange(quotes);
 
                     //Save PNR in cache
-                    await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
+                    await _cacheDataSource.Set(pnrAccessKey, pnr, 15);
                 }
 
                 //redislpay price quotes
@@ -944,7 +944,7 @@ namespace SabreWebtopTicketingService.Services
                     pnr.Quotes.AddRange(quotes);
 
                     //Save PNR in cache
-                    await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
+                    await _cacheDataSource.Set(pnrAccessKey, pnr, 15);
                 }
 
                 //redislpay price quotes

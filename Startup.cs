@@ -15,6 +15,7 @@ using System.Net.Http;
 using Amazon.S3;
 using Amazon.SQS;
 using SabreWebtopTicketingService.Models;
+using StackExchange.Redis;
 
 namespace SabreWebtopTicketingService
 {
@@ -48,6 +49,11 @@ namespace SabreWebtopTicketingService
             services.AddMemoryCache();
             services.AddDistributedMemoryCache();
 
+            //Redis cache
+            var cacheHost = Environment.GetEnvironmentVariable(Constants.CACHE_HOST) ?? "localhost:6379";
+            var redis = ConnectionMultiplexer.Connect(cacheHost);
+            services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
+
             //Add data protection
             services
                 .AddDataProtection()
@@ -73,7 +79,8 @@ namespace SabreWebtopTicketingService
             services.AddLogging();
 
             services.AddScoped<SabreGDS>();
-            services.AddScoped<SessionCreateService>();           
+            services.AddScoped<SessionCreateService>();
+            services.AddScoped<SessionRefreshService>();
             services.AddScoped<SessionRefreshService>();
             services.AddScoped<IgnoreTransactionService>();
             services.AddScoped<SabreCrypticCommandService>();
@@ -101,9 +108,9 @@ namespace SabreWebtopTicketingService
             services.AddScoped<IBackofficeDataSource, BackofficeDataSource>();
             services.AddScoped<IMerchantDataSource, MerchantDataSource>();
             services.AddScoped<IBCodeDataSource, BCodeDataSource>();
-            
+            services.AddScoped<IDbCache, DbCache>();
+
             services.AddSingleton<ISessionManagementBackgroundTaskQueue, SessionManagementBackgroundTaskQueue>();
-            services.AddSingleton<DbCache>();
             services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<ExpiredTokenRetryPolicy>();
