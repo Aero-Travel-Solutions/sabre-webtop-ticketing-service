@@ -88,7 +88,7 @@ namespace SabreWebtopTicketingService.Services
                     //insert new session
                     accessKey = $"{emulatetopcc}-{ticketnumber}";
                     accessKey = accessKey.EncodeBase64();
-                    await _dbCache.InsertOrUpdate(accessKey, token.SessionID, "sabre_session");
+                    await _dbCache.InsertOrUpdate(accessKey, token.SessionID, "sabre_session", pcc.PccCode.EncodeBase64());
                 }
             }
             catch (TimeoutException timeProblem)

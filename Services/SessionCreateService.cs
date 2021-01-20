@@ -63,7 +63,7 @@ namespace SabreWebtopTicketingService.Services
                     if (sabreSession != null && !sabreSession.Expired)
                     {
                         sabreSession.Stored = true;
-                        await _dbCache.InsertOrUpdate(accessKey, sabreSession, "sabre_session");
+                        await _dbCache.InsertOrUpdate(accessKey, sabreSession, "sabre_session", defaultwspcc.PccCode.EncodeBase64());
                         return sabreSession;
                     }
                     #endregion
@@ -110,7 +110,7 @@ namespace SabreWebtopTicketingService.Services
                     //Save to cache if session limit is not yet reached
                     if (!sabreSession.IsLimitReached)
                     {
-                        await _dbCache.InsertOrUpdate(accessKey, sabreSession, "sabre_session");
+                        await _dbCache.InsertOrUpdate(accessKey, sabreSession, "sabre_session", defaultwspcc.PccCode.EncodeBase64());
                     }
                 }
                 #endregion
@@ -204,7 +204,7 @@ namespace SabreWebtopTicketingService.Services
                 token = JsonSerializer.Deserialize<Token>(content);
 
                 //cache token                    
-                await _dbCache.InsertOrUpdate($"{pcc.PccCode}-RESTTOKEN", token, "sabre_token");
+                await _dbCache.InsertOrUpdate($"{pcc.PccCode}-RESTTOKEN", token, "sabre_token", pcc.PccCode.EncodeBase64());
 
                 return token;
             }
