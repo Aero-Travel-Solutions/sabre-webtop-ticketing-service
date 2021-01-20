@@ -79,7 +79,7 @@ namespace SabreWebtopTicketingService.Services
                     //remove current session
                     string accessKey = $"{pcc.PccCode}-{ticketnumber}";
                     accessKey = accessKey.EncodeBase64();
-                    SabreSession session = await _dbCache.GetSession(accessKey, pcc);
+                    SabreSession session = await _dbCache.Get<SabreSession>(accessKey, "sabre_session");
                     if (session != null)
                     {
                         await _dbCache.DeleteSabreSession(accessKey);
@@ -88,7 +88,7 @@ namespace SabreWebtopTicketingService.Services
                     //insert new session
                     accessKey = $"{emulatetopcc}-{ticketnumber}";
                     accessKey = accessKey.EncodeBase64();
-                    await _dbCache.InsertSabreSession(token.SessionID, accessKey);
+                    await _dbCache.InsertOrUpdate(accessKey, token.SessionID, "sabre_session");
                 }
             }
             catch (TimeoutException timeProblem)

@@ -53,6 +53,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly IMerchantDataSource merchantDataSource;
         private readonly IBCodeDataSource bCodeDataSource;
         private readonly INotificationHelper _notificationHelper;
+        private readonly ICacheDataSource _cacheDataSource;
 
         public User user { get; set; }
         public Pcc pcc { get; set; }
@@ -87,7 +88,8 @@ namespace SabreWebtopTicketingService.Services
             IBackofficeDataSource backofficeDataSource,
             IOptions<BackofficeOptions> backofficeOptions,
             IOrdersTransactionDataSource ordersTransactionDataSource,
-            GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy)
+            GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy,
+            ICacheDataSource cacheDataSource)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -118,6 +120,7 @@ namespace SabreWebtopTicketingService.Services
             _backofficeOptions = backofficeOptions?.Value;
             _ordersTransactionDataSource = ordersTransactionDataSource;
             _getOrderSequenceFailedRetryPolicy = getOrderSquenceRetryPolicy.CheckConditionFailedPolicy;
+            _cacheDataSource = cacheDataSource;
             this.session = session;
         }
 
@@ -126,7 +129,7 @@ namespace SabreWebtopTicketingService.Services
             var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(consolidatorid, agentid, sessionid);
 
             if(agentDetails == null) { throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction fail."); }
-            
+
             Agent agent = new Agent()
             {
                 TicketingQueue = webservicepcc == "G4AK" ? "30" : "",
@@ -141,8 +144,8 @@ namespace SabreWebtopTicketingService.Services
                 Name = agentDetails?.Name,
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
-                TicketingPcc = await GetTicketingPCC(sessionid)
-            };
+                TicketingPcc = await GetTicketingPCC(sessionid),
+                Logo = agentDetails.Logo            };
 
             if (user?.Agent != null)
             {
@@ -368,7 +371,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //Save PNR in cache
-                await _dbCache.InsertPNR(pnrAccessKey, pnr, 15);
+                await _cacheDataSource.Set(pnrAccessKey, pnr, 15);
 
                 if (getStoredCards)
                 {
@@ -377,7 +380,7 @@ namespace SabreWebtopTicketingService.Services
                     //Encrypt card number
                     storedCreditCard.ForEach(c => c.CreditCard = dataProtector.Protect(c.CreditCard));
 
-                    await _dbCache.InsertStoreCC(cardAccessKey, storedCreditCard, 15);
+                    await _cacheDataSource.Set(cardAccessKey, storedCreditCard, 15);
                 }
             }
 
@@ -539,12 +542,12 @@ namespace SabreWebtopTicketingService.Services
                     var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                     //Try get PNR in cache               
-                    pnr = await _dbCache.Get<PNR>(pnrAccessKey);
+                    pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
                     if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                     {
                         //Try get stored cards
-                        storedCreditCards = await _dbCache.Get<List<StoredCreditCard>>(cardAccessKey);
+                        storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
                         if (!storedCreditCards.IsNullOrEmpty())
                         {
                             storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -684,12 +687,12 @@ namespace SabreWebtopTicketingService.Services
                 var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
-                pnr = await _dbCache.Get<PNR>(pnrAccessKey);
+                pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
                 if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await _dbCache.Get<List<StoredCreditCard>>(cardAccessKey);
+                    storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -861,12 +864,12 @@ namespace SabreWebtopTicketingService.Services
                 var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
-                pnr = await _dbCache.Get<PNR>(pnrAccessKey);
+                pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
                 if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await _dbCache.Get<List<StoredCreditCard>>(cardAccessKey);
+                    storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -1544,18 +1547,21 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
+                if(request.ContactDetails == null)
+                {
+                    throw new AeronologyException("NO_CONTACT", "Contact details not provided.");
+                }
+
                 if (user == null)
                 {
-                    throw new ExpiredSessionException(request.SessionID, "50000401", "Invalid session.");
+                    throw new ExpiredSessionException(request.SessionID, "INVALID_SESSION", "Invalid session.");
                 }
 
                 user.AgentId = request.AgentID;
-                user.Email = request.ContactDetails.Email;
-                user.Name = request.ContactDetails.ContactName;
 
                 if (!agent?.Agent?.Permission?.AllowTicketing ?? false)
                 {
-                    throw new AeronologyException("50000020", "Ticketing access is not provided for your account. Please contact your consolidator to request access.");
+                    throw new AeronologyException("NO_TICKETING", "Ticketing access is not provided for your account. Please contact your consolidator to request access.");
                 }
 
                 //Populate request collections
@@ -1564,7 +1570,7 @@ namespace SabreWebtopTicketingService.Services
                 string ticketingpcc = request.Quotes.IsNullOrEmpty() ? GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) : request.Quotes.First().TicketingPCC;
                 if (string.IsNullOrEmpty(ticketingpcc))
                 {
-                    throw new ExpiredSessionException(request.SessionID, "50000401", "Invalid ticketing pcc.");
+                    throw new ExpiredSessionException(request.SessionID, "INVALID_TICKETING_PCC", "Invalid ticketing pcc.");
                 }
 
                 agentpcc = (await getagentpccs(user?.AgentId, pcc.PccCode, request.SessionID)).FirstOrDefault();
@@ -1694,6 +1700,16 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = request.SessionID,
                     User = user,
+                    AgentQueuedByDetails = new AgentQueuedByDetails()
+                    {
+                        AgentID = request.AgentID,
+                        AgentName = agent.Name,
+                        AgentLogo = agent.Logo,
+                        UserFullName = request.ContactDetails.ContactName,
+                        UserName = user.Name,
+                        ContactEmail = request.ContactDetails.Email,
+                        ContactPhone = request.ContactDetails.PhoneNumber
+                    },
                     Pnr = pnr,
                     TicketingResult = ticketData
                 };

@@ -16,6 +16,7 @@ namespace SabreWebtopTicketingService.Common
         private readonly SessionRefreshService _sessionRefreshService;
         private readonly ILogger _logger;
         private readonly Table table;
+        private int expiry = 15;
 
         public DbCache(IAmazonDynamoDB dynamoDbClient, SessionRefreshService sessionRefreshService, ILogger logger)
         {
@@ -52,7 +53,6 @@ namespace SabreWebtopTicketingService.Common
             return sabreSessions;
         }
 
-
         public async Task<int> SabreSessionCount(string pccKey)
         {
             try
@@ -74,140 +74,70 @@ namespace SabreWebtopTicketingService.Common
             }
         }
 
-        public async Task<T> Get<T>(string key)
+        public async Task<T> Get<T>(string cacheKey, string fieldValue)
         {
-            if (string.IsNullOrEmpty(key))
-                return default;
-
-            try
-            {
-                _logger.LogInformation($"### RQ - DB cache get('{key}') ###");
-
-                var doc = await table.GetItemAsync(key);
-
-                if (doc == null)
-                {
-                    _logger.LogInformation($"### DB cache get('{key}') => empty ###");
-                    return default;
-                }
-
-                string jsonrs = doc.ToJson();
-
-                _logger.LogInformation($"### RS - DB cache get('{key}') => {jsonrs} ###");
-
-
-                return JsonSerializer.Deserialize<T>(jsonrs);
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"### DB cache get('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
-                return default;
-            }
+            return await GetFromCache<T>(cacheKey, fieldValue);
         }
 
-        public async Task<bool> Set<T>(T item, string key, int expiryinmins)
+        private async Task<T> GetFromCache<T>(string caheKey, string fieldValue)
         {
-            if (string.IsNullOrEmpty(key))
-                return false;
-
-            try
-            {
-                _logger.LogInformation($"### DB cache set('{key}') ###");
-
-                var newDoc = new Document();
-                string json = JsonSerializer.Serialize(item);
-                newDoc[key] = json;
-
-                var result = await table.PutItemAsync(newDoc);
-
-                if (result is { })
-                {
-                    _logger.LogInformation($"### DB cache set('{key}') => empty ###");
-                    return default;
-                }
-
-                return false;
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"### DB cache get('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
+            if (string.IsNullOrEmpty(caheKey))
                 return default;
-            }
-        }
 
-        public async Task<SabreSession> GetSession(string key, Pcc pcc)
-        {
-            var doc = await table.GetItemAsync(key);
+            var item = await table.GetItemAsync(caheKey);
 
-            if (doc == null)
-            {
-                return null;
-            }
+            if (item is null)
+                return default;
 
-            var rs = doc.ToJson();
-            var ttl = doc["expiry"].AsLong();
+            var ttl = item["ttl"].AsLong();
             var now = DateTimeOffset.Now.ToUnixTimeSeconds();
 
-            if (ttl < now || string.IsNullOrWhiteSpace(rs))
-            {
-                return null;
-            }
+            if (ttl < now)
+                return default;
 
-            //if expires in less than 5 minutes, refresh session
-            if (ttl > now && (ttl - now) < 300)
-            {
-                var refreshSuccess = await _sessionRefreshService.RefreshSessionToken(doc["sabre_session_id"], pcc);
-                if (refreshSuccess)
-                {
-                    _logger.LogInformation("Session Refresh Successful => {0}", doc["sabre_session_id"]);
-                }
-                else
-                {
-                    _logger.LogError("Unable to Refresh Session => {0}", doc["sabre_session_id"]);
-                }
-            }
-
-            SabreSession sabreSession =  JsonSerializer.Deserialize<SabreSession>(rs);
-            sabreSession.Stored = true;
-            return sabreSession;
+            var sabreSession = item[fieldValue].AsString();
+            return JsonSerializer.Deserialize<T>(sabreSession);
         }
 
-        public async Task<bool> InsertUpdateSabreSession(SabreSession sabreSession, string cacheKey)
+        public async Task<bool> InsertOrUpdate<T>(string cacheKey, T value, string fieldValue, string pccKeyValue = "")
         {
-            var successInsert = false;
-            if (sabreSession is { })
+            try
             {
-                var doc = await table.GetItemAsync(cacheKey);
-                if (doc is { })
+                Document result;
+                var item = await table.GetItemAsync(cacheKey);
+
+                if (item is null)
                 {
-                    //update                    
-                    doc["sabre_session_id"] = sabreSession.SessionID;
-                    doc["expiry"] = DateTimeOffset.Now.AddMinutes(19).ToUnixTimeSeconds();
-                    var result = await table.UpdateItemAsync(doc);
-                    if (result is { })
+                    item = new Document
                     {
-                        successInsert = true;
-                    }
+                        ["cache_key"] = cacheKey,
+                        ["ttl"] = DateTimeOffset.Now.AddMinutes(expiry).ToUnixTimeSeconds(),
+                        [fieldValue] = JsonSerializer.Serialize(value)
+                    };
+
+                    if (!string.IsNullOrEmpty(pccKeyValue))
+                        item["pcc_key"] = pccKeyValue;
+
+                    result = await table.PutItemAsync(item, new PutItemOperationConfig() { ReturnValues = ReturnValues.AllNewAttributes });
                 }
                 else
                 {
-                    //insert
-                    var newDoc = new Document();
-                    newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(19).ToUnixTimeSeconds();
-                    newDoc["cache_key"] = cacheKey;
-                    newDoc["sabre_session_id"] = sabreSession.SessionID;
+                    item["ttl"] = DateTimeOffset.Now.AddMinutes(expiry).ToUnixTimeSeconds();
+                    item[fieldValue] = JsonSerializer.Serialize(value);
 
-                    var result = await table.PutItemAsync(newDoc);
-                    if (result is { })
-                    {
-                        successInsert = true;
-                    }
+                    if (!string.IsNullOrEmpty(pccKeyValue))
+                        item["pcc_key"] = pccKeyValue;
+
+                    result = await table.UpdateItemAsync(item, new UpdateItemOperationConfig() { ReturnValues = ReturnValues.UpdatedNewAttributes });
                 }
-            }   
-            
-            return successInsert;
+
+                return result is { };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("An error occured saving sabre session to cache database. {SabreSession} {ErrorMessage} {Stacktrace}.", JsonSerializer.Serialize(value), ex.Message, ex.StackTrace);
+                return false;
+            }
         }
 
         public async Task<bool> InsertSabreSession(string sessionid, string cacheKey)
@@ -249,23 +179,6 @@ namespace SabreWebtopTicketingService.Common
             newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(expiryinmins).ToUnixTimeSeconds();
             newDoc["cache_key"] = cacheKey;
             newDoc["pnr"] = JsonSerializer.Serialize(pnr);
-
-            var result = await table.PutItemAsync(newDoc);
-            if (result is { })
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        public async Task<bool> InsertStoreCC(string cacheKey, List<StoredCreditCard> ccs, int expiryinmins)
-        {
-            //insert
-            var newDoc = new Document();
-            newDoc["expiry"] = DateTimeOffset.Now.AddMinutes(expiryinmins).ToUnixTimeSeconds();
-            newDoc["cache_key"] = cacheKey;
-            newDoc["pnr"] = JsonSerializer.Serialize(ccs);
 
             var result = await table.PutItemAsync(newDoc);
             if (result is { })

@@ -104,6 +104,7 @@ namespace SabreWebtopTicketingService
             
             services.AddSingleton<ISessionManagementBackgroundTaskQueue, SessionManagementBackgroundTaskQueue>();
             services.AddSingleton<DbCache>();
+            services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<ExpiredTokenRetryPolicy>();
             services.AddSingleton<GetOrderSquenceRetryPolicy>();

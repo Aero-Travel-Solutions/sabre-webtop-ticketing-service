@@ -58,12 +58,12 @@ namespace SabreWebtopTicketingService.Services
                 {
                     #region Retrieve session from dynamo db
                     //Check token in cache
-                    sabreSession = await _dbCache.Get<SabreSession>(accessKey);
+                    sabreSession = await _dbCache.Get<SabreSession>(accessKey, "sabre_session");
 
                     if (sabreSession != null && !sabreSession.Expired)
                     {
                         sabreSession.Stored = true;
-                        await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
+                        await _dbCache.InsertOrUpdate(accessKey, sabreSession, "sabre_session");
                         return sabreSession;
                     }
                     #endregion
@@ -110,7 +110,7 @@ namespace SabreWebtopTicketingService.Services
                     //Save to cache if session limit is not yet reached
                     if (!sabreSession.IsLimitReached)
                     {
-                        await _dbCache.InsertUpdateSabreSession(sabreSession, accessKey);
+                        await _dbCache.InsertOrUpdate(accessKey, sabreSession, "sabre_session");
                     }
                 }
                 #endregion
@@ -163,7 +163,7 @@ namespace SabreWebtopTicketingService.Services
         public async Task<Token> CreateStatelessSessionToken(Pcc pcc)
         {
             //Check in cache
-            Token token = await _dbCache.Get<Token>($"{pcc.PccCode}-RESTTOKEN");
+            Token token = await _dbCache.Get<Token>($"{pcc.PccCode}-RESTTOKEN", "sabre_token");
             if (token != null)
             {
                 return token;
@@ -204,7 +204,7 @@ namespace SabreWebtopTicketingService.Services
                 token = JsonSerializer.Deserialize<Token>(content);
 
                 //cache token                    
-                await _dbCache.Set<Token>(token, $"{pcc.PccCode}-RESTTOKEN", 10080);
+                await _dbCache.InsertOrUpdate($"{pcc.PccCode}-RESTTOKEN", token, "sabre_token");
 
                 return token;
             }

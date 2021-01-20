@@ -15,5 +15,6 @@ namespace SabreWebtopTicketingService.Models
         public Currency CreditLimit { get; set; }
         public string CustomerNo { get; set; }
         public Address Address { get; set; }
+        public string Logo { get; set; }
     }
 }
