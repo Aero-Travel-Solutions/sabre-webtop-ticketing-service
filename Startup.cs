@@ -50,7 +50,7 @@ namespace SabreWebtopTicketingService
             services.AddDistributedMemoryCache();
 
             //Redis cache
-            var cacheHost = Environment.GetEnvironmentVariable(Constants.CACHE_HOST) ?? "localhost:6379";
+            var cacheHost = Configuration.GetSection("url").Value ?? "localhost:6379";
             var redis = ConnectionMultiplexer.Connect(cacheHost);
             services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
 
@@ -124,6 +124,7 @@ namespace SabreWebtopTicketingService
             return new ConfigurationBuilder()
                 .AddEnvironmentVariables()
                 .AddSystemsManager($"/{Environment.GetEnvironmentVariable("ENVIRONMENT")}/backoffice", TimeSpan.FromMinutes(15))
+                .AddSystemsManager($"/{Environment.GetEnvironmentVariable("ENVIRONMENT")}/redis-cache", TimeSpan.FromMinutes(15))
                 .Build();
         }
     }    
