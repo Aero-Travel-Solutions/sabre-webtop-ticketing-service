@@ -44,8 +44,12 @@ namespace SabreWebtopTicketingService.Common
                 var docSet = await searchResult.GetNextSetAsync();
                 docSet.ForEach(doc =>
                 {
-                    var sabreSession = JsonSerializer.Deserialize<SabreSession>(doc[fieldValue]);
-                    sabreSessions.Add(sabreSession);
+                    var sabreSessionVal = doc[fieldValue];
+                    if(sabreSessionVal != null)
+                    {
+                        var sabreSession = JsonSerializer.Deserialize<SabreSession>(sabreSessionVal);
+                        sabreSessions.Add(sabreSession);
+                    }                    
                 });
             }
             while (!searchResult.IsDone);
