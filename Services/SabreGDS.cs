@@ -53,7 +53,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly IMerchantDataSource merchantDataSource;
         private readonly IBCodeDataSource bCodeDataSource;
         private readonly INotificationHelper _notificationHelper;
-        private readonly ICacheDataSource _cacheDataSource;
+        //private readonly ICacheDataSource _cacheDataSource;
 
         public User user { get; set; }
         public Pcc pcc { get; set; }
@@ -88,8 +88,8 @@ namespace SabreWebtopTicketingService.Services
             IBackofficeDataSource backofficeDataSource,
             IOptions<BackofficeOptions> backofficeOptions,
             IOrdersTransactionDataSource ordersTransactionDataSource,
-            GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy,
-            ICacheDataSource cacheDataSource)
+            GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy)
+            //ICacheDataSource cacheDataSource)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -120,7 +120,7 @@ namespace SabreWebtopTicketingService.Services
             _backofficeOptions = backofficeOptions?.Value;
             _ordersTransactionDataSource = ordersTransactionDataSource;
             _getOrderSequenceFailedRetryPolicy = getOrderSquenceRetryPolicy.CheckConditionFailedPolicy;
-            _cacheDataSource = cacheDataSource;
+            //_cacheDataSource = cacheDataSource;
             this.session = session;
         }
 
