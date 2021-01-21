@@ -23,10 +23,10 @@ provider:
         - sqs:*
         - ssm:*
         - "sns:Publish"
-      Resource: "*"
+      Resource: "*"  
   vpc:
     securityGroupIds: ${self:custom.security_group_ids.${self:provider.stage}}
-    subnet_ids: ${self.custom.subnet_ids.${self:provider.stage}}
+    subnetIds: ${self:custom.subnet_ids.${self:provider.stage}}
 
 package:
   individually: true
@@ -34,25 +34,28 @@ package:
     - buildspec.yml
     - build.sh
 
-custom: 
+custom:
   stages:
     - dev
     - stg
-    - prod   
+    - prod
   security_group_ids:
-    dev: ${ssm:/dev/vpc/private-security-group}
-    stg: ${ssm:/stg/vpc/private-security-group}
-    prod: ${ssm:/prod/vpc/private-security-group}
+    dev:
+      - ${ssm:/dev/vpc/private-security-group}
+    stg:
+      - ${ssm:/stg/vpc/private-security-group}
+    prod:
+      - ${ssm:/prod/vpc/private-security-group}
   subnet_ids:
     dev:
-        - ${ssm:/dev/vpc/private-subnet-1}
-        - ${ssm:/dev/vpc/private-subnet-2}
+      - ${ssm:/dev/vpc/private-subnet-1}
+      - ${ssm:/dev/vpc/private-subnet-2}
     stg:
-        - ${ssm:/stg/vpc/private-subnet-1}
-        - ${ssm:/stg/vpc/private-subnet-2}
+      - ${ssm:/stg/vpc/private-subnet-1}
+      - ${ssm:/stg/vpc/private-subnet-2}
     prod:
-        -${ssm:/prod/vpc/private-subnet-1}
-        -${ssm:/prod/vpc/private-subnet-2}
+      - ${ssm:/prod/vpc/private-subnet-1}
+      - ${ssm:/prod/vpc/private-subnet-2}
   sabre_soap_uri:
     dev: ${ssm:/dev/sabre-soap/uri}
     stg: ${ssm:/stg/sabre-soap/uri}
