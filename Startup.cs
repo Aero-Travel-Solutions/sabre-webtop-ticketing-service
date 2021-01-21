@@ -50,9 +50,9 @@ namespace SabreWebtopTicketingService
             services.AddDistributedMemoryCache();
 
             //Redis cache
-            //var cacheHost = Configuration.GetSection("url").Value ?? "localhost:6379";
-            //var redis = ConnectionMultiplexer.Connect(cacheHost);
-            //services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
+            var cacheHost = Configuration.GetSection("url").Value ?? "localhost:6379";
+            var redis = ConnectionMultiplexer.Connect(cacheHost);
+            services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
 
             //Add data protection
             services
@@ -111,7 +111,7 @@ namespace SabreWebtopTicketingService
             services.AddScoped<IDbCache, DbCache>();
 
             services.AddSingleton<ISessionManagementBackgroundTaskQueue, SessionManagementBackgroundTaskQueue>();
-            //services.AddSingleton<ICacheDataSource, RedisClient>();
+            services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<ExpiredTokenRetryPolicy>();
             services.AddSingleton<GetOrderSquenceRetryPolicy>();
