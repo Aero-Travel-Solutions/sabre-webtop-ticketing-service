@@ -26,7 +26,7 @@ namespace SabreWebtopTicketingService.Services
             url = Constants.GetSoapUrl();
         }
 
-        public async Task ContextChange(SabreSession token, Pcc pcc, string emulatetopcc, string ticketnumber = "")
+        public async Task ContextChange(SabreSession token, Pcc pcc, string emulatetopcc)
         {
             ContextChangePortTypeClient client = null;
             try
@@ -74,22 +74,26 @@ namespace SabreWebtopTicketingService.Services
                                 string.Join(Environment.NewLine, messages.Select(s => s.Value)));
                 }
 
-                if (!string.IsNullOrEmpty(ticketnumber))
+                string accessKey = $"{pcc.PccCode}-{token.Locator}";
+                accessKey = accessKey.EncodeBase64();
+                SabreSession session = await _dbCache.Get<SabreSession>(accessKey, "sabre_session");
+                if (session != null)
                 {
-                    //remove current session
-                    string accessKey = $"{pcc.PccCode}-{ticketnumber}";
-                    accessKey = accessKey.EncodeBase64();
-                    SabreSession session = await _dbCache.Get<SabreSession>(accessKey, "sabre_session");
-                    if (session != null)
-                    {
-                        await _dbCache.DeleteSabreSession(accessKey);
-                    }
-
-                    //insert new session
-                    accessKey = $"{emulatetopcc}-{ticketnumber}";
-                    accessKey = accessKey.EncodeBase64();
-                    await _dbCache.InsertOrUpdate(accessKey, token.SessionID, "sabre_session", pcc.PccCode.EncodeBase64());
+                    await _dbCache.DeleteSabreSession(accessKey);
                 }
+
+                //insert new session
+                accessKey = $"{emulatetopcc}-{token.Locator}";
+                accessKey = accessKey.EncodeBase64();
+                var newsession = new SabreSession()
+                {
+                    CurrentPCC = emulatetopcc,
+                    SessionID = token.SessionID,
+                    ConsolidatorPCC = token.ConsolidatorPCC,
+                    CreatedDateTime = DateTime.Now,
+                    Locator = token.Locator
+                };
+                await _dbCache.InsertOrUpdate(accessKey, newsession, "sabre_session", emulatetopcc.EncodeBase64());
             }
             catch (TimeoutException timeProblem)
             {
