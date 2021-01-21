@@ -567,7 +567,7 @@ namespace SabreWebtopTicketingService.Services
                         await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
 
                         //Context Change
-                        await _changeContextService.ContextChange(token, pcc, ticketingpcc, request.Locator);
+                        await _changeContextService.ContextChange(token, pcc, ticketingpcc);
                     }
 
                     //Retrieve PNR
@@ -712,7 +712,7 @@ namespace SabreWebtopTicketingService.Services
                     await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
 
                     //Context Change
-                    await _changeContextService.ContextChange(token, pcc, ticketingpcc, request.Locator);
+                    await _changeContextService.ContextChange(token, pcc, ticketingpcc);
                 }
 
                 //Retrieve PNR
@@ -889,7 +889,7 @@ namespace SabreWebtopTicketingService.Services
                     await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
 
                     //Context Change
-                    await _changeContextService.ContextChange(token, pcc, ticketingpcc, request.Locator);
+                    await _changeContextService.ContextChange(token, pcc, ticketingpcc);
                 }
 
                 //Retrieve PNR
@@ -1583,7 +1583,7 @@ namespace SabreWebtopTicketingService.Services
                 if (sabreSession.Stored) { await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "I"); }
 
                 //Context Change
-                await _changeContextService.ContextChange(sabreSession, pcc, ticketingpcc, request.Locator);
+                await _changeContextService.ContextChange(sabreSession, pcc, ticketingpcc);
 
                 //Retrieve PNR
                 GetReservationRS getReservationRS = null;
@@ -3468,7 +3468,7 @@ namespace SabreWebtopTicketingService.Services
                     try
                     {
                         //Emulate to issuing PCC
-                        await _changeContextService.ContextChange(token, pcc, tkt.Key, request.Locator);
+                        await _changeContextService.ContextChange(token, pcc, tkt.Key);
                     }
                     catch (Exception ex)
                     {
@@ -3478,7 +3478,7 @@ namespace SabreWebtopTicketingService.Services
                             await _ignoreTransactionService.Ignore(token.SessionID, pcc);
 
                             //Emulate to issuing PCC
-                            await _changeContextService.ContextChange(token, pcc, tkt.Key, request.Locator);
+                            await _changeContextService.ContextChange(token, pcc, tkt.Key);
 
                         }
                         throw;
