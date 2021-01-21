@@ -5,7 +5,6 @@ namespace SabreWebtopTicketingService.Common
 {
     public class SabreSession
     {
-        [JsonPropertyName("sabre_session_id")]
         public string SessionID { get; set; }
         public bool IsLimitReached { get; set; }
         public string ConsolidatorPCC { get; set; }
