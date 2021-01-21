@@ -10,10 +10,7 @@ provider:
     SABRE_URL: ${self:custom.sabre_soap_uri.${self:provider.stage}}
     REST_URL: ${self:custom.sabre_rest_uri.${self:provider.stage}}
     SNS_TOPIC_TICKETS_ISSUED: ${self:custom.sns_topic_tickets_issued.${self:provider.stage}}
-    ENVIRONMENT: ${self:provider.stage}
-  vpc:
-    securityGroupIds: ${self:custom.security_group_ids.${self:provider.stage}}
-    subnet_ids: ${self.custom.subnet_ids.${self:provider.stage}}
+    ENVIRONMENT: ${self:provider.stage}  
   tracing:
     lambda: true
   iamRoleStatements:
@@ -27,6 +24,9 @@ provider:
         - ssm:*
         - "sns:Publish"
       Resource: "*"
+  vpc:
+    securityGroupIds: ${self:custom.security_group_ids.${self:provider.stage}}
+    subnet_ids: ${self.custom.subnet_ids.${self:provider.stage}}
 
 package:
   individually: true
@@ -38,19 +38,7 @@ custom:
   stages:
     - dev
     - stg
-    - prod 
-  sabre_soap_uri:
-    dev: ${ssm:/dev/sabre-soap/uri}
-    stg: ${ssm:/stg/sabre-soap/uri}
-    prod: ${ssm:/prod/sabre-soap/uri}
-  sabre_rest_uri:
-    dev: ${ssm:/dev/sabre_rest/uri}
-    stg: ${ssm:/stg/sabre_rest/uri}
-    prod: ${ssm:/prod/sabre_rest/uri}
-  sns_topic_tickets_issued:
-    dev: ${ssm:/dev/sns/tickets-issued}
-    stg: ${ssm:/stg/sns/tickets-issued}
-    prod: ${ssm:/prod/sns/tickets-issued}
+    - prod   
   security_group_ids:
     dev: ${ssm:/dev/vpc/private-security-group}
     stg: ${ssm:/stg/vpc/private-security-group}
@@ -65,6 +53,18 @@ custom:
     prod:
         -${ssm:/prod/vpc/private-subnet-1}
         -${ssm:/prod/vpc/private-subnet-2}
+  sabre_soap_uri:
+    dev: ${ssm:/dev/sabre-soap/uri}
+    stg: ${ssm:/stg/sabre-soap/uri}
+    prod: ${ssm:/prod/sabre-soap/uri}
+  sabre_rest_uri:
+    dev: ${ssm:/dev/sabre_rest/uri}
+    stg: ${ssm:/stg/sabre_rest/uri}
+    prod: ${ssm:/prod/sabre_rest/uri}
+  sns_topic_tickets_issued:
+    dev: ${ssm:/dev/sns/tickets-issued}
+    stg: ${ssm:/stg/sns/tickets-issued}
+    prod: ${ssm:/prod/sns/tickets-issued}
 
 functions:
   SearchPNR:
