@@ -8,7 +8,7 @@ namespace SabreWebtopTicketingService.Interface
     {
         Task<T> Get<T>(string key);        
 
-        Task Set<T>(string key, T value, int expirationInMinutes);
+        Task Set<T>(string key, T value);
 
         Task Delete(string key);
 

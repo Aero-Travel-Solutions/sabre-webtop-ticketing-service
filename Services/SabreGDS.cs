@@ -371,7 +371,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //Save PNR in cache
-                await _cacheDataSource.Set(pnrAccessKey, pnr, 15);
+                //await _cacheDataSource.Set(pnrAccessKey, pnr);
 
                 if (getStoredCards)
                 {
@@ -380,7 +380,7 @@ namespace SabreWebtopTicketingService.Services
                     //Encrypt card number
                     storedCreditCard.ForEach(c => c.CreditCard = dataProtector.Protect(c.CreditCard));
 
-                    await _cacheDataSource.Set(cardAccessKey, storedCreditCard, 15);
+                    //await _cacheDataSource.Set(cardAccessKey, storedCreditCard);
                 }
             }
 
@@ -542,12 +542,12 @@ namespace SabreWebtopTicketingService.Services
                     var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                     //Try get PNR in cache               
-                    pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
+                    //pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
                     if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                     {
                         //Try get stored cards
-                        storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
+                        //storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
                         if (!storedCreditCards.IsNullOrEmpty())
                         {
                             storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -687,12 +687,12 @@ namespace SabreWebtopTicketingService.Services
                 var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
-                pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
+                //pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
                 if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
+                    //storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -767,7 +767,7 @@ namespace SabreWebtopTicketingService.Services
                     pnr.Quotes.AddRange(quotes);
 
                     //Save PNR in cache
-                    await _cacheDataSource.Set(pnrAccessKey, pnr, 15);
+                    //await _cacheDataSource.Set(pnrAccessKey, pnr);
                 }
 
                 //redislpay price quotes
@@ -864,12 +864,12 @@ namespace SabreWebtopTicketingService.Services
                 var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
-                pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
+                //pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
                 if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
+                    //storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
                         storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
@@ -944,7 +944,7 @@ namespace SabreWebtopTicketingService.Services
                     pnr.Quotes.AddRange(quotes);
 
                     //Save PNR in cache
-                    await _cacheDataSource.Set(pnrAccessKey, pnr, 15);
+                    //await _cacheDataSource.Set(pnrAccessKey, pnr);
                 }
 
                 //redislpay price quotes

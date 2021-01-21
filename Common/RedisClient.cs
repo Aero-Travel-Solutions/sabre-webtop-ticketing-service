@@ -13,6 +13,7 @@ namespace SabreWebtopTicketingService.Common
     {        
         private readonly ILogger _logger;
         private readonly IDatabaseAsync _database;
+        private int expiry = 15;
 
         public RedisClient(IDatabaseAsync database, ILogger logger)
         {
@@ -47,13 +48,13 @@ namespace SabreWebtopTicketingService.Common
             }
         }        
 
-        public async Task Set<T>(string key, T value, int expirationInMinutes)
+        public async Task Set<T>(string key, T value)
         {
             Console.WriteLine($"### Aeronology.DTO.Models.RedisClient.Set('{key}') ###");
 
             try
             {
-                await _database.StringSetAsync(key,JsonSerializer.Serialize(value), TimeSpan.FromMinutes(expirationInMinutes));
+                await _database.StringSetAsync(key,JsonSerializer.Serialize(value), TimeSpan.FromMinutes(expiry));
             }
             catch (Exception ex)
             {

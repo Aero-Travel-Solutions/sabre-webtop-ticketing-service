@@ -14,6 +14,7 @@ namespace SabreWebtopTicketingService.Models
         public string BaseFareCurrency { get; set; }
         public decimal? EquivFare { get; set; }
         public string EquivFareCurrency { get; set; }
+        public decimal ROE { get; set; }
         public List<Tax> Taxes { get; set; }
         public decimal TotalFare { get; set; }
         public decimal TotalTax { get; set; }
