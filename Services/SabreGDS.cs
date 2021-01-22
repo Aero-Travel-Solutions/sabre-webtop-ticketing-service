@@ -1122,6 +1122,29 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
+        //couldn't use interfaces as name missmatch and can't change names
+        private async Task RedisplayGeneratedQuotes(string token, IEnumerable<IssueExpressTicketQuote> quotes)
+        {
+            string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
+            List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
+            if (applicabledpqres.Any(w => w.PQNo != -1))
+            {
+                applicabledpqres.
+                    Where(w => w.PQNo != -1).
+                    ToList().
+                    ForEach(f => quotes.
+                                    Where(q => q.Passenger.PaxType == f.PassengerType ||
+                                               (q.Passenger.PaxType.StartsWith("C") && q.Passenger.PaxType.Substring(0, 1) == f.PassengerType.Substring(0, 1))).
+                                    ToList().
+                                    ForEach(qf =>
+                                    {
+                                        qf.QuoteNo = f.PQNo;
+                                        qf.BspCommissionRate = f.BSPCommission;
+                                        qf.TourCode = f.TourCode;
+                                    }));
+            }
+        }
+
         private List<PQTextResp> ParsePQText(string pqtext)
         {
             List<PQTextResp> result = new List<PQTextResp>();
@@ -1616,7 +1639,6 @@ namespace SabreWebtopTicketingService.Services
                 {
                     await ManualBuild(
                                 pcc, 
-                                request, 
                                 statefultoken, 
                                 manualquotes, 
                                 pnr, 
@@ -2854,7 +2876,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private async Task ManualBuild(Pcc pcc, IssueExpressTicketRQ request, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass)
+        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass)
         {
             //Assign printer
             await _sabreCommandService.
@@ -2872,7 +2894,7 @@ namespace SabreWebtopTicketingService.Services
                             ticketingpcc);
 
             int groupindex = 1;
-            foreach (var quotegrp in request.Quotes.GroupBy(grp => grp.Passenger.PaxType))
+            foreach (var quotegrp in manualquotes.GroupBy(grp => grp.Passenger.PaxType))
             {
                 IssueExpressTicketQuote quote = quotegrp.First();
 
@@ -3119,6 +3141,9 @@ namespace SabreWebtopTicketingService.Services
             //    }
             //}
             #endregion
+
+            //redislpay price quotes
+            await RedisplayGeneratedQuotes(statefultoken, manualquotes);
 
             //receieve and end transact
             await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true, pcc);
