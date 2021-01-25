@@ -10,7 +10,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class GetQuoteRQ
     {
-        private List<QuotePassenger> paxs = new List<QuotePassenger>();
+        private List<QuotePassenger> paxs =null;
         public string SessionID { get; set; }
         public string AgentID { get; set; }
         public string GDSCode { get; set; }
@@ -23,6 +23,7 @@ namespace SabreWebtopTicketingService.Models
             {
                 if (!SelectedPassengerKeys.IsNullOrEmpty())
                 {
+                    paxs = new List<QuotePassenger>();
                     foreach (var SelectedPaxKey in SelectedPassengerKeys)
                     {
                         QuotePassenger quotePassenger = new QuotePassenger();
