@@ -3878,6 +3878,7 @@ namespace SabreWebtopTicketingService.Services
                         Select((q, index) => new Quote()
                         {
                             QuoteNo = q.PQ.PQNo,
+                            FareType = FareType.Published,
                             FiledFare = true,
                             LastPurchaseDate = q.PQ.LastDateToPurchase,
                             BaseFare = q.PQ.BaseFare,

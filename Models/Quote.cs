@@ -10,6 +10,7 @@ namespace SabreWebtopTicketingService.Models
     {
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
+        public FareType FareType { get; set; }
         public string LastPurchaseDate { get; set; }
         public bool FiledFare { get; set; }
         public QuotePassenger QuotePassenger { get; set; }
