@@ -1139,7 +1139,7 @@ namespace SabreWebtopTicketingService.Services
                                     ForEach(qf =>
                                     {
                                         qf.QuoteNo = f.PQNo;
-                                        qf.BspCommissionRate = f.BSPCommission;
+                                        qf.BSPCommissionRate = f.BSPCommission;
                                         qf.TourCode = f.TourCode;
                                     }));
             }
