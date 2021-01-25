@@ -10,6 +10,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class GetQuoteRQ
     {
+        private List<QuotePassenger> paxs = new List<QuotePassenger>();
         public string SessionID { get; set; }
         public string AgentID { get; set; }
         public string GDSCode { get; set; }
@@ -20,7 +21,6 @@ namespace SabreWebtopTicketingService.Models
         {
             get
             {
-                List<QuotePassenger> quotePassengers = new List<QuotePassenger>();
                 if (!SelectedPassengerKeys.IsNullOrEmpty())
                 {
                     foreach (var SelectedPaxKey in SelectedPassengerKeys)
@@ -57,14 +57,17 @@ namespace SabreWebtopTicketingService.Models
                                 quotePassenger.PriceIt = SelectedPaxKey.PriceIt;
                             }
                         }
-                        quotePassengers.Add(quotePassenger);
+                        paxs.Add(quotePassenger);
                     }
                 }
 
-                return quotePassengers;
+                return paxs;
             }
 
-            set { }
+            set 
+            { 
+                paxs = value; 
+            }
         }
         public List<SelectedQuoteSector> SelectedSectors { get; set; }
         public string PriceCode { get; set; }

@@ -50,7 +50,11 @@ namespace SabreWebtopTicketingService
             services.AddDistributedMemoryCache();
 
             //Redis cache
-            var cacheHost = Configuration.GetSection("url").Value ?? "localhost:6379";
+            var cacheHost =  "localhost:6379";//Configuration.GetSection("url").Value ?? 
+            #if !DEBUG
+                cacheHost = Configuration.GetSection("url").Value;
+            #endif
+
             var redis = ConnectionMultiplexer.Connect(cacheHost);
             services.AddSingleton<IDatabaseAsync>(redis.GetDatabase());
 
