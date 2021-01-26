@@ -28,17 +28,17 @@ namespace SabreWebtopTicketingService.Models
         public decimal? FeeGST { get; set; }
         public bool FiledFare { get; set; }
         public bool PendingSfData { get; set; }
-        public QuotePassenger Passenger { get; set; }
+        public QuotePassenger QuotePassenger { get; set; }
         public string PassengerName 
         {
             get
             {
-                return Passenger.PassengerName;
+                return QuotePassenger.PassengerName;
             }
             set { }
         }
 
-        public List<QuoteSector> Sectors { get; set; }
+        public List<QuoteSector> QuoteSectors { get; set; }
         public bool PartialIssue { get; set; }
         public int SectorCount { get; set; }
         public string PlatingCarrier { get; set; }

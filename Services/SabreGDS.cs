@@ -1133,8 +1133,8 @@ namespace SabreWebtopTicketingService.Services
                     Where(w => w.PQNo != -1).
                     ToList().
                     ForEach(f => quotes.
-                                    Where(q => q.Passenger.PaxType == f.PassengerType ||
-                                               (q.Passenger.PaxType.StartsWith("C") && q.Passenger.PaxType.Substring(0, 1) == f.PassengerType.Substring(0, 1))).
+                                    Where(q => q.QuotePassenger.PaxType == f.PassengerType ||
+                                               (q.QuotePassenger.PaxType.StartsWith("C") && q.QuotePassenger.PaxType.Substring(0, 1) == f.PassengerType.Substring(0, 1))).
                                     ToList().
                                     ForEach(qf =>
                                     {
@@ -1290,21 +1290,21 @@ namespace SabreWebtopTicketingService.Services
 
             if (!request.Quotes.IsNullOrEmpty())
             {
-                foreach (var item in request.Quotes.Where(q => q.Passenger.FormOfPayment.PaymentType == PaymentType.CC && q.Passenger.FormOfPayment.CardNumber.Contains("XXX")))
+                foreach (var item in request.Quotes.Where(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //2. Match masked cards and extract card details
                     var value = storedcards.
                                     FirstOrDefault(f =>
-                                        f.MaskedCardNumber == item.Passenger.FormOfPayment.CardNumber);
+                                        f.MaskedCardNumber == item.QuotePassenger.FormOfPayment.CardNumber);
 
                     if (value == null)
                     {
                         throw new AeronologyException("50000050", "Card data not found.");
                     }
 
-                    item.Passenger.FormOfPayment.PaymentType = PaymentType.CC;
-                    item.Passenger.FormOfPayment.CardNumber = value.CreditCard;
-                    item.Passenger.FormOfPayment.ExpiryDate = item.Passenger.FormOfPayment.ExpiryDate;
+                    item.QuotePassenger.FormOfPayment.PaymentType = PaymentType.CC;
+                    item.QuotePassenger.FormOfPayment.CardNumber = value.CreditCard;
+                    item.QuotePassenger.FormOfPayment.ExpiryDate = item.QuotePassenger.FormOfPayment.ExpiryDate;
                 }
             }
 
@@ -1666,7 +1666,7 @@ namespace SabreWebtopTicketingService.Services
 
                 //credit check
                 if (request.MerchantData == null &&
-                    (!(request.Quotes?.Any(q => q.Passenger.FormOfPayment.PaymentType == PaymentType.CC) ?? true) ||
+                    (!(request.Quotes?.Any(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC) ?? true) ||
                     !(request.EMDs?.Any(e => e.FormOfPayment.PaymentType == PaymentType.CC) ?? true)) &&
                     !string.IsNullOrEmpty(agent.CustomerNo) && (backofficeProcess?.CreditLimitCheck ?? false))
                 {
@@ -1825,7 +1825,7 @@ namespace SabreWebtopTicketingService.Services
                 GDSCode = "1W",
                 GrandPriceItAmount = rq.GrandPriceItAmount.HasValue ? rq.GrandPriceItAmount.Value : default(decimal?)
             };
-            bool isccfop = !rq.Quotes.IsNullOrEmpty() && rq.Quotes.First().Passenger.FormOfPayment.PaymentType == PaymentType.CC ||
+            bool isccfop = !rq.Quotes.IsNullOrEmpty() && rq.Quotes.First().QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ||
                            !rq.EMDs.IsNullOrEmpty() && rq.EMDs.First().FormOfPayment.PaymentType == PaymentType.CC;
 
             //TODO: workout ticketing pcc timezone
@@ -2518,7 +2518,7 @@ namespace SabreWebtopTicketingService.Services
                                                     erroreditem.PricingQualifiers.NameSelect != null ?
                                                             rq.Quotes.
                                                             Where(w =>
-                                                                erroreditem.PricingQualifiers.NameSelect.Select(s => s.NameNumber).Contains(w.Passenger.NameNumber)).
+                                                                erroreditem.PricingQualifiers.NameSelect.Select(s => s.NameNumber).Contains(w.QuotePassenger.NameNumber)).
                                                             Select(s => s.QuoteNo).
                                                             Distinct().
                                                                 ToList() :
@@ -2550,15 +2550,15 @@ namespace SabreWebtopTicketingService.Services
 
         private async Task AddDOBRemarks(IssueExpressTicketRQ request, string ticketingpcc, User user, Token token)
         {
-            var dobquotes = request.Quotes.Where(w => w.Passenger.DOBChanged && w.Passenger.DOB.HasValue);
+            var dobquotes = request.Quotes.Where(w => w.QuotePassenger.DOBChanged && w.QuotePassenger.DOB.HasValue);
             if (!dobquotes.IsNullOrEmpty())
             {
                 List<Remark> remarks = GetRemarks(
                                         dobquotes.
                                             Select(s => new Remark()
                                             {
-                                                SegmentNumber = string.Join(",", dobquotes.First().Sectors.Select(sec => sec.PQSectorNo.ToString()).Distinct()),
-                                                RemarkText = $"Date of birth for {s.Passenger.PassengerName} was updated by {user?.FullName ?? "Aeronology"} to {s.Passenger.DOB.Value:ddMMMyyyy}"
+                                                SegmentNumber = string.Join(",", dobquotes.First().QuoteSectors.Select(sec => sec.PQSectorNo.ToString()).Distinct()),
+                                                RemarkText = $"Date of birth for {s.QuotePassenger.PassengerName} was updated by {user?.FullName ?? "Aeronology"} to {s.QuotePassenger.DOB.Value:ddMMMyyyy}"
                                             }).
                                             ToList());
 
@@ -2692,10 +2692,10 @@ namespace SabreWebtopTicketingService.Services
             {
                 GDSCode = request.GDSCode,
                 Locator = request.Locator,
-                SelectedPassengers = pendingquotes.Select(s => s.Passenger).Distinct().ToList(),
+                SelectedPassengers = pendingquotes.Select(s => s.QuotePassenger).Distinct().ToList(),
                 SelectedSectors = pendingquotes.
                                         First().
-                                        Sectors.
+                                        QuoteSectors.
                                         Select(s => new SelectedQuoteSector() 
                                         { 
                                             SectorNo = s.PQSectorNo 
@@ -2769,7 +2769,7 @@ namespace SabreWebtopTicketingService.Services
                             AgentCommissions = q.AgentCommissions,
                             Fee = q.Fee,
                             FeeGST = q.FeeGST,
-                            Passenger = new QuotePassenger()
+                            QuotePassenger = new QuotePassenger()
                             {
                                 NameNumber = q.QuotePassenger.NameNumber,
                                 PassengerName = q.QuotePassenger.PassengerName,
@@ -2779,20 +2779,20 @@ namespace SabreWebtopTicketingService.Services
                                 DOBChanged = getQuoteRQ.SelectedPassengers.First(f => f.NameNumber == q.QuotePassenger.NameNumber).DOBChanged,
                                 FormOfPayment = getQuoteRQ.SelectedPassengers.First(f => f.NameNumber == q.QuotePassenger.NameNumber).FormOfPayment,
                             },
-                            Sectors = q.QuoteSectors,
+                            QuoteSectors = q.QuoteSectors,
                             SectorCount = q.SectorCount,
                             PlatingCarrier = q.ValidatingCarrier,
                             TotalTax = q.TotalTax,
                             Route = q.Route,
                             PriceIt = request.
                                         Quotes.
-                                        First(iq => iq.Passenger.NameNumber == q.QuotePassenger.NameNumber).
+                                        First(iq => iq.QuotePassenger.NameNumber == q.QuotePassenger.NameNumber).
                                         PriceIt,
                             Endorsements = q.Endorsements,
                             MerchantFee = request.MerchantData == null ?
                                             0.00M :
                                             request.MerchantData.MerchantFeeData.First(f => f.DocumentType == Models.DocumentType.Quote &&
-                                           f.DocumentNumber == request.Quotes.First(iq => iq.Passenger.NameNumber == q.QuotePassenger.NameNumber).QuoteNo).
+                                           f.DocumentNumber == request.Quotes.First(iq => iq.QuotePassenger.NameNumber == q.QuotePassenger.NameNumber).QuoteNo).
                                             MerchantFee,
                             TourCode = q.TourCode,
                             ApplySupressITFlag = notourcode && quotes.Any(a => !string.IsNullOrEmpty(a.TourCode))
@@ -2836,20 +2836,20 @@ namespace SabreWebtopTicketingService.Services
                 GroupBy(g => g.QuoteNo).
                 Where(grp => !request.
                                 Quotes.
-                                Where(w => w.Passenger.PaxType == grp.First().Passenger.PaxType).
-                                Select(s => s.Passenger.NameNumber).
-                                All(a => grp.Select(s => s.Passenger.NameNumber).Contains(a))).
+                                Where(w => w.QuotePassenger.PaxType == grp.First().QuotePassenger.PaxType).
+                                Select(s => s.QuotePassenger.NameNumber).
+                                All(a => grp.Select(s => s.QuotePassenger.NameNumber).Contains(a))).
                  SelectMany(m => m).
                  ToList().
                  ForEach(quo => quo.PartialIssue = true);
 
             //Form of payment base
             newissueticketquotes.
-                GroupBy(g => new { g.QuoteNo, g.Passenger.FormOfPayment.PaymentType }).
+                GroupBy(g => new { g.QuoteNo, g.QuotePassenger.FormOfPayment.PaymentType }).
                 Where(w => w.Count() > 1).
                 Select(s => s.ToList()).
-                Where(w => !w.All(a => a.Passenger.FormOfPayment.CardNumber == w.First().Passenger.FormOfPayment.CardNumber ||
-                                      a.Passenger.FormOfPayment.CreditAmount == w.First().Passenger.FormOfPayment.CreditAmount)).
+                Where(w => !w.All(a => a.QuotePassenger.FormOfPayment.CardNumber == w.First().QuotePassenger.FormOfPayment.CardNumber ||
+                                      a.QuotePassenger.FormOfPayment.CreditAmount == w.First().QuotePassenger.FormOfPayment.CreditAmount)).
                 SelectMany(m => m).
                 ToList().
                 ForEach(quo => quo.PartialIssue = true);
@@ -2894,17 +2894,17 @@ namespace SabreWebtopTicketingService.Services
                             ticketingpcc);
 
             int groupindex = 1;
-            foreach (var quotegrp in manualquotes.GroupBy(grp => grp.Passenger.PaxType))
+            foreach (var quotegrp in manualquotes.GroupBy(grp => grp.QuotePassenger.PaxType))
             {
                 IssueExpressTicketQuote quote = quotegrp.First();
 
                 string command1 = $"W¥C¥" +
                                     //paxtype
-                                    $"P{quote.Passenger.PaxType}" +
+                                    $"P{quote.QuotePassenger.PaxType}" +
                                     //namenumber
-                                    $"¥N{string.Join("/", quotegrp.Select(q=> q.Passenger.NameNumber))}" +
+                                    $"¥N{string.Join("/", quotegrp.Select(q=> q.QuotePassenger.NameNumber))}" +
                                     //sectors
-                                    $"¥S{string.Join("/", quote.Sectors.Select(s => s.PQSectorNo))}" +
+                                    $"¥S{string.Join("/", quote.QuoteSectors.Select(s => s.PQSectorNo))}" +
                                     //plating carrier
                                     $"¥A{quote.PlatingCarrier.Trim().ToUpper()}";
 
@@ -2922,7 +2922,7 @@ namespace SabreWebtopTicketingService.Services
 
                 //loop per sector to get farebasis NVA, NVB, Baggage
                 int index = 1;
-                foreach (var quoteSector in quote.Sectors)
+                foreach (var quoteSector in quote.QuoteSectors)
                 {
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
@@ -3212,28 +3212,28 @@ namespace SabreWebtopTicketingService.Services
                 {
                     quotequery = from quo in request.Quotes
                                  let rqquo = requestquotes.First(f => quo.QuoteNo == f.QuoteNo &&
-                                                                      quo.Passenger.PassengerName == f.Passenger.PassengerName &&
+                                                                      quo.QuotePassenger.PassengerName == f.QuotePassenger.PassengerName &&
                                                                       quo.TotalTax == f.TotalTax)
                                  select new IssueExpressTicketQuote()
                                  {
                                      QuoteNo = quo.QuoteNo,
-                                     Passenger = new QuotePassenger()
+                                     QuotePassenger = new QuotePassenger()
                                      {
-                                         DOB = quo.Passenger.DOB,
-                                         DOBChanged = quo.Passenger.DOBChanged,
-                                         NameNumber = quo.Passenger.NameNumber,
-                                         PassengerName = quo.Passenger.PassengerName,
-                                         PaxType = quo.Passenger.PaxType,
-                                         Passport = quo.Passenger.Passport,
-                                         PriceIt = quo.Passenger.PriceIt,
+                                         DOB = quo.QuotePassenger.DOB,
+                                         DOBChanged = quo.QuotePassenger.DOBChanged,
+                                         NameNumber = quo.QuotePassenger.NameNumber,
+                                         PassengerName = quo.QuotePassenger.PassengerName,
+                                         PaxType = quo.QuotePassenger.PaxType,
+                                         Passport = quo.QuotePassenger.Passport,
+                                         PriceIt = quo.QuotePassenger.PriceIt,
                                          FormOfPayment = new FOP()
                                          {
-                                             BCode = quo.FiledFare ? rqquo.Passenger.FormOfPayment.BCode : quo.Passenger.FormOfPayment.BCode,
-                                             CardNumber = quo.Passenger.FormOfPayment.CardNumber,
-                                             ExpiryDate = quo.Passenger.FormOfPayment.ExpiryDate,
-                                             CardType = quo.Passenger.FormOfPayment.CardType,
-                                             PaymentType = quo.Passenger.FormOfPayment.PaymentType,
-                                             CreditAmount = quo.Passenger.FormOfPayment.CreditAmount
+                                             BCode = quo.FiledFare ? rqquo.QuotePassenger.FormOfPayment.BCode : quo.QuotePassenger.FormOfPayment.BCode,
+                                             CardNumber = quo.QuotePassenger.FormOfPayment.CardNumber,
+                                             ExpiryDate = quo.QuotePassenger.FormOfPayment.ExpiryDate,
+                                             CardType = quo.QuotePassenger.FormOfPayment.CardType,
+                                             PaymentType = quo.QuotePassenger.FormOfPayment.PaymentType,
+                                             CreditAmount = quo.QuotePassenger.FormOfPayment.CreditAmount
                                          }
                                      },
                                      PriceIt = quo.PriceIt,
@@ -3247,7 +3247,7 @@ namespace SabreWebtopTicketingService.Services
                                      PlatingCarrier = rqquo.PlatingCarrier,
                                      Route = rqquo.Route,
                                      SectorCount = rqquo.SectorCount,
-                                     Sectors = quo.Sectors.IsNullOrEmpty() ? rqquo.Sectors : quo.Sectors,
+                                     QuoteSectors = quo.QuoteSectors.IsNullOrEmpty() ? rqquo.QuoteSectors : quo.QuoteSectors,
                                      TotalFare = rqquo.TotalFare,
                                      TotalTax = rqquo.TotalTax,
                                      AgentCommissionRate = rqquo.AgentCommissionRate,
@@ -3728,7 +3728,7 @@ namespace SabreWebtopTicketingService.Services
                 ToList().
                 ForEach(tkt =>
                 {
-                    var quote = request.Quotes.First(f => f.QuoteNo == tkt.QuoteRefNo && f.Passenger.PassengerName == tkt.PassengerName);
+                    var quote = request.Quotes.First(f => f.QuoteNo == tkt.QuoteRefNo && f.QuotePassenger.PassengerName == tkt.PassengerName);
 
                     tkt.MerchantFOP = new MerchantFOP()
                     {
@@ -3737,7 +3737,7 @@ namespace SabreWebtopTicketingService.Services
                         CardNumber = result.CardNumber,
                         CardType = result.CardType,
                         ExpiryDate = result.CardExpiry,
-                        TotalCreditAmount = quote.Passenger.FormOfPayment.CreditAmount,
+                        TotalCreditAmount = quote.QuotePassenger.FormOfPayment.CreditAmount,
                         CashAmount = 0.00M,
                         MerchantFee = quote.MerchantFee
                     };
@@ -3778,9 +3778,9 @@ namespace SabreWebtopTicketingService.Services
                 {
                     var quote = request.
                                         Quotes.
-                                        First(f => f.QuoteNo == tkt.QuoteRefNo && f.Passenger.PassengerName == tkt.PassengerName);
+                                        First(f => f.QuoteNo == tkt.QuoteRefNo && f.QuotePassenger.PassengerName == tkt.PassengerName);
 
-                    merchantamount += (quote.Passenger.FormOfPayment.CreditAmount - quote.MerchantFee);
+                    merchantamount += (quote.QuotePassenger.FormOfPayment.CreditAmount - quote.MerchantFee);
                 }
 
                 if (tkt.DocumentType == "EMD" && !tkt.EMDNumber.IsNullOrEmpty())
@@ -3844,7 +3844,7 @@ namespace SabreWebtopTicketingService.Services
         private void GetStoredCards(IssueExpressTicketRQ request, GetReservationRS getReservationRS)
         {
             if (!request.Quotes.IsNullOrEmpty() &&
-                 request.Quotes.Any(q => q.Passenger.FormOfPayment.PaymentType == PaymentType.CC && q.Passenger.FormOfPayment.CardNumber.Contains("XXX")) ||
+                 request.Quotes.Any(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CardNumber.Contains("XXX")) ||
                 !request.EMDs.IsNullOrEmpty() &&
                 request.EMDs.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
             {
@@ -4250,8 +4250,8 @@ namespace SabreWebtopTicketingService.Services
                                 FeeGST = quote.FeeGST,
                                 FiledFare = quote.FiledFare,
                                 PlatingCarrier = quote.ValidatingCarrier,
-                                Passenger = quote.QuotePassenger,
-                                Sectors = quote.QuoteSectors,
+                                QuotePassenger = quote.QuotePassenger,
+                                QuoteSectors = quote.QuoteSectors,
                                 TotalFare = quote.TotalFare,
                                 TotalTax = quote.TotalTax,
                                 QuoteNo = quote.QuoteNo,

@@ -46,17 +46,17 @@ namespace SabreWebtopTicketingService.Services
                 //add quotes to ticketing
                 ticketing.
                     AddRange(quotes.
-                                GroupBy(g => new { g.QuoteNo, g.PlatingCarrier, g.Passenger.FormOfPayment.PaymentType, g.Passenger.FormOfPayment.CardNumber, g.Passenger.FormOfPayment.CreditAmount }).
+                                GroupBy(g => new { g.QuoteNo, g.PlatingCarrier, g.QuotePassenger.FormOfPayment.PaymentType, g.QuotePassenger.FormOfPayment.CardNumber, g.QuotePassenger.FormOfPayment.CreditAmount }).
                                 Select(quotegrp => new AirTicketRQTicketing()
                                 {
                                     FOP_Qualifiers = getFormOfPayment(
-                                                        quotegrp.Select(s => s.Passenger.FormOfPayment).ToList(),
+                                                        quotegrp.Select(s => s.QuotePassenger.FormOfPayment).ToList(),
                                                         quotegrp.Sum(s => s.TotalFare),
                                                         bcode),
                                     MiscQualifiers = GetMiscQualifiers(
                                                             quotegrp.ToList(),
                                                             null,
-                                                            quotegrp.Select(s => s.Passenger.FormOfPayment).All(a=> a.PaymentType == PaymentType.CA) ?
+                                                            quotegrp.Select(s => s.QuotePassenger.FormOfPayment).All(a=> a.PaymentType == PaymentType.CA) ?
                                                                 "":
                                                                 bcode,
                                                             enableextendedendo),
@@ -249,14 +249,14 @@ namespace SabreWebtopTicketingService.Services
             if (quotes.Any(a=> a.PartialIssue) || 
                 quotes.
                     Any(a=> 
-                           a.Passenger.FormOfPayment.CreditAmount != 
-                           quotes.First().Passenger.FormOfPayment.CreditAmount))
+                           a.QuotePassenger.FormOfPayment.CreditAmount != 
+                           quotes.First().QuotePassenger.FormOfPayment.CreditAmount))
             {
                 //specify passengers
                 pricinginstructions.NameSelect = quotes.
                                                     Select(s => new AirTicketRQTicketingPricingQualifiersNameSelect()
                                                     {
-                                                        NameNumber = s.Passenger.NameNumber
+                                                        NameNumber = s.QuotePassenger.NameNumber
                                                     }).ToArray();
 
                 //specify sectors
@@ -264,7 +264,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SegmentSelect = quotes.
                                         First().
-                                        Sectors.
+                                        QuoteSectors.
                                         Select(s => new AirTicketRQTicketingPricingQualifiersItineraryOptionsSegmentSelect()
                                         {
                                             Number = s.PQSectorNo
@@ -529,7 +529,7 @@ namespace SabreWebtopTicketingService.Services
                                 {
                                     DocumentNo = s.QuoteNo,
                                     DocumentType = "QUOTE",
-                                    PassengerName = s.Passenger.PassengerName,
+                                    PassengerName = s.QuotePassenger.PassengerName,
                                     Route = s.Route,
                                     PriceIt = s.PriceIt == decimal.MinValue ?
                                                 s.TotalFare :
@@ -540,11 +540,11 @@ namespace SabreWebtopTicketingService.Services
                                     Commission = ((s.BaseFare + s.TotalTax) * s.AgentCommissionRate ?? 0.00M) / 100,
                                     Fee = s.Fee,
                                     FeeGST = s.FeeGST,
-                                    FormOfPayment = s.Passenger.FormOfPayment,
-                                    AgentPrice = s.Passenger.FormOfPayment == null || s.Passenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                    FormOfPayment = s.QuotePassenger.FormOfPayment,
+                                    AgentPrice = s.QuotePassenger.FormOfPayment == null || s.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
                                                         (s.BaseFare + s.TotalTax + s.Fee + +(s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M)) - s.Commission :
-                                                        s.Passenger.FormOfPayment.PaymentType == PaymentType.CC && s.Passenger.FormOfPayment.CreditAmount < (s.BaseFare + s.TotalTax) ?
-                                                            (s.BaseFare + s.TotalTax) - s.Passenger.FormOfPayment.CreditAmount + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - s.Commission :
+                                                        s.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && s.QuotePassenger.FormOfPayment.CreditAmount < (s.BaseFare + s.TotalTax) ?
+                                                            (s.BaseFare + s.TotalTax) - s.QuotePassenger.FormOfPayment.CreditAmount + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - s.Commission :
                                                             s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - s.Commission
                                 }).ToList(),
                     EMDNos = issueExpressTicketRQ.EMDs.IsNullOrEmpty() ?

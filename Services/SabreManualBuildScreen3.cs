@@ -54,7 +54,7 @@ namespace SabreWebtopTicketingService.Services
                 returncommand += string.
                                     Join("",
                                         quote.
-                                        Sectors.
+                                        QuoteSectors.
                                         Select(s => new
                                         {
                                             connectionindicator = s.DepartureCityCode == "ARUNK" ?  "":"O",
