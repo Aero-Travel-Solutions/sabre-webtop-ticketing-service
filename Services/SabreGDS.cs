@@ -2928,8 +2928,10 @@ namespace SabreWebtopTicketingService.Services
                 {
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
-                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? "" : $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K")}";
-                        string nvbnva = string.IsNullOrEmpty(quoteSector.NVB) && string.IsNullOrEmpty(quoteSector.NVA) ? "" : $"*{quoteSector.NVB}{quoteSector.NVA}";
+                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? "" : $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").TrimStart('0')}";
+                        string nva = string.IsNullOrEmpty(quoteSector.NVA) ? "" : DateTime.Parse(quoteSector.NVA).ToString("DDMMMYY");
+                        string nvb = string.IsNullOrEmpty(quoteSector.NVB) ? "" : DateTime.Parse(quoteSector.NVB).ToString("DDMMMYY");
+                        string nvbnva = $"*{nva}{nvb}";
                         command2 += $"¥L{index}" +//connection indicator
                                                  //farebasis
                                         $"-{quoteSector.FareBasis}" +
@@ -2998,7 +3000,7 @@ namespace SabreWebtopTicketingService.Services
                     throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
                 }
 
-                    command2 += $"¥EO/{endos}";
+                    command2 += $"¥ED/{endos}";
                     //command2 += $"¥EO/{endos.RegexReplace(@"\s*", "").Replace("NONREFUNDABLE", "NONREF").Replace("CARRIER", "CXR").Substring(0, 58)}";
 
 
