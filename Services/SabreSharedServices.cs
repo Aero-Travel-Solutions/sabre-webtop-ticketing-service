@@ -118,7 +118,7 @@ namespace SabreWebtopTicketingService.Services
                     }
 
                     unitofmesure = unitofmesure.StartsWith("P") ? "PC" : unitofmesure.StartsWith("K") ? "KG" : unitofmesure;
-                    result = $"{intnoofpc.ToString()}{unitofmesure}";
+                    result = $"{intnoofpc}{unitofmesure}";
                 }
             }
             catch

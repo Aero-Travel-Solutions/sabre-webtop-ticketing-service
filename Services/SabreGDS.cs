@@ -2901,7 +2901,7 @@ namespace SabreWebtopTicketingService.Services
 
                 string command1 = $"W¥C¥" +
                                     //paxtype
-                                    $"P{quote.QuotePassenger.PaxType}" +
+                                    $"P{GetManualBuildPaxType(quote.QuotePassenger.PaxType, quote.QuotePassenger.DOB)}" +
                                     //namenumber
                                     $"¥N{string.Join("/", quotegrp.Select(q=> q.QuotePassenger.NameNumber))}" +
                                     //sectors
@@ -2918,6 +2918,12 @@ namespace SabreWebtopTicketingService.Services
 
                 logger.LogInformation($"##### Manual build command 1 : {command1}");
                 logger.LogInformation($"##### Manual build command 1 response : {response1}");
+
+                if(!response1.StartsWith("PQ"))
+                {
+                    throw new AeronologyException("MANUAL_BUILD_SHELL_FAIL", $"Unexpected response received from GDS {response1}.");
+                }
+
                 int groupindex = int.Parse(response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*", "1"));
                 logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
@@ -4168,6 +4174,31 @@ namespace SabreWebtopTicketingService.Services
             else if (paxType.StartsWith("C"))
             {
                 return "CHD";
+            }
+            else if (paxType.StartsWith("I"))
+            {
+                return "INF";
+            }
+            else
+            {
+                return "ADT";
+            }
+        }
+
+        private string GetManualBuildPaxType(string paxType, DateTime? dOB)
+        {
+            if (paxType.StartsWith("A"))
+            {
+                return "ADT";
+            }
+            else if (paxType.StartsWith("C"))
+            {
+                if(dOB.HasValue && dOB.Value != DateTime.MinValue)
+                {
+                    return $"C{dOB.Value.GetCurrentAge().ToString().PadLeft(2,'0')}";
+                }
+
+                return "CNN";
             }
             else if (paxType.StartsWith("I"))
             {
