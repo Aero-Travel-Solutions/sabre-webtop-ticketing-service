@@ -44,7 +44,7 @@ namespace SabreWebtopTicketingService.Services
                 //Attach client credentials
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
-
+                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
                 logger.LogInformation($"{nameof(EndTransaction)} invoke \"EnhancedEndTransactionRQAsync\"");
                 var sw = Stopwatch.StartNew();
 
@@ -67,7 +67,7 @@ namespace SabreWebtopTicketingService.Services
                                     SelectMany(s => s.Message);
 
                     throw new GDSException(
-                                "50000162",
+                                "END_TRANSACT_ERROR",
                                 string.Join(",",
                                             messages.
                                             Select(s => s.Value).

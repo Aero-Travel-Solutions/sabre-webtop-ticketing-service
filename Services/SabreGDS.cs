@@ -2895,7 +2895,6 @@ namespace SabreWebtopTicketingService.Services
                             $"PTR/{ticketingprinter}",
                             ticketingpcc);
 
-            int groupindex = 1;
             foreach (var quotegrp in manualquotes.GroupBy(grp => grp.QuotePassenger.PaxType))
             {
                 IssueExpressTicketQuote quote = quotegrp.First();
@@ -2919,7 +2918,8 @@ namespace SabreWebtopTicketingService.Services
 
                 logger.LogInformation($"##### Manual build command 1 : {command1}");
                 logger.LogInformation($"##### Manual build command 1 response : {response1}");
-
+                int groupindex = int.Parse(response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*", "1"));
+                logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
 
                 //loop per sector to get farebasis NVA, NVB, Baggage
@@ -3151,6 +3151,9 @@ namespace SabreWebtopTicketingService.Services
 
             //receieve and end transact
             await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true, pcc);
+
+            //calculate commission
+
         }
 
         private string GetTourCodePrefix(FareType fareType)
