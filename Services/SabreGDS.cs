@@ -2928,7 +2928,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
-                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? "" : $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P")}";
+                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? "" : $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").PadLeft(3, '0')}";
                         string nva = string.IsNullOrEmpty(quoteSector.NVA) ? "" : DateTime.Parse(quoteSector.NVA).ToString("ddMMMyy");
                         string nvb = string.IsNullOrEmpty(quoteSector.NVB) ? "" : DateTime.Parse(quoteSector.NVB).ToString("ddMMMyy");
                         string nvbnva = $"*{nva}{nvb}";
