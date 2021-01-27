@@ -2933,7 +2933,7 @@ namespace SabreWebtopTicketingService.Services
                         string nvb = string.IsNullOrEmpty(quoteSector.NVB) ? "" : DateTime.Parse(quoteSector.NVB).ToString("ddMMMyy");
                         string nvbnva = $"*{nva}{nvb}";
                         command2 += $"¥L{index}" +//connection indicator
-                                                 //farebasis
+                                        //farebasis
                                         $"-{quoteSector.FareBasis}" +
                                         //NVB, NVA
                                         nvbnva +
@@ -3015,7 +3015,7 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"##### Manual build command 1 : {command2}");
                 logger.LogInformation($"##### Manual build command 1 response : {response2}");
 
-                if (response2 != "OK")
+                if (!response2.StartsWith("OK"))
                 {
                     logger.LogInformation("##### INVALID_MANUAL_BUILD_RESPONSE #####");
                     logger.LogInformation(response2);
