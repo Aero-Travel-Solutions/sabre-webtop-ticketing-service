@@ -1590,7 +1590,9 @@ namespace SabreWebtopTicketingService.Services
                 //Populate request collections
                 ReconstructRequestFromKeys(request);
 
-                string ticketingpcc = request.Quotes.IsNullOrEmpty() ? GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) : request.Quotes.First().TicketingPCC;
+                string ticketingpcc = request.Quotes.IsNullOrEmpty() || string.IsNullOrEmpty(request.Quotes.First().TicketingPCC) ? 
+                                                GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) : 
+                                                request.Quotes.First().TicketingPCC;
                 if (string.IsNullOrEmpty(ticketingpcc))
                 {
                     throw new ExpiredSessionException(request.SessionID, "INVALID_TICKETING_PCC", "Invalid ticketing pcc.");
