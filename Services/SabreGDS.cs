@@ -1016,13 +1016,19 @@ namespace SabreWebtopTicketingService.Services
                                              Arunk = pnrsec.From == "ARUNK",
                                              DepartureCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.From,
                                              ArrivalCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.To,
-                                             DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate
+                                             DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate,
+                                             FareBasis = s.Farebasis.First(f=> f.SectorNo == selsec.SectorNo).Farebasis
                                          }).
                                          ToList(),
                           ValidatingCarrier = platingcarrier,
                           SectorCount = request.SelectedSectors.Count,
                           Route = GetRoute(pnr.Sectors.Where(w=> request.SelectedSectors.Select(s=> s.SectorNo).Contains(w.SectorNo)).ToList()),
-                          PriceType = Models.PriceType.Manual
+                          PriceType = Models.PriceType.Manual,
+                          ROE = s.ROE,
+                          FareCalculation = s.FareCalculation,
+                          BaseFare = s.BaseFare,
+                          LastPurchaseDate = s.LastPurchaseDate,
+                          Endorsements = s.Endorsements,
                       }).
                       ToList();
             return quotes;
@@ -1647,7 +1653,8 @@ namespace SabreWebtopTicketingService.Services
                                 ticketingpcc, 
                                 contextID,
                                 ticketingprinter,
-                                printerbypass);
+                                printerbypass,
+                                sessionID);
                 }
 
                 //GDS quote
@@ -2803,7 +2810,7 @@ namespace SabreWebtopTicketingService.Services
             if (!pendingquotes.Any(a => a.FiledFare))
             {
                 //End transaction
-                await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true);
+                await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", request.SessionID, true, pcc);
             }
 
             //Workout the need for inclusion of NameSelection section in ticketing request
@@ -2878,7 +2885,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass)
+        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID)
         {
             //Assign printer
             await _sabreCommandService.
@@ -2934,8 +2941,10 @@ namespace SabreWebtopTicketingService.Services
                 {
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
-                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? "" : $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").PadLeft(3, '0')}";
-                        string nva = string.IsNullOrEmpty(quoteSector.NVA) ? "" : DateTime.Parse(quoteSector.NVA).ToString("ddMMMyy");
+                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? 
+                                                        "" : 
+                                                        $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").PadLeft(3, '0')}";
+                        string nva = DateTime.Parse(quoteSector.NVA).ToString("ddMMMyy");
                         string nvb = string.IsNullOrEmpty(quoteSector.NVB) ? "" : DateTime.Parse(quoteSector.NVB).ToString("ddMMMyy");
                         string nvbnva = $"*{nva}{nvb}";
                         command2 += $"¥L{index}" +//connection indicator
@@ -3156,7 +3165,7 @@ namespace SabreWebtopTicketingService.Services
             await RedisplayGeneratedQuotes(statefultoken, manualquotes);
 
             //receieve and end transact
-            await enhancedEndTransService.EndTransaction(statefultoken, contextID, agent?.FullName ?? "Aeronology", true, pcc);
+            await enhancedEndTransService.EndTransaction(statefultoken, contextID, sessionID, agent?.FullName ?? "Aeronology", true, pcc);
 
             //calculate commission
 
@@ -3428,6 +3437,7 @@ namespace SabreWebtopTicketingService.Services
                     //Void the tickets as payment was not successfull
                     await VoidTicket(new VoidTicketRequest()
                     {
+                        SessionID = request.SessionID,
                         GDSCode = request.GDSCode,
                         Locator = request.Locator,
                         Tickets = returntickettransactiondata.
@@ -3628,7 +3638,7 @@ namespace SabreWebtopTicketingService.Services
                         try
                         {
                             //End the transaction
-                            await enhancedEndTransService.EndTransaction(token.SessionID, contextId, "Aeronology", true);
+                            await enhancedEndTransService.EndTransaction(token.SessionID, contextId, "Aeronology", request.SessionID, true);
                         }
                         catch (GDSException gdsex)
                         {

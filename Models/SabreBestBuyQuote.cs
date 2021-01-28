@@ -7,6 +7,7 @@ using System.Text;
 
 namespace SabreWebtopTicketingService.Models
 {
+    //Example 01
     //BASE FARE                 TAXES/FEES/CHARGES TOTAL
     // 1-    AUD810.00                    208.06XT AUD1018.06ADT
     //XT     60.00AU      64.16WY      28.30QR      38.40SG 
@@ -33,17 +34,38 @@ namespace SabreWebtopTicketingService.Models
     // OBFDA - CC NBR BEGINS WITH 6           4.60        1022.66
     // OBFDA - CC NBR BEGINS WITH 2           3.50        1021.56
     // OBFDA - CARD FEE                       3.50        1021.56
-                                                               
+
     //AIR EXTRAS AVAILABLE - SEE WP* AE
     //BAGGAGE INFO AVAILABLE - SEE WP* BAG
+
+    //Example 02
+    //01NOV DEPARTURE DATE-----LAST DAY TO PURCHASE 11FEB/23:59
+    //BASE FARE        TAXES/FEES/CHARGES   
+    //2-    AUD844.00                AUD133.63    XT AUD977.63    ADT
+    //XT    60.00    AU    6.50    WG    32.08    WY    14.15    QR
+    //11.70    G3    9.20    I5
+    //1688.00        267.26
+    //TOTAL:AUD1955.26
+    //FOP FEES PER TICKET MAY APPLY
+    //ADT-2 QIQW SSVNOV
+    //MEL QF SYD119.22QF X/HKG QF SGN507.24NUC626.46END ROE1.346491
+    //CARRIER RESTRICTION APPLY/FEES APPLY
+    //VALID ON QF SERVICES ONLY
+    //VALIDATING CARRIER - QF
+    //CAT 15 SALES RESTRICTIONS FREE TEXT FOUND - VERIFY RULES
+    //CHANGE BOOKING CLASS - 1Q 2S 3S
+    //FORM OF PAYMENT FEES PER TICKET MAY APPLY
+    //ADT    DESCRIPTION FEE
     //.
+    
     internal class SabreBestBuyQuote
     {
         string gdsresponse = "";
-        List<string> lines = new List<string>();
+        string fullgdsresponse = "";
         public SabreBestBuyQuote(string res)
         {
             if (!res.Contains("TAXES/FEES/CHARGES")) { throw new AeronologyException("INVALID_GDS_RESPONSE", res); }
+            fullgdsresponse = res;
             gdsresponse = res.SplitOnRegex(@"BASE\s+FARE\s+TAXES/FEES/CHARGES\s+TOTAL").Last().SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").First().Trim();
 
         }
@@ -76,6 +98,36 @@ namespace SabreWebtopTicketingService.Models
                 pricehintitems.Add(new PriceHintInfo(pricehintlines[i].Replace("\n", "###") + pricehintlines[i + 1].Replace("\n", "###")));
             }
 
+            string[] farecalcitems = string.Join("," , gdsresponse.
+                                                        SplitOnRegex(@"([ACI][DHN][TDF]-\d+.*)").
+                                                        Skip(1).
+                                                        Take(5)).
+                                                        SplitOnRegex(@"(ROE\d+\.\d+)\s*,");
+
+            string[] amountmatches = gdsresponse.SplitOn("\n").First().SplitOnRegex(@"([A-Z]{3}\d+\.\d+)");
+
+            List<string> farebasis = gdsresponse.
+                                        SplitOnRegex(@"[ACI][DHN][TDF]-\d+(.*)").
+                                        First().
+                                        SplitOnRegex(@"\s+").
+                                        Distinct().
+                                        ToList();
+            List<FBData> fBData = gdsresponse.
+                                        SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
+                                        Last().
+                                        SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
+                                        First().
+                                        SplitOnRegex(@"s+").
+                                        Distinct().
+                                        Select(s => new FBData()
+                                        {
+                                            SectorNo = int.Parse(s.LastMatch(@"(\d+)[A-Z]")),
+                                            BookingClass = s.LastMatch(@"\d+([A-Z])"),
+                                            Farebasis = farebasis.First(f => f.Substring(0, 1) == s.LastMatch(@"\d+([A-Z])"))
+                                        }).
+                                        ToList();
+
+
             var items = taxitems.
                             Select(bestbuy => new
                             {
@@ -88,13 +140,34 @@ namespace SabreWebtopTicketingService.Models
                             {
                                 PaxType = s.bestbuytax.PaxType,
                                 Taxes = s.bestbuytax.Taxes,
-                                PriceHint = s.bestbuypricehint.PriceHint
+                                PriceHint = s.bestbuypricehint.PriceHint,
+                                FareCalculation = farecalcitems[0].Trim() + farecalcitems[1].Trim(),
+                                ROE = farecalcitems[1].SplitOn("ROE").Last(),
+                                CCFeeData = fullgdsresponse.
+                                                SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
+                                                Last().
+                                                Trim(),
+                                Endorsements = gdsresponse.
+                                                        SplitOnRegex(@"(ROE\d+\.\d+)\s*").
+                                                        Skip(1).
+                                                        TakeWhile(t=> t.StartsWith("VALIDATING CARRIER")).
+                                                        ToList(),
+                                BaseFare = decimal.Parse(amountmatches.First().Substring(3)),
+                                Farebasis = fBData,
+                                LastPurchaseDate = fullgdsresponse.
+                                                        SplitOn("\n").
+                                                        First().
+                                                        SplitOn("LAST DAY TO PURCHASE").
+                                                        Last().
+                                                        Trim()
                             }).
                             ToList();
 
             return items;
         }
     }
+
+
 
     internal class PriceHintInfo
     {
@@ -132,8 +205,22 @@ namespace SabreWebtopTicketingService.Models
 
     internal class BestBuyItem
     {
+        public string LastPurchaseDate { get; set; }
         public string PaxType { get; set; }
+        public decimal BaseFare { get; set; }
         public List<Tax> Taxes { get; set; }
         public string PriceHint { get; set; }
+        public string FareCalculation { get; set; }
+        public string ROE { get; set; }
+        public string CCFeeData { get; set; }
+        public List<string> Endorsements { get; set; }
+        public List<FBData> Farebasis { get; set; }
+    }
+
+    public class FBData
+    {
+        public int SectorNo { get; set; }
+        public string BookingClass { get; set; }
+        public string Farebasis { get; set; }
     }
 }

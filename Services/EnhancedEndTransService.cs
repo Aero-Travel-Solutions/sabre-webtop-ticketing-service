@@ -30,14 +30,16 @@ namespace SabreWebtopTicketingService.Services
             url = Constants.GetSoapUrl();
         }
 
-        public async Task EndTransaction(string token, string contextID, string receivedby, bool receiveChanges = false, Models.Pcc webservicepcc = null)
+        public async Task EndTransaction(string token, string contextID, string receivedby, string SessionID = "", bool receiveChanges = false, Models.Pcc webservicepcc = null)
         {
             EnhancedEndTransactionPortTypeClient client = null;
             try
             {
                 EnableTLS();
 
-                var pcc = webservicepcc == null ? await pccSource.GetWebServicePccByGdsCode("1W", contextID, token) : webservicepcc;
+                var pcc = webservicepcc ?? (string.IsNullOrEmpty(SessionID) ?
+                                    throw new AeronologyException("NO_SESSION_ID", "Session ID not found.") :
+                                    await pccSource.GetWebServicePccByGdsCode("1W", contextID, token));
 
                 client = new EnhancedEndTransactionPortTypeClient(GetBasicHttpBinding(), new EndpointAddress(url));
                 
