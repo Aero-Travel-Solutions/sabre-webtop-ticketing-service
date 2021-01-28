@@ -766,7 +766,7 @@ namespace SabreWebtopTicketingService
 
             string contextid = "";
 
-            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || rq.Quotes.IsNullOrEmpty() || rq.Pnr == null)
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || rq.Quotes.IsNullOrEmpty() || rq.Sectors.IsNullOrEmpty())
             {
                 lambdaResponse.statusCode = 400;
                 lambdaResponse.body = JsonConvert.
@@ -799,7 +799,7 @@ namespace SabreWebtopTicketingService
             }
             else
             {
-                contextid = $"1W-{rq.Pnr.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
+                contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
                 try
                 {
                     List<WebtopWarning> result = await sabreGDS.ValidateCommission(rq, contextid);

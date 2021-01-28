@@ -13,7 +13,8 @@ namespace SabreWebtopTicketingService.Models
         public string SessionID { get; set; }
         public string AgentID { get; set; }
         public string GDSCode { get; set; }
-        public PNR Pnr { get; set; }
+        public string Locator { get; set; }
+        public List<PNRSector> Sectors { get; set; }
         public List<Quote> Quotes {get;set;}
     }
 
@@ -22,9 +23,10 @@ namespace SabreWebtopTicketingService.Models
     {
         public ValidateCommissionRQValidator()
         {
-            RuleFor(x => x.Pnr).NotNull().WithMessage("PNR not found.").WithErrorCode("PNR_NOT_FOUND");
             RuleFor(x => x.GDSCode).NotNull().Length(2).Matches(@"^\d[A-Z]").WithMessage("GDS Code not found or not in valid format.").WithErrorCode("GDS_NOT_FOUND");
             RuleFor(x => x.Quotes).NotNull().NotEmpty().WithMessage("At least one quote is required to proceed.").WithErrorCode("QUOTE_NOT_FOUND");
+            RuleFor(x => x.Sectors).NotNull().NotEmpty().WithMessage("At least one sector is required to proceed.").WithErrorCode("SECTORS_NOT_FOUND");
+
         }
     }
 }

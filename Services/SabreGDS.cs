@@ -269,7 +269,7 @@ namespace SabreWebtopTicketingService.Services
             GetFuelSurcharge(rq.Quotes);
 
             //calculate commission
-            CalculateCommission(rq.Quotes, rq.Pnr, ticketingpcc, rq.SessionID, agent);
+            ValidateCommission(rq, ticketingpcc, rq.SessionID, agent);
 
             //check for any missmatch in commission
             rq.
@@ -4155,6 +4155,148 @@ namespace SabreWebtopTicketingService.Services
                                                 string.Join(",", quotes.SelectMany(q => q.Errors).Distinct()));
             }
         }
+
+        private void ValidateCommission(ValidateCommissionRQ rq, string ticketingpcc, string sessionID, Agent agent)
+        {
+            var calculateCommissionTasks = new List<Task>();
+            CancellationToken ct = new CancellationToken();
+
+            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            Parallel.ForEach(rq.Quotes, options, (quote) =>
+            {
+                var secs = quote.
+                            QuoteSectors.
+                            Where(w => w.DepartureCityCode != "ARUNK").
+                            Select(s => rq.
+                                            Sectors.
+                                            First(f => f.From == s.DepartureCityCode &&
+                                                        f.To == s.ArrivalCityCode &&
+                                                        f.DepartureDate == s.DepartureDate)).
+                            Select(s => new TPSector()
+                            {
+                                From = s.From,
+                                To = s.To
+                            }).
+                            ToList();
+
+                quote.TurnaroundPoint = _getTurnaroundPointDataSource.
+                                                GetTurnaroundPoint(
+                                                    new GetTurnaroundPointRequest()
+                                                    {
+                                                        FareCalculation = quote.FareCalculation,
+                                                        Sectors = secs
+                                                    }).GetAwaiter().GetResult();
+
+
+                if (quote.TurnaroundPoint == "err")
+                {
+                    throw new AeronologyException("5000087", "Turnaround point invalid");
+                }
+
+                var calculateCommissionRequest = new CalculateCommissionRequest()
+                {
+                    SessionId = sessionID,
+                    GdsCode = "1W",
+                    PlatingCarrier = quote.ValidatingCarrier,
+                    IssueDate = DateTime.Now,
+                    Origin = quote.QuoteSectors.First().DepartureCityCode,
+                    Destination = quote.TurnaroundPoint,
+                    DocumnentType = "TKT",
+                    TourCode = quote.TourCode,
+                    Sectors = (from pqsecs in quote.QuoteSectors.Where(w => w.DepartureCityCode != "ARUNK")
+                               let sec = rq.Sectors.First(f => f.SectorNo == pqsecs.PQSectorNo)
+                               select new CalculateCommissionSectorRequest()
+                               {
+                                   SectorNumber = sec.SectorNo.ToString(),
+                                   Origin = sec.From,
+                                   Destination = sec.To,
+                                   IsCodeshare = sec.CodeShare,
+                                   DepartureDate = DateTime.Parse(sec.DepartureDate),
+                                   Cabin = sec.Cabin,
+                                   BookingClass = sec.Class,
+                                   Mileage = sec.Mileage == 0M ? default(int?) : Convert.ToInt32(sec.Mileage.ToString()),
+                                   MarketingCarrier = sec.Carrier,
+                                   MarketingFlightNumber = sec.Flight,
+                                   OperatingCarrier = sec.OperatingCarrier,
+                                   OperatingFlightNumber = sec.OperatingCarrierFlightNo,
+                                   ArrivalDate = DateTime.Parse(sec.ArrivalDate),
+                                   FareBasis = pqsecs.FareBasis
+                               }).
+                              ToArray(),
+                    Passengers = new CalculateCommissionPassengerRequest[]
+                                 {
+                                        new CalculateCommissionPassengerRequest()
+                                        {
+                                            PaxType = GetPaxType(quote.QuotePassenger.PaxType),
+                                            PassengerNumber = quote.QuotePassenger.NameNumber
+                                        }
+                                 },
+                    TicketingPcc = ticketingpcc,
+                    AgentNumber = agent?.AgentId,
+                    AgentUsername = pcc.Name,
+                    ConsolidatorId = agent?.ConsolidatorId ?? "acn",
+                    CountryOfSale = !string.IsNullOrEmpty(agent?.Consolidator?.CountryCode) ?
+                                        agent.Consolidator.CountryCode :
+                                        "AU",
+                    AgentIata = user?.Agent?.FinanceDetails?.IataNumber ?? "",
+                    BspCommission = quote.CAT35 ? quote.BspCommissionRate : default,
+                    FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
+                                        "CREDIT_CARD" :
+                                        "CASH",
+                    Quotes = new CalculateCommissionQuoteRequest[]
+                    {
+                            new CalculateCommissionQuoteRequest()
+                            {
+                                BaseFareAmount = quote.BaseFare,
+                                FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
+                                QuoteNumber = quote.QuoteNo.ToString(),
+                                PassengerNumber = quote.QuotePassenger.NameNumber,
+                                Currency = quote.CurrencyCode,
+                                QuotedSectors = quote.QuoteSectors.Select(qsec => qsec.PQSectorNo.ToString()).ToArray()
+                            }
+                    }
+                };
+
+                var calculateCommissionResponse = _commissionDataService.Calculate(calculateCommissionRequest).GetAwaiter().GetResult();
+
+                //read contextID
+                quote.ContextID = _commissionDataService.ContextID;
+
+                if (!(calculateCommissionResponse.PlatingCarrierBspRate.HasValue || (calculateCommissionResponse.PlatingCarrierAgentFee != null && calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue)))
+                {
+                    quote.Errors = new List<WebtopError>()
+                    {
+                        new WebtopError()
+                        {
+                            code = "COMM_REC_NOT_FOUND",
+                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found." +
+                                                $" Please contact the consolidator\\ticket office for more information."
+                        }
+                    };
+                    return;
+                }
+
+                decimal? bspCommission = calculateCommissionResponse.PlatingCarrierBspRate.HasValue ?
+                                                Math.Round(Convert.ToDecimal(calculateCommissionResponse.PlatingCarrierBspRate.Value), 2) :
+                                                default(decimal?);
+                decimal fee = calculateCommissionResponse.PlatingCarrierAgentFee == null || !calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue ?
+                                    default :
+                                    Math.Round(Convert.ToDecimal(calculateCommissionResponse.PlatingCarrierAgentFee.Amount.Value), 2);
+                quote.AgentCommissions = calculateCommissionResponse.AgentCommissions == null ? new List<AgentCommission>() : calculateCommissionResponse.AgentCommissions.ToList();
+                quote.BspCommissionRate = bspCommission;
+                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode);
+                quote.Fee = fee;
+                quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
+            });
+
+            if (rq.Quotes.All(a => !a.Errors.IsNullOrEmpty()))
+            {
+                throw new AeronologyException("COMMISSION_REC_NOT_FOUND",
+                                                string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Distinct()));
+            }
+        }
+
 
         private decimal? GetGSTPercentage(string country)
         {
