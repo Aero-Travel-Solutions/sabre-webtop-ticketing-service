@@ -1017,7 +1017,7 @@ namespace SabreWebtopTicketingService.Services
                                              DepartureCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.From,
                                              ArrivalCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.To,
                                              DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate,
-                                             FareBasis = s.Farebasis.First(f=> f.SectorNo == selsec.SectorNo).Farebasis
+                                             FareBasis = pnrsec.From == "ARUNK" ? "" : s.Farebasis.First(f=> f.SectorNo == selsec.SectorNo).Farebasis
                                          }).
                                          ToList(),
                           ValidatingCarrier = platingcarrier,
@@ -2928,7 +2928,7 @@ namespace SabreWebtopTicketingService.Services
 
                 if(!response1.StartsWith("PQ"))
                 {
-                    throw new AeronologyException("MANUAL_BUILD_SHELL_FAIL", $"Unexpected response received from GDS {response1}.");
+                    throw new AeronologyException("MANUAL_BUILD_SHELL_FAIL", $"Unexpected response received from GDS(Command:{command1}, Response:{response1}).");
                 }
 
                 int groupindex = int.Parse(response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*", "1"));
@@ -3034,7 +3034,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     logger.LogInformation("##### INVALID_MANUAL_BUILD_RESPONSE #####");
                     logger.LogInformation(response2);
-                    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", "Unknown response received from GDS.");
+                    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command2}, Response:{response2}).");
                 }
                 groupindex++;
             }

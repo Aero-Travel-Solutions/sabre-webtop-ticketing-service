@@ -534,7 +534,19 @@ namespace SabreWebtopTicketingService.Services
                                                              Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
                                                          }
                                                      }:
-                                                     null
+                                                     null,
+                                    FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ?
+                                                                null :
+                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
+                                                                {
+                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                                                    {
+                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                                                        {
+                                                                            Code = quoteRequest.PlatingCarrier
+                                                                        }
+                                                                    }
+                                                                }
                                 }
                             }
                         }

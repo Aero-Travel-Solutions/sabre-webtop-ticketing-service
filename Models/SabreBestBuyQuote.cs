@@ -57,7 +57,43 @@ namespace SabreWebtopTicketingService.Models
     //FORM OF PAYMENT FEES PER TICKET MAY APPLY
     //ADT    DESCRIPTION FEE
     //.
-    
+    //
+    //Example 03
+    //01NOV DEPARTURE DATE-----LAST DAY TO PURCHASE 11FEB/2359
+    //       BASE FARE                 TAXES/FEES/CHARGES TOTAL
+    // 2-   AUD2206.00                    217.14XT AUD2423.14ADT
+    //XT     60.00AU       6.50WG      64.16WY      32.78QR 
+    //           11.80G3       9.20I5      30.40TS       0.70G8 
+    //            1.60E7 
+    //         4412.00                    434.28           4846.28TTL
+    //ADT-02  QIQW SSVNV KSVNV KIQW
+    // MEL QF SYD119.22QF X/HKG QF SGN389.90//BKK QF SYD616.41QF PER
+    // 512.48NUC1638.01END ROE1.346491
+    //CARRIER RESTRICTION APPLY/FEES APPLY
+    //VALID ON QF SERVICES ONLY
+    //VALIDATING CARRIER SPECIFIED - QF
+    //CAT 15 SALES RESTRICTIONS FREE TEXT FOUND - VERIFY RULES
+    //CHANGE BOOKING CLASS -   1Q 2S 3S 6K
+
+    //FORM OF PAYMENT FEES PER TICKET MAY APPLY
+    //ADT      DESCRIPTION FEE      TKT TOTAL
+    // OBFCA - CC NBR BEGINS WITH 1081        0.00        2423.14
+    // OBFCA - CC NBR BEGINS WITH 1611        0.00        2423.14
+    // OBFCA - CARD FEE                      25.50        2448.64
+    // OBFDA - CC NBR BEGINS WITH 1081        0.00        2423.14
+    // OBFDA - CC NBR BEGINS WITH 1611        0.00        2423.14
+    // OBFDA - CC NBR BEGINS WITH 3          10.90        2434.04
+    // OBFDA - CC NBR BEGINS WITH 4          10.90        2434.04
+    // OBFDA - CC NBR BEGINS WITH 5           8.30        2431.44
+    // OBFDA - CC NBR BEGINS WITH 6          10.90        2434.04
+    // OBFDA - CC NBR BEGINS WITH 2           8.30        2431.44
+    // OBFDA - CARD FEE                       8.30        2431.44
+                                                               
+    //AIR EXTRAS AVAILABLE - SEE WP* AE
+    //BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    //.
+
+
     internal class SabreBestBuyQuote
     {
         string gdsresponse = "";
@@ -98,26 +134,34 @@ namespace SabreWebtopTicketingService.Models
                 pricehintitems.Add(new PriceHintInfo(pricehintlines[i].Replace("\n", "###") + pricehintlines[i + 1].Replace("\n", "###")));
             }
 
-            string[] farecalcitems = string.Join("," , gdsresponse.
-                                                        SplitOnRegex(@"([ACI][DHN][TDF]-\d+.*)").
-                                                        Skip(1).
-                                                        Take(5)).
-                                                        SplitOnRegex(@"(ROE\d+\.\d+)\s*,");
+            string[] farecalcitems = string.
+                                        Join(",", 
+                                                gdsresponse.
+                                                SplitOnRegex(@"([ACI][DHN][TDF]-\d+.*)").
+                                                Last().
+                                                SplitOn("\n").
+                                                TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
+                                                SplitOnRegex(@"(ROE\d+\.\d+)\s*,");
 
-            string[] amountmatches = gdsresponse.SplitOn("\n").First().SplitOnRegex(@"([A-Z]{3}\d+\.\d+)");
+            string basefare = gdsresponse.
+                                        SplitOn("\n").
+                                        First().
+                                        SplitOnRegex(@"([A-Z]{3}\d+\.\d+)")[1];
 
             List<string> farebasis = gdsresponse.
-                                        SplitOnRegex(@"[ACI][DHN][TDF]-\d+(.*)").
-                                        First().
+                                        SplitOnRegex(@"[ACI][DHN][TDF]-\d+(.*)")[1].
                                         SplitOnRegex(@"\s+").
+                                        Where(w=> !string.IsNullOrEmpty(w)).
                                         Distinct().
                                         ToList();
+
             List<FBData> fBData = gdsresponse.
                                         SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
                                         Last().
                                         SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
                                         First().
-                                        SplitOnRegex(@"s+").
+                                        SplitOnRegex(@"\s+").
+                                        Where(w=> !string.IsNullOrEmpty(w)).
                                         Distinct().
                                         Select(s => new FBData()
                                         {
@@ -152,7 +196,7 @@ namespace SabreWebtopTicketingService.Models
                                                         Skip(1).
                                                         TakeWhile(t=> t.StartsWith("VALIDATING CARRIER")).
                                                         ToList(),
-                                BaseFare = decimal.Parse(amountmatches.First().Substring(3)),
+                                BaseFare = decimal.Parse(basefare.Substring(3)),
                                 Farebasis = fBData,
                                 LastPurchaseDate = fullgdsresponse.
                                                         SplitOn("\n").
