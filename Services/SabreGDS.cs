@@ -4079,7 +4079,7 @@ namespace SabreWebtopTicketingService.Services
 
                 if (quote.TurnaroundPoint == "err")
                 {
-                    throw new AeronologyException("5000087", "Turnaround point invalid");
+                    throw new AeronologyException("INVALID_TURNAROUND_POINT", "Turnaround point invalid");
                 }
 
                 var calculateCommissionRequest = new CalculateCommissionRequest()

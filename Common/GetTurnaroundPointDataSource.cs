@@ -39,30 +39,32 @@ namespace SabreWebtopTicketingService.Common
 
         public async Task<string> InvokeLambdaCShap<R>(string functionName, object input)
         {
-            var lambdaPayload = string.Empty;
+            var lambdaPayload = "";
+            string inputjson = "";
             try
             {
+                inputjson = JsonSerializer.Serialize(input, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
                 var invokeRequest = new InvokeRequest
                 {
                     FunctionName = functionName,
                     InvocationType = InvocationType.RequestResponse,
-                    Payload = JsonSerializer.Serialize(input, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+                    Payload = inputjson
                 };
 
-                logger.LogInformation("Invoking lambda function {FunctionName} with {Request}", functionName, invokeRequest);
+                logger.LogInformation($"Invoking lambda function {functionName} with {inputjson}");
                 var lambdaResponse = await client.InvokeAsync(invokeRequest);
 
                 using (var sr = new StreamReader(lambdaResponse.Payload))
                 {
                     lambdaPayload = await sr.ReadToEndAsync();
 
-                    logger.LogInformation("Lambda function {FunctionName} response {Response}", functionName, lambdaPayload);
+                    logger.LogInformation($"Lambda function {functionName} response {lambdaPayload}");
                     return lambdaPayload;
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An error occurred while processing lambda request {Request} lambda method {FunctionName}. Lambda response {LambdaPayload} and {ErrorMessage}.", input, functionName, lambdaPayload, ex.Message);
+                logger.LogError(ex, $"An error occurred while processing lambda request {inputjson} lambda method {functionName}. Lambda response {lambdaPayload} and {ex.Message}.");
                 throw;
             }
         }
