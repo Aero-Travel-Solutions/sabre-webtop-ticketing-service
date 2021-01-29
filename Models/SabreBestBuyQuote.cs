@@ -174,13 +174,15 @@ namespace SabreWebtopTicketingService.Models
             for (int i = 0; i < selectedsectors.Count; i++)
             {
                 int sectorno = selectedsectors[i];
+                PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
+                if(pnrsec.From == "ARUNK") { continue; }
                 string changesec = changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
                 string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
                                                 usedfbs.IsNullOrEmpty() ?
                                                     farebasis.
-                                                        First(f => pnrsecs.First(p => p.SectorNo == sectorno).Class == f.Substring(0, 1)) :
+                                                        First(f => pnrsec.Class == f.Substring(0, 1)) :
                                                     farebasis.
-                                                        First(f => !usedfbs.Contains(f) && pnrsecs.First(p => p.SectorNo == sectorno).Class == f.Substring(0, 1)) :
+                                                        First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
                                                 farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
 
                 fBData.
@@ -213,10 +215,11 @@ namespace SabreWebtopTicketingService.Models
                                                 Last().
                                                 Trim(),
                                 Endorsements = gdsresponse.
-                                                        SplitOnRegex(@"(ROE\d+\.\d+)\s*").
-                                                        Skip(1).
-                                                        TakeWhile(t=> t.StartsWith("VALIDATING CARRIER")).
-                                                        ToList(),
+                                                    SplitOnRegex(@"(ROE\d+\.\d+)\s*").
+                                                    Last().
+                                                    SplitOn("\n").
+                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                                    ToList(),
                                 BaseFare = decimal.Parse(basefare.Substring(3)),
                                 Farebasis = fBData,
                                 LastPurchaseDate = fullgdsresponse.
