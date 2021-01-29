@@ -996,7 +996,7 @@ namespace SabreWebtopTicketingService.Services
         {
             List<Quote> quotes = new List<Quote>();
 
-            SabreBestBuyQuote bestbuyquote = new SabreBestBuyQuote(bestbuyresponse);
+            SabreBestBuyQuote bestbuyquote = new SabreBestBuyQuote(bestbuyresponse, request.SelectedSectors.Select(s=>s.SectorNo).ToList(), pnr.Sectors);
 
             int index = 0;
             quotes = (from pax in request.SelectedPassengers
@@ -1029,6 +1029,14 @@ namespace SabreWebtopTicketingService.Services
                           BaseFare = s.BaseFare,
                           LastPurchaseDate = s.LastPurchaseDate,
                           Endorsements = s.Endorsements,
+                          Warnings = new List<WebtopWarning>()
+                          {
+                              new WebtopWarning()
+                              {
+                                  code = "BESTBUY_WARNING",
+                                  message = "ALERT: Bestbuy is a guide only. Please make sure booking class changes praposed are verified and done on the PNR before proceed to ticketing."
+                              }
+                          }
                       }).
                       ToList();
             return quotes;
@@ -2941,14 +2949,13 @@ namespace SabreWebtopTicketingService.Services
                 {
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
-                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ? 
-                                                        "" : 
+                        string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ?
+                                                        "" :
                                                         $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").PadLeft(3, '0')}";
-                        string nva = DateTime.Parse(quoteSector.NVA).ToString("ddMMMyy");
-                        string nvb = string.IsNullOrEmpty(quoteSector.NVB) ? "" : DateTime.Parse(quoteSector.NVB).ToString("ddMMMyy");
-                        string nvbnva = $"*{nva}{nvb}";
+                        string nvbnva =  GetNVANVB(quoteSector);
+
                         command2 += $"¥L{index}" +//connection indicator
-                                        //farebasis
+                                                  //farebasis
                                         $"-{quoteSector.FareBasis}" +
                                         //NVB, NVA
                                         nvbnva +
@@ -3169,6 +3176,28 @@ namespace SabreWebtopTicketingService.Services
 
             //calculate commission
 
+        }
+
+        private static string GetNVANVB(QuoteSector quoteSector)
+        {
+            string nvbnva;
+            string nva = DateTime.Parse(quoteSector.NVA).ToString("ddMMMyy");
+            string nvb = string.IsNullOrEmpty(quoteSector.NVB) ? "" : DateTime.Parse(quoteSector.NVB).ToString("ddMMMyy");
+
+            if (!string.IsNullOrEmpty(nva) && string.IsNullOrEmpty(nvb))
+            {
+                nvbnva = $"*NA{nva}";
+            }
+            else if (string.IsNullOrEmpty(nva) && !string.IsNullOrEmpty(nvb))
+            {
+                nvbnva = $"*NB{nvb}";
+            }
+            else
+            {
+                nvbnva = $"*{nva}{nvb}";
+            }
+
+            return nvbnva;
         }
 
         private string GetTourCodePrefix(FareType fareType)

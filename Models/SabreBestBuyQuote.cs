@@ -98,17 +98,22 @@ namespace SabreWebtopTicketingService.Models
     {
         string gdsresponse = "";
         string fullgdsresponse = "";
-        public SabreBestBuyQuote(string res)
+        List<int> selectedsectors = null;
+        List<PNRSector> pnrsecs = null;
+
+        public SabreBestBuyQuote(string res, List<int> selsec, List<PNRSector> pnrsec)
         {
             if (!res.Contains("TAXES/FEES/CHARGES")) { throw new AeronologyException("INVALID_GDS_RESPONSE", res); }
+            selectedsectors = selsec;
+            pnrsecs = pnrsec;
             fullgdsresponse = res;
             gdsresponse = res.SplitOnRegex(@"BASE\s+FARE\s+TAXES/FEES/CHARGES\s+TOTAL").Last().SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").First().Trim();
 
         }
 
-        public List<BestBuyItem> BestBuyItems => GetBestBuyItems(gdsresponse);
+        public List<BestBuyItem> BestBuyItems => GetBestBuyItems();
 
-        private List<BestBuyItem> GetBestBuyItems(string gdsresponse)
+        private List<BestBuyItem> GetBestBuyItems()
         {
             List<TaxInfo> taxitems = new List<TaxInfo>();
             var taxlines = gdsresponse.
@@ -155,22 +160,38 @@ namespace SabreWebtopTicketingService.Models
                                         Distinct().
                                         ToList();
 
-            List<FBData> fBData = gdsresponse.
+            IEnumerable<string> changesecs = gdsresponse.
                                         SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
                                         Last().
                                         SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
                                         First().
                                         SplitOnRegex(@"\s+").
-                                        Where(w=> !string.IsNullOrEmpty(w)).
-                                        Distinct().
-                                        Select(s => new FBData()
-                                        {
-                                            SectorNo = int.Parse(s.LastMatch(@"(\d+)[A-Z]")),
-                                            BookingClass = s.LastMatch(@"\d+([A-Z])"),
-                                            Farebasis = farebasis.First(f => f.Substring(0, 1) == s.LastMatch(@"\d+([A-Z])"))
-                                        }).
-                                        ToList();
+                                        Where(w => !string.IsNullOrEmpty(w)).
+                                        Distinct();
 
+            List<string> usedfbs = new List<string>();
+            List<FBData> fBData = new List<FBData>();
+            for (int i = 0; i < selectedsectors.Count; i++)
+            {
+                int sectorno = selectedsectors[i];
+                string changesec = changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
+                string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
+                                                usedfbs.IsNullOrEmpty() ?
+                                                    farebasis.
+                                                        First(f => pnrsecs.First(p => p.SectorNo == sectorno).Class == f.Substring(0, 1)) :
+                                                    farebasis.
+                                                        First(f => !usedfbs.Contains(f) && pnrsecs.First(p => p.SectorNo == sectorno).Class == f.Substring(0, 1)) :
+                                                farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
+
+                fBData.
+                    Add(new FBData()
+                    {
+                        SectorNo = sectorno,
+                        Farebasis = selectedfarebasis
+                    });
+
+                usedfbs.Add(selectedfarebasis);
+            }
 
             var items = taxitems.
                             Select(bestbuy => new
@@ -264,7 +285,6 @@ namespace SabreWebtopTicketingService.Models
     public class FBData
     {
         public int SectorNo { get; set; }
-        public string BookingClass { get; set; }
         public string Farebasis { get; set; }
     }
 }
