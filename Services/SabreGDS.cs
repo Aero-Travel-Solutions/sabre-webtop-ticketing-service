@@ -4220,7 +4220,7 @@ namespace SabreWebtopTicketingService.Services
 
                 if (quote.TurnaroundPoint == "err")
                 {
-                    throw new AeronologyException("5000087", "Turnaround point invalid");
+                    throw new AeronologyException("INVALID_TURNAROUND_POINT", "Turnaround point invalid");
                 }
 
                 var calculateCommissionRequest = new CalculateCommissionRequest()
@@ -4244,7 +4244,7 @@ namespace SabreWebtopTicketingService.Services
                                    DepartureDate = DateTime.Parse(sec.DepartureDate),
                                    Cabin = sec.Cabin,
                                    BookingClass = sec.Class,
-                                   Mileage = sec.Mileage == 0M ? default(int?) : Convert.ToInt32(sec.Mileage.ToString()),
+                                   Mileage = sec.Mileage == 0M ? default(int?) : Decimal.ToInt32(sec.Mileage),
                                    MarketingCarrier = sec.Carrier,
                                    MarketingFlightNumber = sec.Flight,
                                    OperatingCarrier = sec.OperatingCarrier,
@@ -4322,7 +4322,7 @@ namespace SabreWebtopTicketingService.Services
             if (rq.Quotes.All(a => !a.Errors.IsNullOrEmpty()))
             {
                 throw new AeronologyException("COMMISSION_REC_NOT_FOUND",
-                                                string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Distinct()));
+                                                string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Select(s=> s.message).Distinct()));
             }
         }
 

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using SabreWebtopTicketingService.CustomException;
 
 [assembly:LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 namespace SabreWebtopTicketingService
@@ -813,6 +814,39 @@ namespace SabreWebtopTicketingService
                                                         session_id = rq.SessionID,
                                                         error = new List<WebtopError>(),
                                                         data = result
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+                catch (AeronologyException ex)
+                {
+                    lambdaResponse.statusCode = 500;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new ValidateCommissionLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>()
+                                                        {
+                                                            new WebtopError()
+                                                            {
+                                                                message = ex.Message,
+                                                                code = ex.ErrorCode,
+                                                                stack = ex.StackTrace.ToString()
+                                                            }
+                                                        },
+                                                        data = null
                                                     },
                                                     new JsonSerializerSettings()
                                                     {
