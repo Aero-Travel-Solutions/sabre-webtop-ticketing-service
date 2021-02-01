@@ -3001,7 +3001,7 @@ namespace SabreWebtopTicketingService.Services
                         taxes = GroupTax(taxes);
                     }
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{Math.Round(tax.Amount, 2)}{tax.Code.Trim().ToUpper()}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{string.Format("{0:.00}", tax.Amount)}{tax.Code.Trim().ToUpper()}"));
                 }
 
                 //commission
