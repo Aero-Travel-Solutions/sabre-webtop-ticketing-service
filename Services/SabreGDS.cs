@@ -2975,12 +2975,12 @@ namespace SabreWebtopTicketingService.Services
                     index++;
                 }
                 //base fare and currency
-                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{quote.BaseFare}";
+                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{string.Format("{0:.00}", quote.BaseFare)}";
 
                 //equiv fare and currency
                 if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency))
                 {
-                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{quote.EquivFare.Value}";
+                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{string.Format("{0:.00}", quote.EquivFare.Value)}";
                 }
 
                 //taxes
