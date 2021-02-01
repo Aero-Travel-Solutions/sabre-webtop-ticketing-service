@@ -1000,6 +1000,8 @@ namespace SabreWebtopTicketingService.Services
         {
             List<Quote> quotes = new List<Quote>();
 
+            logger.LogInformation($"BESTBUY RESPONSE{Environment.NewLine}{bestbuyresponse}");
+
             SabreBestBuyQuote bestbuyquote = new SabreBestBuyQuote(bestbuyresponse, request.SelectedSectors.Select(s=>s.SectorNo).ToList(), pnr.Sectors);
 
             int index = 0;
