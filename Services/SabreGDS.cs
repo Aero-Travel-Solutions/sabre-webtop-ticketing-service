@@ -3053,7 +3053,16 @@ namespace SabreWebtopTicketingService.Services
                     logger.LogInformation(response2);
                     throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command2}, Response:{response2}).");
                 }
-                groupindex++;
+
+                //update quoteno and partial issue
+                quotegrp.
+                    Select(s => s).
+                    ToList().
+                    ForEach(f =>
+                    {
+                        f.QuoteNo = groupindex;
+                        f.PartialIssue = quotegrp.Count() > 1;
+                    });
             }
 
             #region Mask
@@ -3178,14 +3187,10 @@ namespace SabreWebtopTicketingService.Services
             //}
             #endregion
 
-            //redislpay price quotes
-            await RedisplayGeneratedQuotes(statefultoken, manualquotes);
+
 
             //receieve and end transact
             await enhancedEndTransService.EndTransaction(statefultoken, contextID, sessionID, agent?.FullName ?? "Aeronology", true, pcc);
-
-            //calculate commission
-
         }
 
         private static string GetNVANVB(QuoteSector quoteSector)
