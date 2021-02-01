@@ -743,6 +743,10 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
+
+                logger.LogInformation($"PNR Sectors: {string.Join(", ", pnr.Sectors.Where(w => w.From != "ARUNK").Select(s => s.SectorNo))}");
+                logger.LogInformation($"Selected Sectors For Quoting: {string.Join(", ", request.SelectedSectors.Select(s => s.ToString()))}");
+
                 quotes = await _enhancedAirBookService.PricePNR(request, token.SessionID, pcc, pnr, ticketingpcc, IsPriceOverride);
 
                 //Check for pax type differences
@@ -2725,6 +2729,9 @@ namespace SabreWebtopTicketingService.Services
                                 pendingquotes.FirstOrDefault(f => !string.IsNullOrEmpty(f.PriceCode))?.PriceCode :
                                 request.PriceCode,
             };
+
+            logger.LogInformation($"PNR Sectors: {string.Join(", ", pnr.Sectors.Where(w => w.From != "ARUNK").Select(s => s.SectorNo))}");
+            logger.LogInformation($"Selected Sectors For Quoting: {string.Join(", ", pendingquotes.First().QuoteSectors.Select(s => s.PQSectorNo))}");
 
             //Quote
             quotes = await _enhancedAirBookService.PricePNRForTicketing(getQuoteRQ, statefultoken, pcc, pnr, ticketingpcc);

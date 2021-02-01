@@ -142,7 +142,7 @@ namespace SabreWebtopTicketingService.Models
             string[] farecalcitems = string.
                                         Join(",", 
                                                 gdsresponse.
-                                                SplitOnRegex(@"([ACI][DHN][TDF]-\d+.*)").
+                                                SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)").
                                                 Last().
                                                 SplitOn("\n").
                                                 TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
@@ -154,20 +154,23 @@ namespace SabreWebtopTicketingService.Models
                                         SplitOnRegex(@"([A-Z]{3}\d+\.\d+)")[1];
 
             List<string> farebasis = gdsresponse.
-                                        SplitOnRegex(@"[ACI][DHN][TDF]-\d+(.*)")[1].
+                                        
+                                        SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].
                                         SplitOnRegex(@"\s+").
                                         Where(w=> !string.IsNullOrEmpty(w)).
                                         Distinct().
                                         ToList();
 
-            IEnumerable<string> changesecs = gdsresponse.
-                                        SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
-                                        Last().
-                                        SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
-                                        First().
-                                        SplitOnRegex(@"\s+").
-                                        Where(w => !string.IsNullOrEmpty(w)).
-                                        Distinct();
+            IEnumerable<string> changesecs = gdsresponse.Contains("CHANGE BOOKING CLASS") ?
+                                                    gdsresponse.
+                                                    SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
+                                                    Last().
+                                                    SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
+                                                    First().
+                                                    SplitOnRegex(@"\s+").
+                                                    Where(w => !string.IsNullOrEmpty(w)).
+                                                    Distinct():
+                                                    null;
 
             List<string> usedfbs = new List<string>();
             List<FBData> fBData = new List<FBData>();
