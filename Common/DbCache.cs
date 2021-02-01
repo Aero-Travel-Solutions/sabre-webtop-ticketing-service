@@ -44,7 +44,7 @@ namespace SabreWebtopTicketingService.Common
                 var docSet = await searchResult.GetNextSetAsync();
                 docSet.ForEach(doc =>
                 {
-                    var sabreSessionVal = doc[fieldValue];
+                    var sabreSessionVal = doc.ContainsKey(fieldValue) ? doc[fieldValue]: null;
                     if(sabreSessionVal != null)
                     {
                         var sabreSession = JsonSerializer.Deserialize<SabreSession>(sabreSessionVal);
