@@ -353,7 +353,9 @@ namespace SabreWebtopTicketingService.Models
         public string FareBasis => sec.GetFirstElement("FareBasis")?.Value;
         public string NVB => sec.GetFirstElement("NotValidBefore")?.Value;
         public string NVA => sec.GetFirstElement("NotValidAfter")?.Value;
-        public string Baggageallowance => sec.GetFirstElement("Baggage")?.GetAttribute("allowance")?.Value +
-                                          sec.GetFirstElement("Baggage")?.GetAttribute("type")?.Value;
+        public string Baggageallowance => sec.GetFirstElement("Baggage")?.GetAttribute("type")?.Value == "N" ?
+                                                "NIL":
+                                                sec.GetFirstElement("Baggage")?.GetAttribute("allowance")?.Value +
+                                                sec.GetFirstElement("Baggage")?.GetAttribute("type")?.Value;
     }
 }

@@ -745,7 +745,7 @@ namespace SabreWebtopTicketingService.Services
             {
 
                 logger.LogInformation($"PNR Sectors: {string.Join(", ", pnr.Sectors.Where(w => w.From != "ARUNK").Select(s => s.SectorNo))}");
-                logger.LogInformation($"Selected Sectors For Quoting: {string.Join(", ", request.SelectedSectors.Select(s => s.ToString()))}");
+                logger.LogInformation($"Selected Sectors For Quoting: {string.Join(", ", request.SelectedSectors.SelectMany(s => s.SectorNo.ToString()))}");
 
                 quotes = await _enhancedAirBookService.PricePNR(request, token.SessionID, pcc, pnr, ticketingpcc, IsPriceOverride);
 
@@ -2731,7 +2731,7 @@ namespace SabreWebtopTicketingService.Services
             };
 
             logger.LogInformation($"PNR Sectors: {string.Join(", ", pnr.Sectors.Where(w => w.From != "ARUNK").Select(s => s.SectorNo))}");
-            logger.LogInformation($"Selected Sectors For Quoting: {string.Join(", ", pendingquotes.First().QuoteSectors.Select(s => s.PQSectorNo))}");
+            logger.LogInformation($"Selected Sectors For Quoting: {string.Join(", ", pendingquotes.First().QuoteSectors.Select(s => s.PQSectorNo.ToString()))}");
 
             //Quote
             quotes = await _enhancedAirBookService.PricePNRForTicketing(getQuoteRQ, statefultoken, pcc, pnr, ticketingpcc);
