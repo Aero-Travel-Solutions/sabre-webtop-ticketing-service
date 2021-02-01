@@ -1027,7 +1027,7 @@ namespace SabreWebtopTicketingService.Services
                                              FareBasis = pnrsec.From == "ARUNK" ? "" : s.Farebasis.First(f=> f.SectorNo == selsec.SectorNo).Farebasis
                                          }).
                                          ToList(),
-                          ValidatingCarrier = platingcarrier,
+                          PlatingCarrier = platingcarrier,
                           SectorCount = request.SelectedSectors.Count,
                           Route = GetRoute(pnr.Sectors.Where(w=> request.SelectedSectors.Select(s=> s.SectorNo).Contains(w.SectorNo)).ToList()),
                           PriceType = Models.PriceType.Manual,
@@ -2808,7 +2808,7 @@ namespace SabreWebtopTicketingService.Services
                             },
                             QuoteSectors = q.QuoteSectors,
                             SectorCount = q.SectorCount,
-                            PlatingCarrier = q.ValidatingCarrier,
+                            PlatingCarrier = q.PlatingCarrier,
                             TotalTax = q.TotalTax,
                             Route = q.Route,
                             PriceIt = request.
@@ -3989,7 +3989,7 @@ namespace SabreWebtopTicketingService.Services
                                         Paid = false
                                     }).
                                     ToList(),
-                            ValidatingCarrier = q.PQ.ValidatingCarrier,
+                            PlatingCarrier = q.PQ.ValidatingCarrier,
                             CreditCardFee = q.PQ.CreditCardFee,
                             Expired = q.PQSummary.IsExpired &&
                                       q.PQ.Expired &&
@@ -4101,7 +4101,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
-                    PlatingCarrier = quote.ValidatingCarrier,
+                    PlatingCarrier = quote.PlatingCarrier,
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
                     Destination = quote.TurnaroundPoint,
@@ -4242,7 +4242,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
-                    PlatingCarrier = quote.ValidatingCarrier,
+                    PlatingCarrier = quote.PlatingCarrier,
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
                     Destination = quote.TurnaroundPoint,
@@ -4483,7 +4483,7 @@ namespace SabreWebtopTicketingService.Services
                                 Fee = quote.Fee,
                                 FeeGST = quote.FeeGST,
                                 FiledFare = quote.FiledFare,
-                                PlatingCarrier = quote.ValidatingCarrier,
+                                PlatingCarrier = quote.PlatingCarrier,
                                 QuotePassenger = quote.QuotePassenger,
                                 QuoteSectors = quote.QuoteSectors,
                                 TotalFare = quote.TotalFare,
@@ -4526,7 +4526,7 @@ namespace SabreWebtopTicketingService.Services
                 AgentId = agent?.AgentId,
                 ConsolidatorId = agent?.ConsolidatorId ?? "acn",
                 BookingPcc = pnr.BookedPCC,
-                PlatingCarrier = quote.ValidatingCarrier,
+                PlatingCarrier = quote.PlatingCarrier,
                 Sectors = secs.
                             Select(s => new Models.SectorData()
                             {

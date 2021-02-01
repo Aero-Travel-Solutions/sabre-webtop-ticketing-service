@@ -33,7 +33,7 @@ namespace SabreWebtopTicketingService.Models
         public List<Tax> Taxes { get; set; }
         public string FareCalculation { get; set; }
         public string TurnaroundPoint { get; set; }
-        public string ValidatingCarrier { get; set; }
+        public string PlatingCarrier { get; set; }
         public List<string> Endorsements { get; set; }
         public string NonRefundable { get; set; }
         public bool PrivateFare { get; set; }

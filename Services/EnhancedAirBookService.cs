@@ -821,7 +821,7 @@ namespace SabreWebtopTicketingService.Services
                                   Quote = new Quote()
                                   {
                                       QuoteNo = GetQuoteNumber(pqnos, paxsdata, sectors, pqs),
-                                      ValidatingCarrier = validatingcarrier,
+                                      PlatingCarrier = validatingcarrier,
                                       BaseFare = pqs.ItinTotalFare.EquivFare == null ?
                                                 decimal.Parse(pqs.ItinTotalFare.BaseFare.Amount) :
                                                 decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
@@ -885,7 +885,7 @@ namespace SabreWebtopTicketingService.Services
                                   let pax = MatchPaxTypes(s.PaxType, pnr, paxsdata).First()
                                   select new Quote()
                                   {
-                                      ValidatingCarrier = s.Quote.ValidatingCarrier,
+                                      PlatingCarrier = s.Quote.PlatingCarrier,
                                       BaseFare = s.Quote.BaseFare,
                                       CurrencyCode = s.Quote.CurrencyCode,
                                       Endorsements = s.Quote.Endorsements,
@@ -950,7 +950,7 @@ namespace SabreWebtopTicketingService.Services
                         NonRefundable = item.Quote.NonRefundable,
                         PrivateFare = item.Quote.PrivateFare,
                         SpecificPenalties = item.Quote.SpecificPenalties,
-                        ValidatingCarrier = item.Quote.ValidatingCarrier,
+                        PlatingCarrier = item.Quote.PlatingCarrier,
                         Taxes = item.Quote.Taxes,
                         QuotePassenger = new QuotePassenger()
                         {
