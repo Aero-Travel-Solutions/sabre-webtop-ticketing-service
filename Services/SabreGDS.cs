@@ -1000,7 +1000,10 @@ namespace SabreWebtopTicketingService.Services
 
             int index = 0;
             quotes = (from pax in request.SelectedPassengers
-                      let s = bestbuyquote.BestBuyItems.FirstOrDefault(f => f.PaxType == pax.PaxType)
+                      let s = bestbuyquote.
+                                    BestBuyItems.
+                                    FirstOrDefault(f => f.PaxType == pax.PaxType||
+                                                         (pax.PaxType.StartsWith("C") && f.PaxType == "CNN"))
                       select new Quote()
                       {
                           QuoteNo = index++,

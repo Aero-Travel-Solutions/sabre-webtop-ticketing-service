@@ -130,11 +130,11 @@ namespace SabreWebtopTicketingService.Models
 
             List<PriceHintInfo> pricehintitems = new List<PriceHintInfo>();
             var pricehintlines = gdsresponse.
-                                    SplitOnRegex(@"([ACI][DHN][TDF]-\d+.*)").
+                                    SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)").
                                     Skip(1).
                                     ToList();
 
-            for (int i = 0; i < taxlines.Count(); i += 2)
+            for (int i = 0; i < pricehintlines.Count(); i += 2)
             {
                 pricehintitems.Add(new PriceHintInfo(pricehintlines[i].Replace("\n", "###") + pricehintlines[i + 1].Replace("\n", "###")));
             }
@@ -181,9 +181,10 @@ namespace SabreWebtopTicketingService.Models
                                                 usedfbs.IsNullOrEmpty() ?
                                                     farebasis.
                                                         First(f => pnrsec.Class == f.Substring(0, 1)) :
-                                                    farebasis.
-                                                        First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
-                                                farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
+                                                    string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
+                                                        farebasis.First(f => pnrsec.Class == f.Substring(0, 1)):
+                                                        farebasis.First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
+                                                    farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
 
                 fBData.
                     Add(new FBData()
@@ -207,8 +208,8 @@ namespace SabreWebtopTicketingService.Models
                             {
                                 PaxType = s.bestbuytax.PaxType,
                                 Taxes = s.bestbuytax.Taxes,
-                                PriceHint = s.bestbuypricehint.PriceHint,
-                                FareCalculation = farecalcitems[0].Trim() + farecalcitems[1].Trim(),
+                                PriceHint = s.bestbuypricehint?.PriceHint,
+                                FareCalculation = farecalcitems[0].Trim(),
                                 ROE = farecalcitems[1].SplitOn("ROE").Last(),
                                 CCFeeData = fullgdsresponse.
                                                 SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
