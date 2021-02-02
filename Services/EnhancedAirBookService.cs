@@ -205,7 +205,8 @@ namespace SabreWebtopTicketingService.Services
                                                             {
                                                                 GoverningCarrierOverride = quoteRequest.
                                                                 SelectedSectors.
-                                                                Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From) &&
+                                                                          pnr.Sectors.First(f => f.SectorNo == w.SectorNo).Carrier == quoteRequest.PlatingCarrier).
                                                                 Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride()
                                                                     {
                                                                         RPH = s.SectorNo.ToString(),
