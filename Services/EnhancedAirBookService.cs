@@ -178,6 +178,7 @@ namespace SabreWebtopTicketingService.Services
                                                                 Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
                                                                 Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                 {
+                                                                    RPH = s.SectorNo.ToString(),
                                                                     Number = s.SectorNo.ToString()
                                                                 }).
                                                                 ToArray()
