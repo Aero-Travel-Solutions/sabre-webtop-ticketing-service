@@ -115,127 +115,126 @@ namespace SabreWebtopTicketingService.Models
 
         private List<BestBuyItem> GetBestBuyItems()
         {
-            List<TaxInfo> taxitems = new List<TaxInfo>();
-            var taxlines = gdsresponse.
-                                SplitOnRegex(@"[ACI][DHN][TDF]-\d+").
-                                First().
-                                SplitOnRegex(@"(\d+\s*-.*)").
-                                Where(w => !string.IsNullOrEmpty(w)).
-                                ToList();
+            List<BestBuyItem> bestBuyItems = new List<BestBuyItem>();
+            var items = gdsresponse.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)");
+            List<string> usedfbs = new List<string>();
+            //List<FBData> fBData = new List<FBData>();
+            List<SectorFBData> sectors = new List<SectorFBData>();
 
-            for (int i = 0; i < taxlines.Count(); i+=2)
+            for (int i = 1; i < items.Skip(1).Count(); i += 2)
             {
-                taxitems.Add(new TaxInfo(taxlines[i].Replace("\n", "###") + taxlines[i + 1].Replace("\n", "###")));
-            }
+                string paxtype = items[i].SplitOn("-").First();
+                List<TaxInfo> taxitems = new List<TaxInfo>();
 
-            List<PriceHintInfo> pricehintitems = new List<PriceHintInfo>();
-            var pricehintlines = gdsresponse.
-                                    SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)").
-                                    Skip(1).
+                var taxlines = items[0].
+                                    SplitOnRegex(@"(\d+\s*-.*)").
+                                    Where(w => !string.IsNullOrEmpty(w)).
                                     ToList();
 
-            for (int i = 0; i < pricehintlines.Count(); i += 2)
-            {
-                pricehintitems.Add(new PriceHintInfo(pricehintlines[i].Replace("\n", "###") + pricehintlines[i + 1].Replace("\n", "###")));
-            }
+                int paxtypeindex = taxlines.FindLastIndex(f => f.IsMatch(@"\d+\s*-.*" + paxtype));
+                if (paxtypeindex != -1)
+                {
+                    taxitems.Add(new TaxInfo(taxlines[paxtypeindex].Replace("\n", "###") + taxlines[paxtypeindex + 1].Replace("\n", "###")));
+                }
 
-            string[] farecalcitems = string.
-                                        Join(",", 
-                                                gdsresponse.
-                                                SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)").
-                                                Last().
-                                                SplitOn("\n").
-                                                TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
-                                                SplitOnRegex(@"(ROE\d+\.\d+)\s*,");
+                string basefare = taxlines[paxtypeindex].
+                                    SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}(\d+\.\d+)")[1];
 
-            string basefare = gdsresponse.
-                                        SplitOn("\n").
-                                        First().
-                                        SplitOnRegex(@"([A-Z]{3}\d+\.\d+)")[1];
 
-            List<string> farebasis = gdsresponse.
-                                        
-                                        SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].
-                                        SplitOnRegex(@"\s+").
-                                        Where(w=> !string.IsNullOrEmpty(w)).
-                                        Distinct().
-                                        ToList();
+                string[] farebasis = items[i].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s +").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
+                string pricehint = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
+                                        items[i + 1].SplitOn("\n").First(f => f.StartsWith("CHANGE BOOKING CLASS")) :
+                                        "";
 
-            IEnumerable<string> changesecs = gdsresponse.Contains("CHANGE BOOKING CLASS") ?
-                                                    gdsresponse.
+                string[] farecalcitems = string.Join("", items[i + 1].
+                                                    SplitOn("\n").
+                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
+                                                    SplitOnRegex(@"(ROE\d+\.\d+)\s*");
+
+                IEnumerable<string> changesecs = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
+                                                    items[i+1].
                                                     SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
                                                     Last().
                                                     SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
                                                     First().
                                                     SplitOnRegex(@"\s+").
                                                     Where(w => !string.IsNullOrEmpty(w)).
-                                                    Distinct():
+                                                    Distinct() :
                                                     null;
 
-            List<string> usedfbs = new List<string>();
-            List<FBData> fBData = new List<FBData>();
-            for (int i = 0; i < selectedsectors.Count; i++)
-            {
-                int sectorno = selectedsectors[i];
-                PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
-                if(pnrsec.From == "ARUNK") { continue; }
-                string changesec = changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
-                string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
-                                                usedfbs.IsNullOrEmpty() ?
-                                                    farebasis.
-                                                        First(f => pnrsec.Class == f.Substring(0, 1)) :
-                                                    string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
-                                                        farebasis.First(f => pnrsec.Class == f.Substring(0, 1)):
-                                                        farebasis.First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
-                                                    farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
+                List<string> ccfeedataarray = fullgdsresponse.
+                                        SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
+                                        Last().
+                                        SplitOnRegex(@"([ACI][DHN][TDFN]\s+DESCRIPTION\.*)").
+                                        ToList();
 
-                fBData.
-                    Add(new FBData()
+                string ccfeedata = "";
+                int ccfeedataindex = ccfeedataarray.FindIndex(f => f.IsMatch(@$"{paxtype}\s+DESCRIPTION"));
+                if(ccfeedataindex != -1)
+                {
+                    ccfeedata = ccfeedataarray[ccfeedataindex] + ccfeedataarray[ccfeedataindex + 1].SplitOn("AIR EXTRAS AVAILABLE").First().Trim();
+                }
+
+
+                for (int j = 0; j < selectedsectors.Count; j++)
+                {
+                    int sectorno = selectedsectors[j];
+                    PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
+                    if (pnrsec.From == "ARUNK") { continue; }
+                    string changesec = changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
+                    string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
+                                                    usedfbs.IsNullOrEmpty() ?
+                                                        farebasis.
+                                                            First(f => pnrsec.Class == f.Substring(0, 1)) :
+                                                        string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
+                                                            farebasis.First(f => pnrsec.Class == f.Substring(0, 1)) :
+                                                            farebasis.First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
+                                                        farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
+
+                    sectors.
+                        Add(new SectorFBData()
+                        {
+                            SectorNo = sectorno,
+                            Farebasis = selectedfarebasis
+                        });
+
+                    usedfbs.Add(selectedfarebasis);
+                }
+
+                bestBuyItems.
+                    Add(new BestBuyItem()
                     {
-                        SectorNo = sectorno,
-                        Farebasis = selectedfarebasis
-                    });
-
-                usedfbs.Add(selectedfarebasis);
-            }
-
-            var items = taxitems.
-                            Select(bestbuy => new
-                            {
-                                bestbuytax = bestbuy,
-                                bestbuypricehint = pricehintitems.
-                                        FirstOrDefault(f =>
-                                            f.PaxType == bestbuy.PaxType)
-                            }).
-                            Select(s => new BestBuyItem()
-                            {
-                                PaxType = s.bestbuytax.PaxType,
-                                Taxes = s.bestbuytax.Taxes,
-                                PriceHint = s.bestbuypricehint?.PriceHint,
-                                FareCalculation = farecalcitems[0].Trim(),
-                                ROE = farecalcitems[1].SplitOn("ROE").Last(),
-                                CCFeeData = fullgdsresponse.
-                                                SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
+                        PaxType = paxtype,
+                        Farebasis = sectors,
+                        PriceHint = pricehint,
+                        CCFeeData = ccfeedata,
+                        LastPurchaseDate = fullgdsresponse.
+                                                SplitOn("\n").
+                                                First().
+                                                SplitOn("LAST DAY TO PURCHASE").
                                                 Last().
                                                 Trim(),
-                                Endorsements = gdsresponse.
-                                                    SplitOnRegex(@"(ROE\d+\.\d+)\s*").
-                                                    Last().
-                                                    SplitOn("\n").
-                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
-                                                    ToList(),
-                                BaseFare = decimal.Parse(basefare.Substring(3)),
-                                Farebasis = fBData,
-                                LastPurchaseDate = fullgdsresponse.
-                                                        SplitOn("\n").
-                                                        First().
-                                                        SplitOn("LAST DAY TO PURCHASE").
-                                                        Last().
-                                                        Trim()
-                            }).
-                            ToList();
+                        Endorsements = items[1].
+                                            SplitOnRegex(@"(ROE\d+\.\d+)\s*").
+                                            Last().
+                                            SplitOn("\n").
+                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                            ToList(),
+                        FareCalculation = farecalcitems.First(),
+                        ROE = farecalcitems[1].Substring(3).Trim(),
+                        Taxes = taxitems.
+                                    SelectMany(s => s.Taxes).
+                                    Select(s => new Tax()
+                                    {
+                                        Code = s.Code,
+                                        Amount = s.Amount
+                                    }).
+                                    ToList(),
+                        BaseFare = decimal.Parse(basefare)
+                    });
+            }
 
-            return items;
+            return bestBuyItems;
         }
     }
 
@@ -286,10 +285,10 @@ namespace SabreWebtopTicketingService.Models
         public string ROE { get; set; }
         public string CCFeeData { get; set; }
         public List<string> Endorsements { get; set; }
-        public List<FBData> Farebasis { get; set; }
+        public List<SectorFBData> Farebasis { get; set; }
     }
 
-    public class FBData
+    public class SectorFBData
     {
         public int SectorNo { get; set; }
         public string Farebasis { get; set; }
