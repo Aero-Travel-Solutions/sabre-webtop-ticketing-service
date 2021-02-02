@@ -173,15 +173,24 @@ namespace SabreWebtopTicketingService.Services
                                         //Sector Selection
                                         ItineraryOptions = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptions()
                                         {
-                                            SegmentSelect = quoteRequest.
-                                                                SelectedSectors.
-                                                                Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
-                                                                Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
-                                                                {
-                                                                    RPH = s.SectorNo.ToString(),
-                                                                    Number = s.SectorNo.ToString()
-                                                                }).
-                                                                ToArray()
+                                            SegmentSelect = IsPriceOveride ?
+                                                                quoteRequest.
+                                                                    SelectedSectors.
+                                                                    Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                    Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
+                                                                    {
+                                                                        RPH = s.SectorNo.ToString(),
+                                                                        Number = s.SectorNo.ToString()
+                                                                    }).
+                                                                    ToArray():
+                                                                quoteRequest.
+                                                                    SelectedSectors.
+                                                                    Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                    Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
+                                                                    {
+                                                                        Number = s.SectorNo.ToString()
+                                                                    }).
+                                                                    ToArray()
                                         },
                                         //Enable Specific Penalty
                                         SpecificPenalty = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
