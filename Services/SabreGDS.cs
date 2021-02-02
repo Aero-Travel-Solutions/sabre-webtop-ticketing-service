@@ -1015,6 +1015,7 @@ namespace SabreWebtopTicketingService.Services
                           QuoteNo = index++,
                           Taxes = s == null ? new List<Tax>(): s.Taxes,
                           PricingHint = s == null ? "" : s.PriceHint,
+                          CCFeeData = s == null ? "" : s.CCFeeData,
                           PriceCode = request.PriceCode,
                           QuotePassenger = pax,
                           QuoteSectors = (from selsec in request.SelectedSectors
