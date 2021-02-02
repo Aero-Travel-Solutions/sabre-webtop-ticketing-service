@@ -214,14 +214,21 @@ namespace SabreWebtopTicketingService.Models
                                                 SplitOn("LAST DAY TO PURCHASE").
                                                 Last().
                                                 Trim(),
-                        Endorsements = items[1].
+                        Endorsements = items[1].Contains("ROE")?
+                                        items[1].
                                             SplitOnRegex(@"(ROE\d+\.\d+)\s*").
                                             Last().
                                             SplitOn("\n").
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                            ToList():
+                                        items[1].
+                                            SplitOnRegex(@"(END").
+                                            Last().
+                                            SplitOn("\n").
+                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
                                             ToList(),
-                        FareCalculation = farecalcitems.First(),
-                        ROE = farecalcitems[1].Substring(3).Trim(),
+                        FareCalculation = farecalcitems.Count() == 1? farecalcitems.First().SplitOn("END").First(): farecalcitems.First(),
+                        ROE = farecalcitems.Count() == 1? "1.0000": farecalcitems[1].Substring(3).Trim(),
                         Taxes = taxitems.
                                     SelectMany(s => s.Taxes).
                                     Select(s => new Tax()

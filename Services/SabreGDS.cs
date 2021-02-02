@@ -605,7 +605,7 @@ namespace SabreWebtopTicketingService.Services
 
                 //Generate bestbuy command
                 string command = GetBestbuyCommand(request, platingcarrier);
-                logger.LogInformation($"Sabre bestbuy command: {command}.");
+                logger.LogInformation($"Sabre bestbuy command: {command}");
 
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
@@ -2978,12 +2978,12 @@ namespace SabreWebtopTicketingService.Services
                     index++;
                 }
                 //base fare and currency
-                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{string.Format("{0:.00}", quote.BaseFare)}";
+                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{string.Format("{0:0.00}", quote.BaseFare)}";
 
                 //equiv fare and currency
                 if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency))
                 {
-                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{string.Format("{0:.00}", quote.EquivFare.Value)}";
+                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{string.Format("{0:0.00}", quote.EquivFare.Value)}";
                 }
 
                 //taxes
@@ -3004,7 +3004,7 @@ namespace SabreWebtopTicketingService.Services
                         taxes = GroupTax(taxes);
                     }
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{string.Format("{0:.00}", tax.Amount)}{tax.Code.Trim().ToUpper()}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{string.Format("{0:0.00}", tax.Amount)}{tax.Code.Trim().ToUpper()}"));
                 }
 
                 //commission

@@ -175,7 +175,7 @@ namespace SabreWebtopTicketingService.Services
                                         {
                                             SegmentSelect = quoteRequest.
                                                                 SelectedSectors.
-                                                                Where(w=> pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "SURFACE").
+                                                                Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
                                                                 Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                 {
                                                                     Number = s.SectorNo.ToString()
@@ -202,16 +202,19 @@ namespace SabreWebtopTicketingService.Services
                                         Overrides = IsPriceOveride ?
                                                             new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverrides()
                                                             {
-                                                                GoverningCarrierOverride = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride[]
-                                                                {
-                                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride()
+                                                                GoverningCarrierOverride = quoteRequest.
+                                                                SelectedSectors.
+                                                                Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride()
                                                                     {
+                                                                        RPH = s.SectorNo.ToString(),
                                                                         Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverrideAirline()
                                                                         {
                                                                             Code = quoteRequest.PlatingCarrier
                                                                         }
                                                                     }
-                                                                }
+                                                                ).
+                                                                ToArray()
                                                             }:
                                                             null
                                     },
