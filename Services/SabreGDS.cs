@@ -2964,7 +2964,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ?
                                                         "" :
-                                                        $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").PadLeft(3, '0')}";
+                                                        $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").Replace("NONIL", "NIL").PadLeft(3, '0')}";
                         string nvbnva =  GetNVANVB(quoteSector);
 
                         command2 += $"¥L{index}" +//connection indicator
