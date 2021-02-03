@@ -1,6 +1,5 @@
 ﻿using Amazon.Lambda;
 using Amazon.Lambda.Model;
-using Microsoft.Extensions.Logging;
 using SabreWebtopTicketingService.Interface;
 using SabreWebtopTicketingService.Models;
 using System;
@@ -14,14 +13,14 @@ namespace SabreWebtopTicketingService.Common
 {
     public class GetTurnaroundPointDataSource : IGetTurnaroundPointDataSource
     {
-        private readonly ILogger<GetTurnaroundPointDataSource> logger;
+        private readonly ILogger logger;
         private readonly AmazonLambdaClient client;
         private readonly string env;
         public string ContextID { get; set; }
 
 
         public GetTurnaroundPointDataSource(
-            ILogger<GetTurnaroundPointDataSource> logger,
+            ILogger logger,
             AmazonLambdaClient client)
         {
             this.logger = logger;
@@ -64,7 +63,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, $"An error occurred while processing lambda request {inputjson} lambda method {functionName}. Lambda response {lambdaPayload} and {ex.Message}.");
+                logger.LogError($"An error occurred while processing lambda request {inputjson} lambda method {functionName}. Lambda response {lambdaPayload} and {ex.Message}.");
                 throw;
             }
         }
