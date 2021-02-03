@@ -3061,11 +3061,7 @@ namespace SabreWebtopTicketingService.Services
                 quotegrp.
                     Select(s => s).
                     ToList().
-                    ForEach(f =>
-                    {
-                        f.QuoteNo = groupindex;
-                        f.PartialIssue = quotegrp.Count() > 1;
-                    });
+                    ForEach(f => f.QuoteNo = groupindex);
             }
 
             #region Mask
