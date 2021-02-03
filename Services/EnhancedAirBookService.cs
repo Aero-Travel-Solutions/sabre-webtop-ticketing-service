@@ -195,11 +195,13 @@ namespace SabreWebtopTicketingService.Services
                                                                     ToArray()
                                         },
                                         //Enable Specific Penalty
-                                        SpecificPenalty = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
-                                        {
-                                            AdditionalInfoSpecified = true,
-                                            AdditionalInfo = true
-                                        },
+                                        SpecificPenalty = IsPriceOveride ?
+                                                                null:
+                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
+                                                                {
+                                                                    AdditionalInfoSpecified = true,
+                                                                    AdditionalInfo = true
+                                                                },
                                         Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
                                                     null:
                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
