@@ -222,7 +222,7 @@ namespace SabreWebtopTicketingService.Models
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
                                             ToList():
                                         items[1].
-                                            SplitOnRegex(@"(END").
+                                            SplitOnRegex(@"(END)").
                                             Last().
                                             SplitOn("\n").
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
