@@ -190,7 +190,7 @@ namespace SabreWebtopTicketingService.Services
                 //Retrieve PNR if only one match found
                 try
                 {
-                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, true, true, true, false));
+                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, contextID, true, true, true, false));
 
                     logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
 
@@ -281,22 +281,26 @@ namespace SabreWebtopTicketingService.Services
                     if((oldquotecomm.BspCommissionRate.HasValue || q.BspCommissionRate.HasValue) &&
                        oldquotecomm.BspCommissionRate.Value != q.BspCommissionRate.Value)
                     {
+                        string sysbspcomm = q.BspCommissionRate.HasValue ? string.Format("{0:0.00}", q.BspCommissionRate.Value.ToString()) : "Not Specified";
+                        string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.BspCommissionRate.Value.ToString()) : "Not Specified";
                         webtopWarnings.
                             Add(new WebtopWarning()
                             {
                                 code = "BSP_COMM_MISSMATCH",
-                                message = $"Bsp commission rate missmatch (system:{q.BspCommissionRate.Value}, user: {oldquotecomm.BspCommissionRate.Value}). Please verify before proceeding to ticketing."
+                                message = $"BSP commission rate missmatch. (System:{sysbspcomm}, User: {userbspcomm}). Please verify before proceeding to ticketing."
                             });
                     }
 
                     if((oldquotecomm.AgentCommissionRate.HasValue || q.AgentCommissionRate.HasValue) &&
                        q.AgentCommissionRate.Value != oldquotecomm.AgentCommissionRate)
                     {
+                        string sysagtcomm = q.AgentCommissionRate.HasValue? string.Format("{0:0.00}", q.AgentCommissionRate.Value.ToString()) : "Not Specified";
+                        string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.AgentCommissionRate.Value.ToString()) : "Not Specified";
                         webtopWarnings.
                             Add(new WebtopWarning()
                             {
                                 code = "AGENT_COMM_MISSMATCH",
-                                message = $"Agency commission rate missmatch (system:{q.AgentCommissionRate.Value}, user: {oldquotecomm.AgentCommissionRate.Value}). Please verify before proceeding to ticketing."
+                                message = $"Agent commission rate missmatch. (System:{sysagtcomm}, User: {useragtcomm}). Please verify before proceeding to ticketing."
                             });
                     }
                 });
@@ -304,7 +308,7 @@ namespace SabreWebtopTicketingService.Services
             return webtopWarnings;
         }
 
-        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
+        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
         {
             var pnrAccessKey = $"{ticketingpcc}-{locator}-pnr".EncodeBase64();
             var cardAccessKey = $"{ticketingpcc}-{locator}-card".EncodeBase64();
@@ -346,7 +350,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (agent != null && !string.IsNullOrEmpty(agent.AgentId))
             {
-                pnr = ParseSabrePNR(response, sabresessionid, sessionid, agent, includeQuotes, includeexpiredquote);
+                pnr = ParseSabrePNR(response, sabresessionid, sessionid, agent, contextID, includeQuotes, includeexpiredquote);
 
                 if (withpnrvalidation)
                 {
@@ -574,7 +578,7 @@ namespace SabreWebtopTicketingService.Services
                     GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                     //Parse PNR++
-                    pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent);
+                    pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent, contextID);
 
                     //Get stored card data
                     var maskedcards = request.
@@ -719,7 +723,7 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                 //Parse PNR++
-                pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent);
+                pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent, contextID);
 
                 //Get stored card data
                 var maskedcards = request.
@@ -784,7 +788,7 @@ namespace SabreWebtopTicketingService.Services
                 GetFuelSurcharge(quotes);
 
                 //Calculate Commission
-                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent);
+                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent, contextID);
 
                 //Agent Price
                 quotes.
@@ -900,7 +904,7 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
                 //Parse PNR++
-                pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent);
+                pnr = ParseSabrePNR(result, token.SessionID, sessionID, agent, contextID);
 
                 //Get stored card data
                 var maskedcards = request.
@@ -961,7 +965,7 @@ namespace SabreWebtopTicketingService.Services
                 GetFuelSurcharge(quotes);
 
                 //Calculate Commission
-                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent);
+                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent, contextID);
 
                 //Agent Price
                 quotes.
@@ -1115,7 +1119,7 @@ namespace SabreWebtopTicketingService.Services
 
                 if (value == null)
                 {
-                    throw new AeronologyException("50000050", "Card data not found.");
+                    throw new AeronologyException("NO_CARD_FOUND", "Card data not found.");
                 }
 
                 item.FormOfPayment.PaymentType = PaymentType.CC;
@@ -1258,7 +1262,7 @@ namespace SabreWebtopTicketingService.Services
             return agentlist;
         }
 
-        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, Agent agent, bool includeQuotes = false, bool includeexpiredquote = false)
+        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, Agent agent, string contextID, bool includeQuotes = false, bool includeexpiredquote = false)
         {
             DateTime? pcclocaldatetime = null;
             SabrePNR sabrepnr = new SabrePNR(result);
@@ -1278,7 +1282,7 @@ namespace SabreWebtopTicketingService.Services
                                             System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid, agent);
+            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid, agent, contextID);
 
             pnr.LastQuoteNumber = pnr.Quotes.IsNullOrEmpty() ? 0 : pnr.Quotes.OrderBy(l => l.QuoteNo).Last().QuoteNo;
             return pnr;
@@ -1323,7 +1327,7 @@ namespace SabreWebtopTicketingService.Services
 
                     if (value == null)
                     {
-                        throw new AeronologyException("50000050", "Card data not found.");
+                        throw new AeronologyException("NO_CARD_FOUND", "Card data not found.");
                     }
 
                     item.QuotePassenger.FormOfPayment.PaymentType = PaymentType.CC;
@@ -1343,7 +1347,7 @@ namespace SabreWebtopTicketingService.Services
 
                     if (value == null)
                     {
-                        throw new AeronologyException("50000050", "Card data not found.");
+                        throw new AeronologyException("NO_CARD_FOUND", "Card data not found.");
                     }
 
                     item.FormOfPayment.PaymentType = PaymentType.CC;
@@ -1353,7 +1357,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid, Agent agent)
+        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid, Agent agent, string contextID)
         {
             List<PNRSector> secs = GetSectors(sabrepnr.AirSectors, sabrepnr.ArunkSectors);
             List<PNRPassengers> paxs = GetPassengers(sabrepnr.Passengers);
@@ -1411,7 +1415,7 @@ namespace SabreWebtopTicketingService.Services
             if (includeQuotes)
             {
                 //Quote
-                pnr.Quotes = GetQuotes(sabrepnr.PriceQuote, pnr, includeexpiredquotes, pcclocaldatetime.Value, sessionid, agent);
+                pnr.Quotes = GetQuotes(sabrepnr.PriceQuote, pnr, includeexpiredquotes, pcclocaldatetime.Value, sessionid, agent, contextID);
             }
 
             //adding quote form of payments to stored cards
@@ -1637,7 +1641,7 @@ namespace SabreWebtopTicketingService.Services
                 //Retrieve PNR
                 GetReservationRS getReservationRS = null;
                 getReservationRS = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
-                pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, true, true);
+                pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, contextID, true, true);
 
                 //Check if the filed fares are partially issued
                 var filedfares = request.Quotes.Where(w => w.FiledFare).GroupBy(g=> g.QuoteNo).ToList();
@@ -2768,7 +2772,7 @@ namespace SabreWebtopTicketingService.Services
             bool notourcode = quotes.All(a => string.IsNullOrEmpty(a.TourCode));
 
             //Get commission data
-            CalculateCommission(quotes, pnr, ticketingpcc, request.SessionID, agent);
+            CalculateCommission(quotes, pnr, ticketingpcc, request.SessionID, agent, contextID);
 
             //commission or fee check
             if (!pendingquotes.Select(q => q.BSPCommissionRate).All(quotes.Select(s => s.BspCommissionRate).Contains))
@@ -3918,7 +3922,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sessionid, Agent agent)
+        private List<Quote> GetQuotes(PriceQuoteXElement sabrequotes, PNR pnr, bool includeexpiredquotes, DateTime pcclocaltime, string sessionid, Agent agent, string contextID)
         {
             if (sabrequotes == null) { return new List<Quote>(); }
 
@@ -4018,9 +4022,10 @@ namespace SabreWebtopTicketingService.Services
                                     pnr,
                                     pcc.PccCode,
                                     sessionid,
-                                    agent);
+                                    agent,
+                                    contextID);
             }
-            catch { } //Errors will not be thrown as we need file -ares with errors to be displayed
+            catch { }//Errors will not be thrown as we need filefares with errors to be displayed
 
             var ApplySupressITFlag = notourcode && quotes.Any(a => !string.IsNullOrEmpty(a.TourCode));
 
@@ -4058,7 +4063,7 @@ namespace SabreWebtopTicketingService.Services
                     ToList();
         }
 
-        private void CalculateCommission(List<Quote> quotes, PNR pnr, string ticketingpcc, string sessionID, Agent agent)
+        private void CalculateCommission(List<Quote> quotes, PNR pnr, string ticketingpcc, string sessionID, Agent agent, string contextID)
         {
             var calculateCommissionTasks = new List<Task>();
             CancellationToken ct = new CancellationToken();
@@ -4093,7 +4098,15 @@ namespace SabreWebtopTicketingService.Services
 
                 if (quote.TurnaroundPoint == "err")
                 {
-                    throw new AeronologyException("INVALID_TURNAROUND_POINT", "Turnaround point invalid");
+                    quote.Errors = new List<WebtopError>()
+                    {
+                        new WebtopError()
+                        {
+                            code = "INVALID_TURNAROUND_POINT",
+                            message = "Turnaround point invalid."
+                        }
+                    };
+                    return;
                 }
 
                 var calculateCommissionRequest = new CalculateCommissionRequest()
