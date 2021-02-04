@@ -1048,7 +1048,7 @@ namespace SabreWebtopTicketingService.Services
                               new WebtopWarning()
                               {
                                   code = "BESTBUY_WARNING",
-                                  message = "ALERT: Bestbuy is a guide only. Please make sure booking class changes praposed are verified and done on the PNR before proceed to ticketing."
+                                  message = "ALERT: Bestbuy is a guide only. Please make sure booking class changes proposed are verified and done on the PNR before proceed to ticketing."
                               }
                           }
                       }).

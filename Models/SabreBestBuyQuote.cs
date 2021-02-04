@@ -88,6 +88,48 @@ namespace SabreWebtopTicketingService.Models
     // OBFDA - CC NBR BEGINS WITH 6          10.90        2434.04
     // OBFDA - CC NBR BEGINS WITH 2           8.30        2431.44
     // OBFDA - CARD FEE                       8.30        2431.44
+
+    //AIR EXTRAS AVAILABLE - SEE WP* AE
+    //BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    //.
+
+    //Example 04
+
+    //BASE FARE      EQUIV AMT  TAXES/FEES/CHARGES TOTAL
+    // 1-     THB12165 AUD534.00      97.40XT AUD631.40ADT
+    //XT     21.00WY      43.40YQ      30.70TS       0.70G8 
+    //            1.60E7 
+    // 1-      THB9125 AUD401.00      97.40XT AUD498.40CNN
+    //XT     21.00WY      43.40YQ      30.70TS       0.70G8 
+    //            1.60E7 
+    //           21290         935.00     194.80           1129.80TTL
+    //ADT-01  K1LEOTG
+    // BKK TG MEL402.72NUC402.72END ROE30.2068
+    //NON ENDORSE/CANCELLATION/CHANGE FEE APPLIED/RFND/NOT LATER THAN
+    // 90 DAYS/AFTER TKT EXPIRY
+    //VALIDATING CARRIER SPECIFIED - TG
+    //CAT 15 SALES RESTRICTIONS FREE TEXT FOUND - VERIFY RULES
+    //CHANGE BOOKING CLASS -   2K
+    //CNN-01  K1LEOTG/CH
+    // BKK TG MEL302.04NUC302.04END ROE30.2068
+    //NON ENDORSE/CANCELLATION/CHANGE FEE APPLIED/RFND/NOT LATER THAN
+    // 90 DAYS/AFTER TKT EXPIRY
+    //VALIDATING CARRIER SPECIFIED - TG
+    //CAT 15 SALES RESTRICTIONS FREE TEXT FOUND - VERIFY RULES
+    //CHANGE BOOKING CLASS -   2K
+
+    //FORM OF PAYMENT FEES PER TICKET MAY APPLY
+    //ADT      DESCRIPTION FEE      TKT TOTAL
+    // OBFCA - CC NBR BEGINS WITH 36         20.90         652.30
+    // OBFCA - CC NBR BEGINS WITH 37         19.20         650.60
+    // OBFCA - CC NBR BEGINS WITH 4           6.40         637.80
+    // OBFCA - CC NBR BEGINS WITH 5           6.40         637.80
+                                                               
+    //CNN DESCRIPTION                     FEE TKT TOTAL
+    // OBFCA - CC NBR BEGINS WITH 36         16.50         514.90
+    // OBFCA - CC NBR BEGINS WITH 37         15.10         513.50
+    // OBFCA - CC NBR BEGINS WITH 4           5.00         503.40
+    // OBFCA - CC NBR BEGINS WITH 5           5.00         503.40
                                                                
     //AIR EXTRAS AVAILABLE - SEE WP* AE
     //BAGGAGE INFO AVAILABLE - SEE WP* BAG
@@ -137,8 +179,12 @@ namespace SabreWebtopTicketingService.Models
                     taxitems.Add(new TaxInfo(taxlines[paxtypeindex].Replace("\n", "###") + taxlines[paxtypeindex + 1].Replace("\n", "###")));
                 }
 
-                string basefare = taxlines[paxtypeindex].
-                                    SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}(\d+\.\d+)")[1];
+                //single currency
+                string basefare = items[0].Contains("EQUIV AMT") ?
+                                    taxlines[paxtypeindex].
+                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+[A-Z]{3}(\d+\.{0,1}\d*)\s+")[1] :
+                                    taxlines[paxtypeindex].
+                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}(\d+\.{0,1}\d*)")[1];
 
 
                 string[] farebasis = items[i].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s +").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
@@ -150,6 +196,20 @@ namespace SabreWebtopTicketingService.Models
                                                     SplitOn("\n").
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
                                                     SplitOnRegex(@"(ROE\d+\.\d+)\s*");
+
+                List<string> endos = items[i + 1].Contains("ROE") ?
+                                        items[i + 1].
+                                            SplitOnRegex(@"(ROE\d+\.\d+)\s*").
+                                            Last().
+                                            SplitOn("\n").
+                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                            ToList() :
+                                        items[i + 1].
+                                            SplitOnRegex(@"(END)").
+                                            Last().
+                                            SplitOn("\n").
+                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                            ToList();
 
                 IEnumerable<string> changesecs = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
                                                     items[i+1].
@@ -181,7 +241,7 @@ namespace SabreWebtopTicketingService.Models
                     int sectorno = selectedsectors[j];
                     PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
                     if (pnrsec.From == "ARUNK") { continue; }
-                    string changesec = changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
+                    string changesec = changesecs.IsNullOrEmpty()? "" :  changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
                     string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
                                                     usedfbs.IsNullOrEmpty() ?
                                                         farebasis.
@@ -214,19 +274,7 @@ namespace SabreWebtopTicketingService.Models
                                                 SplitOn("LAST DAY TO PURCHASE").
                                                 Last().
                                                 Trim(),
-                        Endorsements = items[1].Contains("ROE")?
-                                        items[1].
-                                            SplitOnRegex(@"(ROE\d+\.\d+)\s*").
-                                            Last().
-                                            SplitOn("\n").
-                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
-                                            ToList():
-                                        items[1].
-                                            SplitOnRegex(@"(END)").
-                                            Last().
-                                            SplitOn("\n").
-                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
-                                            ToList(),
+                        Endorsements = endos,
                         FareCalculation = farecalcitems.Count() == 1? farecalcitems.First().SplitOn("END").First(): farecalcitems.First(),
                         ROE = farecalcitems.Count() == 1? "1.0000": farecalcitems[1].Substring(3).Trim(),
                         Taxes = taxitems.
