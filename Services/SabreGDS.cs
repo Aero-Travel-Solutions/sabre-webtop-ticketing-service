@@ -4204,12 +4204,6 @@ namespace SabreWebtopTicketingService.Services
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
-
-            if (quotes.All(a => !a.Errors.IsNullOrEmpty()))
-            {
-                throw new AeronologyException("COMMISSION_REC_NOT_FOUND",
-                                                string.Join(",", quotes.SelectMany(q => q.Errors).Distinct()));
-            }
         }
 
         private void ValidateCommission(ValidateCommissionRQ rq, string ticketingpcc, string sessionID, Agent agent)

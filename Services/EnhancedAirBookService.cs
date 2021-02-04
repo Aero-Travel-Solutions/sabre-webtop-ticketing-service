@@ -1000,7 +1000,12 @@ namespace SabreWebtopTicketingService.Services
 
             //set PriceType
             quotes.
-                ForEach(f => f.PriceType = priceType);
+                ForEach(f =>
+                {
+                    f.PriceType = priceType;
+                    f.Warnings = new List<WebtopWarning>();
+                    f.Errors = new List<WebtopError>();
+                });
 
             //Order quotes
             quotes = quotes.
