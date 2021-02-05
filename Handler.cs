@@ -157,7 +157,7 @@ namespace SabreWebtopTicketingService
             {
                 contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
                 List<Quote> result = await sabreGDS.GetQuote(rq, contextid);
-                lambdaResponse.statusCode = result.All(a=> a.Errors.IsNullOrEmpty()) ? 200 : 500;
+                lambdaResponse.statusCode = 200;
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
@@ -165,13 +165,8 @@ namespace SabreWebtopTicketingService
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
-                                                    error = result.All(a => a.Errors.IsNullOrEmpty()) ? 
-                                                                new List<WebtopError>() : 
-                                                                result.
-                                                                    SelectMany(s=> s.Errors).
-                                                                    DistinctBy(d=> d.message).
-                                                                    ToList(),
-                                                    data = result.All(a => a.Errors.IsNullOrEmpty()) ? result : null
+                                                    error = new List<WebtopError>(),
+                                                    data = result
                                                 },
                                                 new JsonSerializerSettings()
                                                 {
