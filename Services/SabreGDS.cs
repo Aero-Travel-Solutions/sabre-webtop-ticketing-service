@@ -548,6 +548,15 @@ namespace SabreWebtopTicketingService.Services
                     //Try get PNR in cache               
                     pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
+                    if(pnr != null)
+                    {
+                        //ignore session
+                        await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+                        //retrieve pnr
+                        await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, $"*{pnr.Locator}");
+                    }
+
                     if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                     {
                         //Try get stored cards
@@ -599,9 +608,6 @@ namespace SabreWebtopTicketingService.Services
 
                 //published quote
                 List<Quote> quotes = new List<Quote>();
-
-                //ignore session
-                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
 
                 //workout plating carrier
                 string platingcarrier = GetManualPlatingCarrier(pnr, request);
@@ -1758,10 +1764,13 @@ namespace SabreWebtopTicketingService.Services
                         AgentID = request.AgentID,
                         AgentName = agent.Name,
                         AgentLogo = agent.Logo,
-                        UserFullName = request.ContactDetails.ContactName,
-                        UserName = user.Name,
+                        ConsolidatorUserFullName = user.FullName,
+                        ConsolidatorUserName = user.Name,
+                        ContactName = request.ContactDetails.ContactName,
                         ContactEmail = request.ContactDetails.Email,
-                        ContactPhone = request.ContactDetails.PhoneNumber
+                        ContactPhone = request.ContactDetails.PhoneNumber,
+                        AgentUserName = request.ContactDetails.AgentUserName,
+                        AgentUserFullName = request.ContactDetails.AgentUserFullName
                     },
                     Pnr = pnr,
                     TicketingResult = ticketData

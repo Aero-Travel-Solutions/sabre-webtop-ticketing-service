@@ -23,6 +23,8 @@ namespace SabreWebtopTicketingService.Models
         public string ContactName { get; set; }
         public string PhoneNumber { get; set; }
         public string Email { get; set; }
+        public string AgentUserName { get; set; }
+        public string AgentUserFullName { get; set; }
     }
 
     public class MerchantData
