@@ -1045,7 +1045,7 @@ namespace SabreWebtopTicketingService.Services
                                          {
                                              PQSectorNo = selsec.SectorNo,
                                              Arunk = pnrsec.From == "ARUNK",
-                                             DepartureCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.From,
+                                             DepartureCityCode = pnrsec.From,
                                              ArrivalCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.To,
                                              DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate,
                                              FareBasis = pnrsec.From == "ARUNK" ? "" : s.Farebasis.First(f=> f.SectorNo == selsec.SectorNo).Farebasis
