@@ -255,6 +255,12 @@ namespace SabreWebtopTicketingService.Services
                                     pcc.PccCode);
             string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
 
+            var invalidquotes = rq.Quotes.Where(w => !w.BspCommissionRate.HasValue && !w.AgentCommissionRate.HasValue);
+            if (!invalidquotes.IsNullOrEmpty())
+            {
+                throw new AeronologyException("NO_COMM_AGENT_FEE", "BSP commission rate or agent fee needs to be populated before validating commission.");
+            }
+
             List<CommissionData> oldcommdata = rq.
                                                 Quotes.
                                                 Select(q => new CommissionData()
@@ -265,6 +271,7 @@ namespace SabreWebtopTicketingService.Services
                                                 }).
                                                 ToList();
 
+
             //workout fuel surcharge taxcode
             GetFuelSurcharge(rq.Quotes);
 
@@ -274,15 +281,14 @@ namespace SabreWebtopTicketingService.Services
             //check for any missmatch in commission
             rq.
                 Quotes.
-                ForEach(q => 
+                ForEach(q =>
                 {
                     CommissionData oldquotecomm = oldcommdata.First(f => f.QuoteNo == q.QuoteNo);
 
-                    if((oldquotecomm.BspCommissionRate.HasValue || q.BspCommissionRate.HasValue) &&
-                       oldquotecomm.BspCommissionRate.Value != q.BspCommissionRate.Value)
+                    string sysbspcomm = q.BspCommissionRate.HasValue ? string.Format("{0:0.00}", q.BspCommissionRate.Value.ToString()) : "Not Specified";
+                    string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.BspCommissionRate.Value.ToString()) : "Not Specified";
+                    if (sysbspcomm != userbspcomm)
                     {
-                        string sysbspcomm = q.BspCommissionRate.HasValue ? string.Format("{0:0.00}", q.BspCommissionRate.Value.ToString()) : "Not Specified";
-                        string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.BspCommissionRate.Value.ToString()) : "Not Specified";
                         webtopWarnings.
                             Add(new WebtopWarning()
                             {
@@ -291,11 +297,10 @@ namespace SabreWebtopTicketingService.Services
                             });
                     }
 
-                    if((oldquotecomm.AgentCommissionRate.HasValue || q.AgentCommissionRate.HasValue) &&
-                       q.AgentCommissionRate.Value != oldquotecomm.AgentCommissionRate)
+                    string sysagtcomm = q.AgentCommissionRate.HasValue ? string.Format("{0:0.00}", q.AgentCommissionRate.Value.ToString()) : "Not Specified";
+                    string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.AgentCommissionRate.Value.ToString()) : "Not Specified";
+                    if (sysagtcomm != useragtcomm)
                     {
-                        string sysagtcomm = q.AgentCommissionRate.HasValue? string.Format("{0:0.00}", q.AgentCommissionRate.Value.ToString()) : "Not Specified";
-                        string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.AgentCommissionRate.Value.ToString()) : "Not Specified";
                         webtopWarnings.
                             Add(new WebtopWarning()
                             {
@@ -621,6 +626,12 @@ namespace SabreWebtopTicketingService.Services
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
+
+                //workout fuel surcharge taxcode
+                GetFuelSurcharge(quotes);
+
+                //Calculate Commission
+                CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent, contextID);
 
                 return quotes;
             }
