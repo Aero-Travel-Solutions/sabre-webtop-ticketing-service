@@ -4097,9 +4097,10 @@ namespace SabreWebtopTicketingService.Services
                             Where(w => w.DepartureCityCode != "ARUNK").
                             Select(s => pnr.
                                             Sectors.
-                                            First(f =>  f.From == s.DepartureCityCode &&
+                                            FirstOrDefault(f =>  f.From == s.DepartureCityCode &&
                                                         f.To == s.ArrivalCityCode &&
                                                         f.DepartureDate == s.DepartureDate)).
+                            Where(w => w != null).
                             Select(s => new TPSector()
                             {
                                 From = s.From,
