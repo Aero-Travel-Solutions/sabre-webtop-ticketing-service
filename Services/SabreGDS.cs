@@ -318,7 +318,7 @@ namespace SabreWebtopTicketingService.Services
                             Add(new WebtopWarning()
                             {
                                 code = "AGENT_FEE_MISSMATCH",
-                                message = $"Agent fee missmatch. (System:{sysagtcomm}, User: {useragtcomm}). Please verify before proceeding to ticketing."
+                                message = $"Agent fee missmatch. (System:{sysagtfee}, User: {useragtfee}). Please verify before proceeding to ticketing."
                             });
                     }
                 });
