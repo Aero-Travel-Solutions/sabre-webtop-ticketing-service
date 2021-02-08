@@ -506,7 +506,7 @@ namespace SabreWebtopTicketingService.Services
                                                                 Where(w=> pnr.Sectors.First(f=> f.SectorNo == w.SectorNo).From != "SURFACE").
                                                                 Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                 {
-                                                                    RPH = s.SectorNo.ToString(),
+                                                                    RPH = string.IsNullOrEmpty(s.FareBasis) ? null : s.SectorNo.ToString(),
                                                                     Number = s.SectorNo.ToString()
                                                                 }).
                                                                 ToArray()
@@ -531,6 +531,7 @@ namespace SabreWebtopTicketingService.Services
                                                     },
                                         CommandPricing = quoteRequest.
                                                             SelectedSectors.
+                                                            Where(w=> !string.IsNullOrEmpty(w.FareBasis)).
                                                             Select(sec => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricing()
                                                             {
                                                                 RPH = sec.SectorNo.ToString(),

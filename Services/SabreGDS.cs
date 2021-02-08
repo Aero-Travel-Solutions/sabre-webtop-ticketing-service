@@ -1000,7 +1000,15 @@ namespace SabreWebtopTicketingService.Services
 
             logger.LogInformation($"BESTBUY RESPONSE{Environment.NewLine}{bestbuyresponse}");
 
-            SabreBestBuyQuote bestbuyquote = new SabreBestBuyQuote(bestbuyresponse, request.SelectedSectors.Select(s=>s.SectorNo).ToList(), pnr.Sectors);
+            IBestBuyQuote bestbuyquote = bestbuyresponse.Contains("TAXES/FEES/CHARGES")?
+                                                        (IBestBuyQuote)new SabreBestBuyQuote(
+                                                                bestbuyresponse, 
+                                                                request.SelectedSectors.Select(s=>s.SectorNo).ToList(), pnr.Sectors):
+                                                        bestbuyresponse.Contains("PSGR TYPE")?
+                                                            (IBestBuyQuote)new AbacusBuyQuote(
+                                                                bestbuyresponse,
+                                                                request.SelectedSectors.Select(s => s.SectorNo).ToList(), pnr.Sectors):
+                                                            throw new AeronologyException("INVALID_GDS_RESPONSE", bestbuyresponse);
 
             int index = 0;
             quotes = (from pax in request.SelectedPassengers
@@ -2948,12 +2956,17 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"##### Manual build command 1 : {command1}");
                 logger.LogInformation($"##### Manual build command 1 response : {response1}");
 
-                if(!response1.StartsWith("PQ"))
+                if(!response1.StartsWith("PQ") || !response1.StartsWith("PRICE QUOTE RECORD"))
                 {
                     throw new AeronologyException("MANUAL_BUILD_SHELL_FAIL", $"Unexpected response received from GDS(Command:{command1}, Response:{response1}).");
                 }
 
-                int groupindex = int.Parse(response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*", "1"));
+                string pqnumber = response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*");
+                //if(string.IsNullOrEmpty(pqnumber))
+                //{
+                //    pqnumber = response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*");
+                //}
+                int groupindex = int.Parse(pqnumber);
                 logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
 
