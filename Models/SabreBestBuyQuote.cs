@@ -124,16 +124,37 @@ namespace SabreWebtopTicketingService.Models
     // OBFCA - CC NBR BEGINS WITH 37         19.20         650.60
     // OBFCA - CC NBR BEGINS WITH 4           6.40         637.80
     // OBFCA - CC NBR BEGINS WITH 5           6.40         637.80
-                                                               
+
     //CNN DESCRIPTION                     FEE TKT TOTAL
     // OBFCA - CC NBR BEGINS WITH 36         16.50         514.90
     // OBFCA - CC NBR BEGINS WITH 37         15.10         513.50
     // OBFCA - CC NBR BEGINS WITH 4           5.00         503.40
     // OBFCA - CC NBR BEGINS WITH 5           5.00         503.40
-                                                               
+
     //AIR EXTRAS AVAILABLE - SEE WP* AE
     //BAGGAGE INFO AVAILABLE - SEE WP* BAG
     //.
+
+
+    //ABACUS
+    //PSGR TYPE  ADT - 01
+    // CXR RES DATE FARE BASIS NVB   NVA BG
+    // HKG
+    // TPE HX N   05AUG NAVT1HS         05AUG 05AUG 30K
+    //FARE  HKD       750  
+    //TAX HKD       120HK HKD        90G3 HKD       105XT
+    //TOTAL HKD      1065
+    //ADT-01  NAVT1HS
+    // HKG HX TPE96.42NUC96.42END ROE7.75325
+    //XT HKD50I5 HKD55YR
+    //ENDOS* SEG1* Q/NONEND RFD HKD700/NOSH HKD1000
+    //ATTN* PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //ATTN* PRIVATE Â¤
+    //ATTN* VALIDATING CARRIER SPECIFIED - HX
+    //ATTN* CHANGE BOOKING CLASS -   1N
+    //ATTN* BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    // .
+
 
 
     internal class SabreBestBuyQuote

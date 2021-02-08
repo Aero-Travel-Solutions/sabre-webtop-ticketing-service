@@ -63,8 +63,11 @@ namespace SabreWebtopTicketingService.Models
         {
             get
             {
-                agtcommrate = AgentCommissions?.FirstOrDefault()?.AgtCommRate;
-                return AgentCommissions?.FirstOrDefault()?.AgtCommRate;
+                if (AgentCommissions != null)
+                {
+                    agtcommrate = AgentCommissions.FirstOrDefault()?.AgtCommRate;
+                }
+                return agtcommrate;
             }
 
             set
