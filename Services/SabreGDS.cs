@@ -267,7 +267,8 @@ namespace SabreWebtopTicketingService.Services
                                                 {
                                                     QuoteNo = q.QuoteNo,
                                                     BspCommissionRate = q.BspCommissionRate,
-                                                    AgentCommissionRate = q.AgentCommissionRate
+                                                    AgentCommissionRate = q.AgentCommissionRate,
+                                                    Fee = q.Fee
                                                 }).
                                                 ToList();
 
@@ -306,6 +307,18 @@ namespace SabreWebtopTicketingService.Services
                             {
                                 code = "AGENT_COMM_MISSMATCH",
                                 message = $"Agent commission rate missmatch. (System:{sysagtcomm}, User: {useragtcomm}). Please verify before proceeding to ticketing."
+                            });
+                    }
+
+                    string sysagtfee = string.Format("{0:0.00}", q.Fee.ToString());
+                    string useragtfee = string.Format("{0:0.00}", oldquotecomm.Fee.ToString());
+                    if (sysagtfee != useragtfee)
+                    {
+                        webtopWarnings.
+                            Add(new WebtopWarning()
+                            {
+                                code = "AGENT_FEE_MISSMATCH",
+                                message = $"Agent fee missmatch. (System:{sysagtcomm}, User: {useragtcomm}). Please verify before proceeding to ticketing."
                             });
                     }
                 });
@@ -526,7 +539,6 @@ namespace SabreWebtopTicketingService.Services
             request.Validate();
             SabreSession token = null;
             PNR pnr = null;
-
             try
             {
                 string sessionID = request.SessionID;
@@ -553,7 +565,7 @@ namespace SabreWebtopTicketingService.Services
                     //Try get PNR in cache               
                     pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
-                    if(pnr != null)
+                    if (pnr != null)
                     {
                         //ignore session
                         await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
@@ -634,41 +646,6 @@ namespace SabreWebtopTicketingService.Services
                 CalculateCommission(quotes, pnr, ticketingpcc, sessionID, agent, contextID);
 
                 return quotes;
-            }
-            catch(Exception ex)
-            {
-                if (ex is GDSException || ex is AeronologyException)
-                {
-                    return new List<Quote>()
-                    {
-                        new Quote()
-                        {
-                            Errors = new List<WebtopError>()
-                            {
-                                new WebtopError()
-                                {
-                                    code = ((AeronologyException)ex).ErrorCode,
-                                    message = ex.Message
-                                }
-                            }
-                        }
-                    };
-                }
-
-                return new List<Quote>()
-                {
-                    new Quote()
-                    {
-                        Errors = new List<WebtopError>()
-                        {
-                            new WebtopError()
-                            {
-                                code = "UNKNOWN_ERROR",
-                                message = ex.Message
-                            }
-                        }
-                    }
-                };
             }
             finally
             {
@@ -4763,6 +4740,7 @@ namespace SabreWebtopTicketingService.Services
         public int QuoteNo { get; set; }
         public decimal? AgentCommissionRate { get; set; }
         public decimal? BspCommissionRate { get; set; }
+        public decimal Fee { get; set; }
     }
 
     internal class sectorinfo

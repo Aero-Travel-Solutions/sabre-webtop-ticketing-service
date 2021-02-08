@@ -8,6 +8,8 @@ namespace SabreWebtopTicketingService.Models
 {
     public class Quote
     {
+        private decimal? agtcommrate = null;
+
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
         public FareType FareType { get; set; }
@@ -57,7 +59,19 @@ namespace SabreWebtopTicketingService.Models
 
         //Commision and fees
         public string ContextID { get; set; }
-        public decimal? AgentCommissionRate => AgentCommissions?.FirstOrDefault()?.AgtCommRate;
+        public decimal? AgentCommissionRate 
+        {
+            get
+            {
+                agtcommrate = AgentCommissions?.FirstOrDefault()?.AgtCommRate;
+                return AgentCommissions?.FirstOrDefault()?.AgtCommRate;
+            }
+
+            set
+            {
+                agtcommrate = value;
+            }
+        }
         public decimal? BspCommissionRate { get; set; }
         [JsonIgnore]
         public decimal? GSTRate { get; set; }
