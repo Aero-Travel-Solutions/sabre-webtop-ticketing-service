@@ -9,6 +9,7 @@ using System.Text;
 namespace SabreWebtopTicketingService.Models
 {
     //ABACUS
+    //Example 01:
     //PSGR TYPE  ADT - 01
     // CXR RES DATE FARE BASIS NVB   NVA BG
     // HKG
@@ -27,11 +28,116 @@ namespace SabreWebtopTicketingService.Models
     //ATTN* BAGGAGE INFO AVAILABLE - SEE WP* BAG
     // .
 
+    //Example 02
+    //    PSGR TYPE  ADT - 01
+    //     CXR RES DATE FARE BASIS NVB   NVA BG
+    // HKG
+    // BKK CX Q   01SEP QAZZWTAE        01SEP 01SEP 30K
+    //HKG CX Q   08SEP QAZZWTAE        08SEP 08SEP 30K
+    //FARE  HKD      1670  
+    //TAX HKD       120HK HKD        90G3 HKD       368XT
+    //TOTAL HKD      2248
+    //ADT-01  QAZZWTAE
+    // HKG CX BKK107.35CX HKG107.35NUC214.70END ROE7.75325
+    //XT HKD50I5 HKD182TS HKD8G8 HKD18E7 HKD110YR
+    //ENDOS* SEG1/2* NONENDORSEABLE/FARE RESTRICTIONS APPLY
+    //ATTN* PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //ATTN* PRIVATE Â¤
+    //ATTN* VALIDATING CARRIER SPECIFIED - CX
+    //ATTN* CHANGE BOOKING CLASS -   2Q
+
+    //Example 02 - Multi pax
+    // PSGR TYPE CNN - 02
+    //     CXR RES DATE FARE BASIS NVB   NVA BG
+    // HKG
+    // BKK CX Q   01SEP QAZZWTAE/CH25   01SEP 01SEP 30K
+    //HKG CX Q   08SEP QAZZWTAE/CH25   08SEP 08SEP 30K
+    //FARE  HKD      1250  
+    //TAX HKD        90G3 HKD        50I5 HKD       318XT
+    //TOTAL HKD      1708
+    //CNN-01  QAZZWTAE/CH25
+    // HKG CX BKK80.51CX HKG80.51NUC161.02END ROE7.75325
+    //XT HKD182TS HKD8G8 HKD18E7 HKD110YR
+    //ENDOS* SEG1/2* NONENDORSEABLE/FARE RESTRICTIONS APPLY
+    //ATTN* EACH CNN REQUIRES ACCOMPANYING SAME RULE SAME CABIN ADT
+    //ATTN* PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //ATTN* PRIVATE Â¤
+    //ATTN* VALIDATING CARRIER SPECIFIED - CX
+    //ATTN* CHANGE BOOKING CLASS -   2Q
+
+    // PSGR TYPE INF - 03
+    //     CXR RES DATE FARE BASIS NVB   NVA BG
+    // HKG
+    // BKK CX Q   01SEP QAZZWTAE/IN90   01SEP 01SEP 10K
+    //HKG CX Q   08SEP QAZZWTAE/IN90   08SEP 08SEP 10K
+    //FARE  HKD       170  
+    //TAX HKD        90G3 HKD        50I5 HKD       136XT
+    //TOTAL HKD       446
+    //INF-01  QAZZWTAE/IN90
+    // HKG CX BKK10.73CX HKG10.73NUC21.46END ROE7.75325
+    //XT HKD8G8 HKD18E7 HKD110YR
+    //ENDOS* SEG1/2* NONENDORSEABLE/FARE RESTRICTIONS APPLY
+    //ATTN* PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //ATTN* EACH INF REQUIRES ACCOMPANYING ADT PASSENGER
+    //ATTN* PRIVATE Â¤
+    //ATTN* VALIDATING CARRIER SPECIFIED - CX
+    //ATTN* CHANGE BOOKING CLASS -   2Q
+    //            3090                      1312              4402TTL
+
+    //FORM OF PAYMENT FEES PER TICKET MAY APPLY
+    //ADT      DESCRIPTION FEE      TKT TOTAL
+    // OBFCA - CC NBR BEGINS WITH 516470         0           2248
+    // OBFCA - CC NBR BEGINS WITH 1611           0           2248
+    // OBFCA - CC NBR BEGINS WITH 559867         0           2248
+    // OBFCA - CC NBR BEGINS WITH 900024         0           2248
+    // OBFCA - CC SVC FEE                        0           2248
+
+    //CNN DESCRIPTION                     FEE TKT TOTAL
+    // OBFCA - CC NBR BEGINS WITH 516470         0           1708
+    // OBFCA - CC NBR BEGINS WITH 1611           0           1708
+    // OBFCA - CC NBR BEGINS WITH 559867         0           1708
+    // OBFCA - CC NBR BEGINS WITH 900024         0           1708
+    // OBFCA - CC SVC FEE                        0           1708
+
+    //INF DESCRIPTION                     FEE TKT TOTAL
+    // OBFCA - CC NBR BEGINS WITH 516470         0            446
+    // OBFCA - CC NBR BEGINS WITH 1611           0            446
+    // OBFCA - CC NBR BEGINS WITH 559867         0            446
+    // OBFCA - CC NBR BEGINS WITH 900024         0            446
+    // OBFCA - CC SVC FEE                        0            446
+
+    //ATTN* AIR EXTRAS AVAILABLE - SEE WP* AE
+    //ATTN* BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    // .
+
+    //Example 03 - Foreign Currency
+    //PSGR TYPE  ADT - 01
+    //CXR RES DATE FARE BASIS NVB   NVA BG
+    //BKK
+    //HKG CX S   01JUL SRZZTHAO        01JUL 01JUL 30K
+    //FARE  THB      4390 EQUIV HKD      1140
+    //TAX HKD       182TS HKD         4G8 HKD        64XT
+    //TOTAL HKD      1390\nADT-01  SRZZTHAO
+    //BKK CX HKG145.33NUC145.33END ROE30.2068
+    //XT HKD9E7 HKD55YR
+    //ENDOS* SEG1* NONENDORSEABLE/FARE RESTRICTIONS APPLY
+    //  RATE USED 1THB-0.25935544HKD
+    //ATTN* VALIDATING CARRIER SPECIFIED - CX
+
+    // FORM OF PAYMENT FEES PER TICKET MAY APPLY
+    // ADT      DESCRIPTION FEE      TKT TOTAL
+    //OBFCA - CC NBR BEGINS WITH 516470         0           1390
+    //OBFCA - CC NBR BEGINS WITH 1611           0           1390
+    //OBFCA - CC NBR BEGINS WITH 559867         0           1390
+    //OBFCA - CC NBR BEGINS WITH 900024         0           1390
+
+    //ATTN* AIR EXTRAS AVAILABLE - SEE WP* AE
+    //ATTN* BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    // .
 
 
     internal class AbacusBuyQuote : IBestBuyQuote
     {
-        string gdsresponse = "";
         string fullgdsresponse = "";
         List<int> selectedsectors = null;
         List<PNRSector> pnrsecs = null;
@@ -48,76 +154,73 @@ namespace SabreWebtopTicketingService.Models
         private List<BestBuyItem> GetBestBuyItems()
         {
             List<BestBuyItem> bestBuyItems = new List<BestBuyItem>();
-            var items = gdsresponse.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)");
+            var items = fullgdsresponse.SplitOnRegex(@"PSGR\s+TYPE\s+([ACI][DHN][TDFN]\s*-\s*\d+.*)");
             List<string> usedfbs = new List<string>();
-            //List<FBData> fBData = new List<FBData>();
             List<SectorFBData> sectors = new List<SectorFBData>();
 
             for (int i = 1; i < items.Skip(1).Count(); i += 2)
             {
                 //PSGR TYPE  ADT - 01
-                string paxtype = items[i].SplitOn("-").First();
+                string paxtype = items[i].SplitOn("-").First().Trim();
                 List<TaxInfo> taxitems = new List<TaxInfo>();
 
-                var taxlines = items[0].
-                                    SplitOnRegex(@"(\d+\s*-.*)").
-                                    Where(w => !string.IsNullOrEmpty(w)).
-                                    ToList();
+                List<string> lines = items[i + 1].
+                                        SplitOn("\n").
+                                        ToList();
+                string taxline = lines.
+                                    SkipWhile(s => !s.StartsWith("TAX")).
+                                    Take(1).
+                                    First();
+                taxitems.Add(new TaxInfo(taxline.Replace("\n", "###")));
 
-                int paxtypeindex = taxlines.FindLastIndex(f => f.IsMatch(@"\d+\s*-.*" + paxtype));
-                if (paxtypeindex != -1)
-                {
-                    taxitems.Add(new TaxInfo(taxlines[paxtypeindex].Replace("\n", "###") + taxlines[paxtypeindex + 1].Replace("\n", "###")));
-                }
 
                 //single currency
-                string basefare = items[0].Contains("EQUIV AMT") ?
-                                    taxlines[paxtypeindex].
-                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+[A-Z]{3}(\d+\.{0,1}\d*)\s+")[1] :
-                                    taxlines[paxtypeindex].
-                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}(\d+\.{0,1}\d*)")[1];
+                string fareline = lines.
+                                        SkipWhile(s => !s.StartsWith("FARE")).
+                                        Take(1).
+                                        First();
+
+                string basefare = fareline.Contains("EQUIV") ?
+                                        fareline.SplitOnRegex(@"EQUIV\s+[A-Z]{3}\s*(\d+\.*\d*)s*")[1]:
+                                        fareline.SplitOnRegex(@"FARE\s+[A-Z]{3}\s*(\d+\.*\d*)s*")[1];
 
 
-                string[] farebasis = items[i].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
-                string pricehint = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
-                                        items[i + 1].SplitOn("\n").First(f => f.StartsWith("CHANGE BOOKING CLASS")) :
-                                        "";
+                string[] farebasis = items[i+1].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
 
-                string[] farecalcitems = string.Join("", items[i + 1].
-                                                    SplitOn("\n").
-                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
-                                                    SplitOnRegex(@"(ROE\d+\.\d+)\s*");
+                string pricehintline = lines.FirstOrDefault(w => w.StartsWith("ATTN*CHANGE BOOKING CLASS"));
+                string pricehint = string.IsNullOrEmpty(pricehintline) ?
+                                        "":
+                                        pricehintline.SplitOn("ATTN*").Last();
 
-                List<string> endos = items[i + 1].Contains("ROE") ?
-                                        items[i + 1].
-                                            SplitOnRegex(@"(ROE\d+\.\d+)\s*").
-                                            Last().
-                                            SplitOn("\n").
-                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
-                                            ToList() :
-                                        items[i + 1].
-                                            SplitOnRegex(@"(END)").
-                                            Last().
-                                            SplitOn("\n").
-                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
-                                            ToList();
+                string[] farecalcitems = string.Join("", lines.
+                                                            SkipWhile(w=> !w.StartsWith("TOTAL")).
+                                                            Skip(2).
+                                                            TakeWhile(t => !t.StartsWith("ENDOS"))).
+                                                            SplitOnRegex(@"(ROE\d+\.\d+)\s*");
 
-                IEnumerable<string> changesecs = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
-                                                    items[i+1].
-                                                    SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
+                List<string> endos = lines.
+                                        First(f=> f.StartsWith("ENDOS")).
+                                        SplitOnRegex(@"ENDOS\*SEG.*\*").
+                                        Last().
+                                        SplitOn("/").
+                                        Where(w=> !string.IsNullOrEmpty(w)).
+                                        Select(s=> s.Trim()).
+                                        ToList();
+
+                IEnumerable<string> changesecs = string.IsNullOrEmpty(pricehintline)?
+                                                    null:
+                                                    pricehintline.
+                                                    SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-\s*").
                                                     Last().
-                                                    SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
-                                                    First().
                                                     SplitOnRegex(@"\s+").
                                                     Where(w => !string.IsNullOrEmpty(w)).
-                                                    Distinct() :
-                                                    null;
+                                                    Distinct();
 
                 List<string> ccfeedataarray = fullgdsresponse.
-                                        SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
-                                        Last().
-                                        SplitOnRegex(@"([ACI][DHN][TDFN]\s+DESCRIPTION\.*)").
-                                        ToList();
+                                                    SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
+                                                    Last().
+                                                    SplitOnRegex(@"([ACI][DHN][TDFN]\s+DESCRIPTION\.*)").
+                                                    ToList();
 
                 string ccfeedata = "";
                 int ccfeedataindex = ccfeedataarray.FindIndex(f => f.IsMatch(@$"{paxtype}\s+DESCRIPTION"));
