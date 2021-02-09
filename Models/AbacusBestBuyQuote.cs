@@ -172,6 +172,7 @@ namespace SabreWebtopTicketingService.Models
                                     Take(1).
                                     First();
                 taxitems.Add(new TaxInfo(taxline.Replace("\n", "###")));
+                taxitems.Add(new TaxInfo(lines.FirstOrDefault(f => f.StartsWith("XT"))));
 
 
                 //single currency
