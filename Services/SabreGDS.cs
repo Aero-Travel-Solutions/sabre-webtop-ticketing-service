@@ -2956,16 +2956,18 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"##### Manual build command 1 : {command1}");
                 logger.LogInformation($"##### Manual build command 1 response : {response1}");
 
-                if(!response1.StartsWith("PQ") || !response1.StartsWith("PRICE QUOTE RECORD"))
+                if(!(response1.StartsWith("PQ") || response1.StartsWith("PRICE QUOTE RECORD - SUMMARY BY NAME NUMBER")))
                 {
                     throw new AeronologyException("MANUAL_BUILD_SHELL_FAIL", $"Unexpected response received from GDS(Command:{command1}, Response:{response1}).");
                 }
 
                 string pqnumber = response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*");
-                //if(string.IsNullOrEmpty(pqnumber))
-                //{
-                //    pqnumber = response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*");
-                //}
+                if (string.IsNullOrEmpty(pqnumber))
+                {
+                    string paxtype = quotegrp.Key.Trim().ToUpper().Replace("HD", "NN");
+                    List<string> paxlines = response1.SplitOn("\n").Where(w => w.Contains(paxtype)).ToList();
+                    pqnumber = paxlines.OrderBy(o => o.LastMatch(@"\s+(\d{2}{A_Z]{3})\s*")).First().LastMatch(@"(\d+)\s*"+ quotegrp.Key);
+                }
                 int groupindex = int.Parse(pqnumber);
                 logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
@@ -3026,14 +3028,14 @@ namespace SabreWebtopTicketingService.Services
                 //command += $"¥KP{commission}";
 
                 //form of payment
-                string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper():
-                                        "";
+                //string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                //                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper():
+                //                        "";
 
-                command2 += 
-                    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ? 
-                        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" : 
-                        $"F{cashstring}";
+                //command2 += 
+                //    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ? 
+                //        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" : 
+                //        $"¥F{cashstring}";
 
                 //tourcode
                 string tourcodeprefix = GetTourCodePrefix(quote.FareType);
