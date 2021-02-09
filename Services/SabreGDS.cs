@@ -637,7 +637,17 @@ namespace SabreWebtopTicketingService.Services
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
-                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
+                //WP*Bag
+                string wpbagres = "";
+                if (bestbuyresponse.Contains("BAGGAGE INFO AVAILABLE"))
+                {
+                    logger.LogInformation($"Baggage information found. Executing WP*BAG");
+
+                    string wpbagcommand = "WP*BAG";
+                    wpbagres = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, wpbagcommand);
+                }
+
+                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier, wpbagres);
 
                 //workout fuel surcharge taxcode
                 GetFuelSurcharge(quotes);
@@ -994,7 +1004,7 @@ namespace SabreWebtopTicketingService.Services
             return quotes;
         }
 
-        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier)
+        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier, string wpbagres = "")
         {
             List<Quote> quotes = new List<Quote>();
 
@@ -1003,11 +1013,14 @@ namespace SabreWebtopTicketingService.Services
             IBestBuyQuote bestbuyquote = bestbuyresponse.Contains("TAXES/FEES/CHARGES")?
                                                         (IBestBuyQuote)new SabreBestBuyQuote(
                                                                 bestbuyresponse, 
-                                                                request.SelectedSectors.Select(s=>s.SectorNo).ToList(), pnr.Sectors):
+                                                                request.SelectedSectors.Select(s=>s.SectorNo).ToList(), 
+                                                                pnr.Sectors,
+                                                                wpbagres) :
                                                         bestbuyresponse.Contains("PSGR TYPE")?
                                                             (IBestBuyQuote)new AbacusBuyQuote(
                                                                 bestbuyresponse,
-                                                                request.SelectedSectors.Select(s => s.SectorNo).ToList(), pnr.Sectors):
+                                                                request.SelectedSectors.Select(s => s.SectorNo).ToList(), 
+                                                                pnr.Sectors):
                                                             throw new AeronologyException("INVALID_GDS_RESPONSE", bestbuyresponse);
 
             int index = 0;
@@ -1026,15 +1039,17 @@ namespace SabreWebtopTicketingService.Services
                           QuotePassenger = pax,
                           QuoteSectors = (from selsec in request.SelectedSectors
                                          let pnrsec = pnr.Sectors.First(f=> f.SectorNo == selsec.SectorNo)
-                                         select new QuoteSector()
+                                         let fbdata = pnrsec.From == "ARUNK" ? null : s.Farebasis.First(f => f.SectorNo == selsec.SectorNo)
+                                          select new QuoteSector()
                                          {
                                              PQSectorNo = selsec.SectorNo,
                                              Arunk = pnrsec.From == "ARUNK",
                                              DepartureCityCode = pnrsec.From,
                                              ArrivalCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.To,
                                              DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate,
-                                             FareBasis = pnrsec.From == "ARUNK" ? "" : s.Farebasis.First(f=> f.SectorNo == selsec.SectorNo).Farebasis
-                                         }).
+                                             FareBasis = fbdata == null ? "" : fbdata.Farebasis,
+                                             Baggageallowance = fbdata == null ? "" : fbdata.Baggage
+                                          }).
                                          ToList(),
                           PlatingCarrier = platingcarrier,
                           SectorCount = request.SelectedSectors.Count,

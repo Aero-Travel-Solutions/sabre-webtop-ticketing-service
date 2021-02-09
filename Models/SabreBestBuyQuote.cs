@@ -142,9 +142,11 @@ namespace SabreWebtopTicketingService.Models
         string fullgdsresponse = "";
         List<int> selectedsectors = null;
         List<PNRSector> pnrsecs = null;
+        string wpbag = "";
 
-        public SabreBestBuyQuote(string res, List<int> selsec, List<PNRSector> pnrsec)
+        public SabreBestBuyQuote(string res, List<int> selsec, List<PNRSector> pnrsec, string wpbagres = "")
         {
+            wpbag = wpbagres;
             selectedsectors = selsec;
             pnrsecs = pnrsec;
             fullgdsresponse = res;
@@ -161,6 +163,7 @@ namespace SabreWebtopTicketingService.Models
             List<string> usedfbs = new List<string>();
             //List<FBData> fBData = new List<FBData>();
             List<SectorFBData> sectors = new List<SectorFBData>();
+            List<BaggageInfo> baggageinfo = GetBestBuyBaggageAllowance(wpbag);
 
             for (int i = 1; i < items.Skip(1).Count(); i += 2)
             {
@@ -175,7 +178,7 @@ namespace SabreWebtopTicketingService.Models
                 int paxtypeindex = taxlines.FindLastIndex(f => f.IsMatch(@"\d+\s*-.*" + paxtype));
                 if (paxtypeindex != -1)
                 {
-                    taxitems.Add(new TaxInfo(taxlines[paxtypeindex].Replace("\n", "###") + taxlines[paxtypeindex + 1].Replace("\n", "###")));
+                    taxitems.Add(new TaxInfo(taxlines[paxtypeindex + 1].Replace("\n", "###")));
                 }
 
                 //single currency
@@ -234,7 +237,6 @@ namespace SabreWebtopTicketingService.Models
                     ccfeedata = ccfeedataarray[ccfeedataindex] + ccfeedataarray[ccfeedataindex + 1].SplitOn("AIR EXTRAS AVAILABLE").First().Trim();
                 }
 
-
                 for (int j = 0; j < selectedsectors.Count; j++)
                 {
                     int sectorno = selectedsectors[j];
@@ -254,7 +256,14 @@ namespace SabreWebtopTicketingService.Models
                         Add(new SectorFBData()
                         {
                             SectorNo = sectorno,
-                            Farebasis = selectedfarebasis
+                            Farebasis = selectedfarebasis,
+                            Baggage = baggageinfo.
+                                        First(w=> 
+                                            w.PaxType == paxtype).
+                                        SectorBags.
+                                        First(f => f.From == pnrsec.From &&
+                                                   f.To == pnrsec.To).
+                                        BaggageAllowance
                         });
 
                     usedfbs.Add(selectedfarebasis);
@@ -290,5 +299,74 @@ namespace SabreWebtopTicketingService.Models
 
             return bestBuyItems;
         }
+
+        private List<BaggageInfo> GetBestBuyBaggageAllowance(string wpbag)
+        {
+            //ADT - 01
+            //BAG ALLOWANCE     -SYDWLG - 30KG / QF
+            //BAG ALLOWANCE     -AKLMEL - 30KG / QF
+            //CARRY ON ALLOWANCE
+            //SYDWLG AKLMEL - 01P / QF
+            //01 / UP TO 15 POUNDS / 7 KILOGRAMS AND UP TO 45 LINEAR INCHES/ 115 L
+            //     INEAR CENTIMETERS
+            //     CARRY ON CHARGES
+            //SYDWLG AKLMEL-QF - CARRY ON FEES UNKNOWN - CONTACT CARRIER
+            //    ADDITIONAL ALLOWANCES AND/ OR DISCOUNTS MAY APPLY
+            //CNN - 01
+            //BAG ALLOWANCE     -SYDWLG - 30KG / QF
+            //BAG ALLOWANCE     -AKLMEL - 30KG / QF
+            //CARRY ON ALLOWANCE
+            //SYDWLG AKLMEL - 01P / QF
+            //01 / UP TO 15 POUNDS / 7 KILOGRAMS AND UP TO 45 LINEAR INCHES/ 115 L
+            //     INEAR CENTIMETERS
+            //     CARRY ON CHARGES
+            //SYDWLG AKLMEL-QF - CARRY ON FEES UNKNOWN - CONTACT CARRIER
+            //    ADDITIONAL ALLOWANCES AND/ OR DISCOUNTS MAY APPLY
+
+
+            //EMBARGOES - APPLY TO EACH PASSENGER
+            //  SYDWLG AKLMEL - QF
+            //SPORTING EQUIPMENT/ SURFBOARD UP TO 109 INCHES / 277 CENTIMETERS N
+            //OT PERMITTED
+            //OVER 70 POUNDS / 32 KILOGRAMS NOT PERMITTED.
+
+            List<BaggageInfo> baginfo = new List<BaggageInfo>();
+            string[] items = wpbag.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+)");
+
+            for (int i = 1; i < items.Skip(1).Count(); i+=2)
+            {
+                baginfo.
+                    Add(new BaggageInfo()
+                    {
+                        PaxType = items[i].SplitOn("-").First().Trim(),
+                        SectorBags = items[i+1].
+                                        SplitOn("\n").
+                                        Where(w=> w.IsMatch(@"BAG\sALLOWANCE\s+-(.*)")).
+                                        Select(s => s.LastMatch(@"BAG\sALLOWANCE\s+-(.*)")).
+                                        Select(s=> s.SplitOn("/").First().Trim()).
+                                        Select(s=> new SectorBag()
+                                        {
+                                            From = s.Substring(0,3),
+                                            To = s.Substring(3,3),
+                                            BaggageAllowance = s.SplitOn("-").Last().Trim()
+                                        }).
+                                        ToList()
+                    });
+            }
+            return baginfo;
+        }
+    }
+
+    internal class BaggageInfo
+    {
+        public string PaxType { get; set; }
+        public List<SectorBag> SectorBags { get; set; }
+    }
+
+    public class SectorBag
+    {
+        public string From { get; set; }
+        public string To { get; set; }
+        public string BaggageAllowance { get; set; }
     }
 }

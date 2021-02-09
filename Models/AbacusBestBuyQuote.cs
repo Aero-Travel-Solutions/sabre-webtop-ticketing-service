@@ -230,30 +230,27 @@ namespace SabreWebtopTicketingService.Models
                     ccfeedata = ccfeedataarray[ccfeedataindex] + ccfeedataarray[ccfeedataindex + 1].SplitOn("AIR EXTRAS AVAILABLE").First().Trim();
                 }
 
+                List<string> seclines = lines.TakeWhile(t => !t.StartsWith("FARE")).ToList();
 
-                for (int j = 0; j < selectedsectors.Count; j++)
+                for (int j = 1; j < seclines.Skip(1).Count(); j++)
                 {
-                    int sectorno = selectedsectors[j];
-                    PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
-                    if (pnrsec.From == "ARUNK") { continue; }
-                    string changesec = changesecs.IsNullOrEmpty()? "" :  changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
-                    string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
-                                                    usedfbs.IsNullOrEmpty() ?
-                                                        farebasis.
-                                                            First(f => pnrsec.Class == f.Substring(0, 1)) :
-                                                        string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
-                                                            farebasis.First(f => pnrsec.Class == f.Substring(0, 1)) :
-                                                            farebasis.First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
-                                                        farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
+                    //BKK
+                    //HKG CX S   01JUL SRZZTHAO        01JUL 01JUL 30K
 
+                   PNRSector pnrsec = pnrsecs.
+                                            First(p => 
+                                                p.From == seclines[j-1].Trim().Substring(0,3) &&
+                                                p.To == seclines[j].Trim().Substring(0, 3));
+                    List<string> lineitems = seclines[j].SplitOnRegex(@"\s+").ToList();
                     sectors.
                         Add(new SectorFBData()
                         {
-                            SectorNo = sectorno,
-                            Farebasis = selectedfarebasis
+                            SectorNo = pnrsec.SectorNo,
+                            Farebasis = seclines[j].LastMatch(@"\w{2}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+(\w+)\s+\d{2}[A-Z]{3}"),
+                            NVA = lineitems[lineitems.Count()-2],
+                            NVB = lineitems[lineitems.Count() - 3],
+                            Baggage = lineitems.Last()
                         });
-
-                    usedfbs.Add(selectedfarebasis);
                 }
 
                 bestBuyItems.

@@ -25,6 +25,8 @@ namespace SabreWebtopTicketingService.Models
     {
         public int SectorNo { get; set; }
         public string Farebasis { get; set; }
+        public string NVB { get; set; }
+        public string NVA { get; set; }
         public string Baggage { get; set; }
     }
 
