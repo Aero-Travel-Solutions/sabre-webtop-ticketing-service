@@ -3025,6 +3025,16 @@ namespace SabreWebtopTicketingService.Services
                 //int commission = quote.BSPCommissionRate.HasValue ? (int)quote.BSPCommissionRate.Value : 0;
                 //command += $"¥KP{commission}";
 
+                //form of payment
+                string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper():
+                                        "";
+
+                command2 += 
+                    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ? 
+                        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" : 
+                        $"F{cashstring}";
+
                 //tourcode
                 string tourcodeprefix = GetTourCodePrefix(quote.FareType);
                 if (!string.IsNullOrEmpty(quote.TourCode))
@@ -3049,9 +3059,7 @@ namespace SabreWebtopTicketingService.Services
                     throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
                 }
 
-                    command2 += $"¥ED/{endos}";
-                    //command2 += $"¥EO/{endos.RegexReplace(@"\s*", "").Replace("NONREFUNDABLE", "NONREF").Replace("CARRIER", "CXR").Substring(0, 58)}";
-
+                command2 += $"¥ED/{endos}";
 
                 string response2 = await _sabreCommandService.
                                                 ExecuteCommand(
@@ -3061,8 +3069,8 @@ namespace SabreWebtopTicketingService.Services
                                                     ticketingpcc);
 
 
-                logger.LogInformation($"##### Manual build command 1 : {command2}");
-                logger.LogInformation($"##### Manual build command 1 response : {response2}");
+                logger.LogInformation($"##### Manual build command 2 : {command2}");
+                logger.LogInformation($"##### Manual build command 2 response : {response2}");
 
                 if (!response2.StartsWith("OK"))
                 {
