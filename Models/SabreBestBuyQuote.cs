@@ -162,7 +162,7 @@ namespace SabreWebtopTicketingService.Models
             var items = gdsresponse.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)");
             List<string> usedfbs = new List<string>();
             //List<FBData> fBData = new List<FBData>();
-            List<SectorFBData> sectors = new List<SectorFBData>();
+            List<SectorFBData> sectors = null;
             List<BaggageInfo> baggageinfo = GetBestBuyBaggageAllowance(wpbag);
 
             for (int i = 1; i < items.Skip(1).Count(); i += 2)
@@ -236,7 +236,7 @@ namespace SabreWebtopTicketingService.Models
                 {
                     ccfeedata = ccfeedataarray[ccfeedataindex] + ccfeedataarray[ccfeedataindex + 1].SplitOn("AIR EXTRAS AVAILABLE").First().Trim();
                 }
-
+                sectors = new List<SectorFBData>();
                 for (int j = 0; j < selectedsectors.Count; j++)
                 {
                     int sectorno = selectedsectors[j];
