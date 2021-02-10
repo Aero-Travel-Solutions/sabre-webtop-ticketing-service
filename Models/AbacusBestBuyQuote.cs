@@ -230,7 +230,7 @@ namespace SabreWebtopTicketingService.Models
                     ccfeedata = ccfeedataarray[ccfeedataindex] + ccfeedataarray[ccfeedataindex + 1].SplitOn("AIR EXTRAS AVAILABLE").First().Trim();
                 }
 
-                List<string> seclines = lines.TakeWhile(t => !t.StartsWith("FARE")).ToList();
+                List<string> seclines = lines.TakeWhile(t => !t.StartsWith("FARE")).Skip(1).ToList();
 
                 for (int j = 1; j < seclines.Skip(1).Count(); j++)
                 {
