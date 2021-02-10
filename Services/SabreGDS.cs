@@ -3042,16 +3042,6 @@ namespace SabreWebtopTicketingService.Services
                 //int commission = quote.BSPCommissionRate.HasValue ? (int)quote.BSPCommissionRate.Value : 0;
                 //command += $"¥KP{commission}";
 
-                //form of payment
-                //string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                //                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper():
-                //                        "";
-
-                //command2 += 
-                //    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ? 
-                //        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" : 
-                //        $"¥F{cashstring}";
-
                 //tourcode
                 string tourcodeprefix = GetTourCodePrefix(quote.FareType);
                 if (!string.IsNullOrEmpty(quote.TourCode))
@@ -3095,6 +3085,17 @@ namespace SabreWebtopTicketingService.Services
                     logger.LogInformation(response2);
                     throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command2}, Response:{response2}).");
                 }
+
+
+                //form of payment
+                string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
+                                        "";
+
+                command3 +=
+                    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
+                        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" :
+                        $"¥F{cashstring}";
 
                 //update quoteno and partial issue
                 quotegrp.
