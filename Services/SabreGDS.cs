@@ -1694,6 +1694,10 @@ namespace SabreWebtopTicketingService.Services
                                 ticketingprinter,
                                 printerbypass,
                                 sessionID);
+
+                    //Remove the client added quotes
+                    request.Quotes = new List<IssueExpressTicketQuote>();
+                    request.Quotes.AddRange(manualquotes);
                 }
 
                 //GDS quote

@@ -156,7 +156,6 @@ namespace SabreWebtopTicketingService.Models
             List<BestBuyItem> bestBuyItems = new List<BestBuyItem>();
             var items = fullgdsresponse.SplitOnRegex(@"PSGR\s+TYPE\s+([ACI][DHN][TDFN]\s*-\s*\d+.*)");
             List<string> usedfbs = new List<string>();
-            List<SectorFBData> sectors = new List<SectorFBData>();
 
             for (int i = 1; i < items.Skip(1).Count(); i += 2)
             {
@@ -231,8 +230,8 @@ namespace SabreWebtopTicketingService.Models
                 }
 
                 List<string> seclines = lines.TakeWhile(t => !t.StartsWith("FARE")).Skip(1).ToList();
-
-                for (int j = 1; j < seclines.Skip(1).Count(); j++)
+                List<SectorFBData> sectors = new List<SectorFBData>();
+                for (int j = 1; j < seclines.Count(); j++)
                 {
                     //BKK
                     //HKG CX S   01JUL SRZZTHAO        01JUL 01JUL 30K
@@ -246,7 +245,7 @@ namespace SabreWebtopTicketingService.Models
                         Add(new SectorFBData()
                         {
                             SectorNo = pnrsec.SectorNo,
-                            Farebasis = seclines[j].LastMatch(@"\w{2}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+(\w+)\s+\d{2}[A-Z]{3}"),
+                            Farebasis = seclines[j].LastMatch(@"\w{2}\s+[A-Z]\s+\d{2}[A-Z]{3}\s+(.*)\s+\d{2}[A-Z]{3}").SplitOnRegex(@"\s+").First(),
                             NVA = lineitems[lineitems.Count()-2],
                             NVB = lineitems[lineitems.Count() - 3],
                             Baggage = lineitems.Last()
