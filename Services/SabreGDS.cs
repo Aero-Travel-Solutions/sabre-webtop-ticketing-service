@@ -2950,6 +2950,13 @@ namespace SabreWebtopTicketingService.Services
             foreach (var quotegrp in manualquotes.GroupBy(grp => grp.QuotePassenger.PaxType))
             {
                 IssueExpressTicketQuote quote = quotegrp.First();
+                string fopstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ?
+                                            "¥FCASH" : 
+                                            quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
+                                        quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
+                                            $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}":
+                                            "";
 
                 string command1 = $"W¥C¥" +
                                     //paxtype
@@ -2959,7 +2966,8 @@ namespace SabreWebtopTicketingService.Services
                                     //sectors
                                     $"¥S{string.Join("/", quote.QuoteSectors.Select(s => s.PQSectorNo))}" +
                                     //plating carrier
-                                    $"¥A{quote.PlatingCarrier.Trim().ToUpper()}";
+                                    $"¥A{quote.PlatingCarrier.Trim().ToUpper()}" +
+                                    fopstring;
 
                 string response1 = await _sabreCommandService.
                         ExecuteCommand(
@@ -3088,33 +3096,33 @@ namespace SabreWebtopTicketingService.Services
 
 
                 //form of payment
-                string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
-                                        "";
+                //string cashstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                //                        string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
+                //                        "";
 
-                string command3 = $"W¥I{groupindex}";
-                command3 +=
-                    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
-                        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" :
-                        $"¥F{cashstring}";
+                //string command3 = $"W¥I{groupindex}";
+                //command3 +=
+                //    quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
+                //        $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" :
+                //        $"¥F{cashstring}";
 
-                string response3 = await _sabreCommandService.
-                                                ExecuteCommand(
-                                                    statefultoken,
-                                                    pcc,
-                                                    command3,
-                                                    ticketingpcc);
+                //string response3 = await _sabreCommandService.
+                //                                ExecuteCommand(
+                //                                    statefultoken,
+                //                                    pcc,
+                //                                    command3,
+                //                                    ticketingpcc);
 
 
-                logger.LogInformation($"##### Manual build command FOP : {command3}");
-                logger.LogInformation($"##### Manual build command FOP response : {response3}");
+                //logger.LogInformation($"##### Manual build command FOP : {command3}");
+                //logger.LogInformation($"##### Manual build command FOP response : {response3}");
 
-                if (!response3.StartsWith("OK"))
-                {
-                    logger.LogInformation("##### INVALID_MANUAL_BUILD_RESPONSE #####");
-                    logger.LogInformation(response3);
-                    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command3}, Response:{response3}).");
-                }
+                //if (!response3.StartsWith("OK"))
+                //{
+                //    logger.LogInformation("##### INVALID_MANUAL_BUILD_RESPONSE #####");
+                //    logger.LogInformation(response3);
+                //    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command3}, Response:{response3}).");
+                //}
 
                 //update quoteno and partial issue
                 quotegrp.
