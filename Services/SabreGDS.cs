@@ -697,7 +697,12 @@ namespace SabreWebtopTicketingService.Services
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
-                if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
+                if (request.
+                        SelectedPassengers.
+                        Any(q => 
+                                q.FormOfPayment.PaymentType == PaymentType.CC && 
+                                q.FormOfPayment.CardNumber != null && 
+                                q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
                     storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
@@ -1615,7 +1620,7 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
-                if(request.ContactDetails == null)
+                if (request.ContactDetails == null)
                 {
                     throw new AeronologyException("NO_CONTACT", "Contact details not provided.");
                 }
@@ -1635,8 +1640,8 @@ namespace SabreWebtopTicketingService.Services
                 //Populate request collections
                 ReconstructRequestFromKeys(request);
 
-                string ticketingpcc = request.Quotes.IsNullOrEmpty() || string.IsNullOrEmpty(request.Quotes.First().TicketingPCC) ? 
-                                                GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) : 
+                string ticketingpcc = request.Quotes.IsNullOrEmpty() || string.IsNullOrEmpty(request.Quotes.First().TicketingPCC) ?
+                                                GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) :
                                                 request.Quotes.First().TicketingPCC;
                 if (string.IsNullOrEmpty(ticketingpcc))
                 {
@@ -1659,9 +1664,16 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS getReservationRS = null;
                 getReservationRS = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
                 pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, contextID, true, true);
+                
+                //check commission
+                IssueExpressTicketRS issueExpressTicketRS = await CheckCommission(request, contextID, pnr);
+                if(!issueExpressTicketRS.Errors.IsNullOrEmpty())
+                {
+                    return issueExpressTicketRS;
+                }
 
                 //Check if the filed fares are partially issued
-                var filedfares = request.Quotes.Where(w => w.FiledFare).GroupBy(g=> g.QuoteNo).ToList();
+                var filedfares = request.Quotes.Where(w => w.FiledFare).GroupBy(g => g.QuoteNo).ToList();
                 if (!filedfares.IsNullOrEmpty())
                 {
                     filedfares.
@@ -1682,14 +1694,14 @@ namespace SabreWebtopTicketingService.Services
                 var pendingsfdata = request.Quotes.Where(a => a.PendingSfData);
 
                 //Manual build
-                if(!manualquotes.IsNullOrEmpty())
+                if (!manualquotes.IsNullOrEmpty())
                 {
                     await ManualBuild(
-                                pcc, 
-                                statefultoken, 
-                                manualquotes, 
-                                pnr, 
-                                ticketingpcc, 
+                                pcc,
+                                statefultoken,
+                                manualquotes,
+                                pnr,
+                                ticketingpcc,
                                 contextID,
                                 ticketingprinter,
                                 printerbypass,
@@ -1871,6 +1883,66 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
+        private async Task<IssueExpressTicketRS> CheckCommission(IssueExpressTicketRQ request, string contextID, PNR pnr)
+        {
+            IssueExpressTicketRS issueExpressTicketRS = new IssueExpressTicketRS()
+            {
+                GDSCode = "1W",
+                Locator = request.Locator,
+                Errors = new List<IssueTicketError>()
+            };
+
+            //Check commission
+            if (request.CheckCommission)
+            {
+                List<WebtopWarning> warnings = new List<WebtopWarning>();
+                warnings = await ValidateCommission(
+                                    new ValidateCommissionRQ()
+                                    {
+                                        AgentID = request.AgentID,
+                                        GDSCode = "1W",
+                                        Locator = request.Locator,
+                                        SessionID = request.SessionID,
+                                        Sectors = pnr.Sectors,
+                                        Quotes = request.
+                                                    Quotes.
+                                                    Select(q => new Quote()
+                                                    {
+                                                        QuoteNo = q.QuoteNo,
+                                                        PlatingCarrier = q.PlatingCarrier,
+                                                        FareCalculation = q.FareCalculation,
+                                                        TourCode = q.TourCode,
+                                                        QuotePassenger = q.QuotePassenger,
+                                                        QuoteSectors = q.QuoteSectors,
+                                                        Taxes = q.Taxes,
+                                                        BaseFare = q.BaseFare,
+                                                        CurrencyCode = q.BaseFareCurrency,
+
+                                                    }).
+                                                    ToList()
+                                    },
+                                    contextID);
+
+                if(!warnings.IsNullOrEmpty())
+                {
+                    foreach (var war in warnings)
+                    {
+                        issueExpressTicketRS.
+                            Errors.
+                            Add(new IssueTicketError()
+                            {
+                                Error = new WebtopError()
+                                {
+                                    code = war.code,
+                                    message = war.message
+                                }
+                            });
+                    }
+                }
+            }
+
+            return issueExpressTicketRS;
+        }
 
         private async Task<IssueExpressTicketRS> ParseSabreTicketData(List<issueticketresponse> responselist, IssueExpressTicketRQ rq, string statefultoken, Pcc pcc, string ticketingpcc, PNR pnr, string bcode, Token statelesstoken, User user)
         {
@@ -2970,8 +3042,8 @@ namespace SabreWebtopTicketingService.Services
                                     //sectors
                                     $"¥S{string.Join("/", quote.QuoteSectors.Select(s => s.PQSectorNo))}" +
                                     //plating carrier
-                                    $"¥A{quote.PlatingCarrier.Trim().ToUpper()}";// +
-                                    //fopstring;
+                                    $"¥A{quote.PlatingCarrier.Trim().ToUpper()}" +
+                                    fopstring;
 
                 string response1 = await _sabreCommandService.
                         ExecuteCommand(

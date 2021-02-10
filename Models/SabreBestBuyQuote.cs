@@ -176,7 +176,7 @@ namespace SabreWebtopTicketingService.Models
                                     ToList();
 
                 int paxtypeindex = taxlines.FindLastIndex(f => f.IsMatch(@"\d+\s*-.*" + paxtype));
-                if (paxtypeindex != -1)
+                if (paxtypeindex != -1 && taxlines[paxtypeindex + 1].Trim().StartsWith("XT"))
                 {
                     taxitems.Add(new TaxInfo(taxlines[paxtypeindex + 1].Replace("\n", "###")));
                 }
