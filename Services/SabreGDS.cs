@@ -3092,10 +3092,29 @@ namespace SabreWebtopTicketingService.Services
                                         string.IsNullOrEmpty(quote.QuotePassenger.FormOfPayment.BCode) ? "CASH" : quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
                                         "";
 
+                string command3 = $"W¥I{groupindex}";
                 command3 +=
                     quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                         $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}" :
                         $"¥F{cashstring}";
+
+                string response3 = await _sabreCommandService.
+                                                ExecuteCommand(
+                                                    statefultoken,
+                                                    pcc,
+                                                    command3,
+                                                    ticketingpcc);
+
+
+                logger.LogInformation($"##### Manual build command FOP : {command3}");
+                logger.LogInformation($"##### Manual build command FOP response : {response3}");
+
+                if (!response3.StartsWith("OK"))
+                {
+                    logger.LogInformation("##### INVALID_MANUAL_BUILD_RESPONSE #####");
+                    logger.LogInformation(response3);
+                    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command3}, Response:{response3}).");
+                }
 
                 //update quoteno and partial issue
                 quotegrp.
