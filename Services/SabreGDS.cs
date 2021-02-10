@@ -2962,12 +2962,12 @@ namespace SabreWebtopTicketingService.Services
                                     //paxtype
                                     $"P{GetManualBuildPaxType(quote.QuotePassenger.PaxType, quote.QuotePassenger.DOB)}" +
                                     //namenumber
-                                    $"¥N{string.Join("/", quotegrp.Select(q=> q.QuotePassenger.NameNumber))}" +
+                                    $"¥N{string.Join("/", quotegrp.Select(q => q.QuotePassenger.NameNumber))}" +
                                     //sectors
                                     $"¥S{string.Join("/", quote.QuoteSectors.Select(s => s.PQSectorNo))}" +
                                     //plating carrier
-                                    $"¥A{quote.PlatingCarrier.Trim().ToUpper()}" +
-                                    fopstring;
+                                    $"¥A{quote.PlatingCarrier.Trim().ToUpper()}";// +
+                                    //fopstring;
 
                 string response1 = await _sabreCommandService.
                         ExecuteCommand(
