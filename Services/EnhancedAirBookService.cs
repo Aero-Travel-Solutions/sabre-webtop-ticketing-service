@@ -121,7 +121,7 @@ namespace SabreWebtopTicketingService.Services
             };
         }
 
-        private EnhancedAirBookRQ CreatePriceByPaxRequest(GetQuoteRQ quoteRequest, PNR pnr, bool IsPriceOveride = false)
+        private EnhancedAirBookRQ CreatePriceByPaxRequest(GetQuoteRQ quoteRequest, PNR pnr, bool IsPriceOveride = false, bool inquoting = false)
         {
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
             EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =

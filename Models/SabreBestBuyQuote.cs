@@ -250,20 +250,20 @@ namespace SabreWebtopTicketingService.Models
                                                         string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
                                                             farebasis.First(f => pnrsec.Class == f.Substring(0, 1)) :
                                                             farebasis.First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
-                                                        farebasis.First(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"));
-
+                                                        farebasis.FirstOrDefault(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"))??"";
+                    var bagdata = baggageinfo.
+                                        First(w =>
+                                            w.PaxType == paxtype)?.
+                                        SectorBags.
+                                        FirstOrDefault(f => f.From == pnrsec.From &&
+                                                   f.To == pnrsec.To);
+                    string baggage = bagdata == null ? "" : bagdata.BaggageAllowance;
                     sectors.
                         Add(new SectorFBData()
                         {
                             SectorNo = sectorno,
                             Farebasis = selectedfarebasis,
-                            Baggage = baggageinfo.
-                                        First(w=> 
-                                            w.PaxType == paxtype).
-                                        SectorBags.
-                                        First(f => f.From == pnrsec.From &&
-                                                   f.To == pnrsec.To).
-                                        BaggageAllowance
+                            Baggage = baggage
                         });
 
                     usedfbs.Add(selectedfarebasis);

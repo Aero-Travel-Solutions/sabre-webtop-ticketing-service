@@ -12,6 +12,7 @@ using SabreWebtopTicketingService.PollyPolicies;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1107,11 +1108,23 @@ namespace SabreWebtopTicketingService.Services
         private string GetBestbuyCommand(GetQuoteRQ request, string platingcarrier)
         {
             string command = $"WPNC¥A{platingcarrier}¥S{string.Join("/", request.SelectedSectors.Select(s=> s.SectorNo))}";
+            string fopstring = request.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CA ?
+                        string.IsNullOrEmpty(request.SelectedPassengers.First().FormOfPayment.BCode) ?
+                            "¥FCASH" :
+                            request.SelectedPassengers.First().FormOfPayment.BCode.Trim().ToUpper() :
+                        request.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC ?
+                            $"¥F*{CreditCardOperations.GetCreditCardType(request.SelectedPassengers.First().FormOfPayment.CardNumber)}" +
+                            $"{request.SelectedPassengers.First().FormOfPayment.CardNumber}/" +
+                            $"{DateTime.ParseExact(request.SelectedPassengers.First().FormOfPayment.ExpiryDate, "MMyy", CultureInfo.InvariantCulture):yyyy-MM}" :
+                            "";
 
-            if(!string.IsNullOrEmpty(request.PriceCode))
+            command += fopstring;
+
+            if (!string.IsNullOrEmpty(request.PriceCode))
             {
                 command += $"¥AC*{request.PriceCode}";
             }
+
             return command;
         }
 
@@ -3031,7 +3044,9 @@ namespace SabreWebtopTicketingService.Services
                                             "¥FCASH" : 
                                             quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
                                         quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
-                                            $"¥F*{CreditCardOperations.GetCreditCardType(quote.QuotePassenger.FormOfPayment.CardNumber)}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}":
+                                            $"¥F*{CreditCardOperations.GetCreditCardType(quote.QuotePassenger.FormOfPayment.CardNumber)}" +
+                                            $"{quote.QuotePassenger.FormOfPayment.CardNumber}/" +
+                                            $"{DateTime.ParseExact(quote.QuotePassenger.FormOfPayment.ExpiryDate, "MMyy",CultureInfo.InvariantCulture):yyyy-MM}":
                                             "";
 
                 string command1 = $"W¥C¥" +
