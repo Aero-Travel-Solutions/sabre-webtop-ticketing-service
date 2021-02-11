@@ -3031,7 +3031,7 @@ namespace SabreWebtopTicketingService.Services
                                             "¥FCASH" : 
                                             quote.QuotePassenger.FormOfPayment.BCode.Trim().ToUpper() :
                                         quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
-                                            $"¥F*{quote.QuotePassenger.FormOfPayment.CardType}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}":
+                                            $"¥F*{CreditCardOperations.GetCreditCardType(quote.QuotePassenger.FormOfPayment.CardNumber)}{quote.QuotePassenger.FormOfPayment.CardNumber}/{quote.QuotePassenger.FormOfPayment.ExpiryDate}":
                                             "";
 
                 string command1 = $"W¥C¥" +
