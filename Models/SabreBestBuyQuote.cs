@@ -178,7 +178,7 @@ namespace SabreWebtopTicketingService.Models
                 int paxtypeindex = taxlines.FindLastIndex(f => f.IsMatch(@"\d+\s*-.*" + paxtype));
                 if (paxtypeindex != -1 && taxlines[paxtypeindex + 1].Trim().StartsWith("XT"))
                 {
-                    taxitems.Add(new TaxInfo(taxlines[paxtypeindex + 1].Replace("\n", "###")));
+                    taxitems.Add(new TaxInfo(string.Join("###", taxlines[paxtypeindex + 1].SplitOn("\n").Where(w => !w.Contains("TTL")))));
                 }
 
                 //single currency
@@ -215,11 +215,11 @@ namespace SabreWebtopTicketingService.Models
 
                 IEnumerable<string> changesecs = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
                                                     items[i+1].
+                                                    SplitOn("\n").
+                                                    FirstOrDefault(w => w.IsMatch(@"CHANGE\sBOOKING\sCLASS\s*-"))?.
                                                     SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
                                                     Last().
-                                                    SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
-                                                    First().
-                                                    SplitOnRegex(@"\s+").
+                                                    SplitOnRegex(@"\s +").
                                                     Where(w => !string.IsNullOrEmpty(w)).
                                                     Distinct() :
                                                     null;

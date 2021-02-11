@@ -1844,7 +1844,7 @@ namespace SabreWebtopTicketingService.Services
                                 "ALL_TICKETS_FAILED",
                                 string.Join(
                                     Environment.NewLine,
-                                    transactionData.TicketingResult.Errors.Select(s => s.Error).Distinct()));
+                                    transactionData.TicketingResult.Errors.Select(s => s.Error.message).Distinct()));
                 }
 
                 //Queue tickets on SQS for invoicing
