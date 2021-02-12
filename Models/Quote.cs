@@ -8,7 +8,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class Quote
     {
-        private decimal? agtcommrate = null;
+        private decimal? agtcommrate = 0;
 
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
