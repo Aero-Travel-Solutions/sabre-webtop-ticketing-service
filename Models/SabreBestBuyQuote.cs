@@ -219,7 +219,7 @@ namespace SabreWebtopTicketingService.Models
                                                     FirstOrDefault(w => w.IsMatch(@"CHANGE\sBOOKING\sCLASS\s*-"))?.
                                                     SplitOnRegex(@"CHANGE\sBOOKING\sCLASS\s*-").
                                                     Last().
-                                                    SplitOnRegex(@"\s +").
+                                                    SplitOnRegex(@"\s+").
                                                     Where(w => !string.IsNullOrEmpty(w)).
                                                     Distinct() :
                                                     null;
