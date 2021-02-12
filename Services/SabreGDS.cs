@@ -3155,7 +3155,20 @@ namespace SabreWebtopTicketingService.Services
                     throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
                 }
 
-                command2 += $"¥C{quote.FareCalculation.Trim().ToUpper()}";
+                string farecalc = quote.FareCalculation.Trim().ToUpper();
+
+                if(!farecalc.IsMatch(@".*END"))
+                {
+                    farecalc += " END";
+                }
+
+                if (farecalc.Contains("NUC"))
+                {
+                    farecalc += $" ROE {quote.ROE}";
+                }
+
+                command2 += $"¥C{farecalc}";
+
 
                 //endorsements
                 //max char limit = 58
