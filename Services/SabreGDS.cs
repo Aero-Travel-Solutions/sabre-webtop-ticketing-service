@@ -1115,7 +1115,7 @@ namespace SabreWebtopTicketingService.Services
                         request.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC ?
                             $"¥F*{CreditCardOperations.GetCreditCardType(request.SelectedPassengers.First().FormOfPayment.CardNumber)}" +
                             $"{request.SelectedPassengers.First().FormOfPayment.CardNumber}/" +
-                            $"{DateTime.ParseExact(request.SelectedPassengers.First().FormOfPayment.ExpiryDate, "MMyy", CultureInfo.InvariantCulture):yyyy-MM}" :
+                            $"{DateTime.ParseExact(request.SelectedPassengers.First().FormOfPayment.ExpiryDate, "MMyy", CultureInfo.InvariantCulture):MMyy}" :
                             "";
 
             command += fopstring;
@@ -1929,7 +1929,7 @@ namespace SabreWebtopTicketingService.Services
                                                         QuoteSectors = q.QuoteSectors,
                                                         Taxes = q.Taxes,
                                                         BaseFare = q.BaseFare,
-                                                        CurrencyCode = q.BaseFareCurrency,
+                                                        BaseFareCurrency = q.BaseFareCurrency,
 
                                                     }).
                                                     ToList()
@@ -3046,7 +3046,7 @@ namespace SabreWebtopTicketingService.Services
                                         quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                             $"¥F*{CreditCardOperations.GetCreditCardType(quote.QuotePassenger.FormOfPayment.CardNumber)}" +
                                             $"{quote.QuotePassenger.FormOfPayment.CardNumber}/" +
-                                            $"{DateTime.ParseExact(quote.QuotePassenger.FormOfPayment.ExpiryDate, "MMyy",CultureInfo.InvariantCulture):yyyy-MM}":
+                                            $"{DateTime.ParseExact(quote.QuotePassenger.FormOfPayment.ExpiryDate, "MMyy",CultureInfo.InvariantCulture):MMyy}":
                                             "";
 
                 string command1 = $"W¥C¥" +
@@ -3160,9 +3160,9 @@ namespace SabreWebtopTicketingService.Services
                 //endorsements
                 //max char limit = 58
                 string endos = string.Join("/", quote.Endorsements).Trim().ToUpper();
-                if (endos.Trim().Count() > 246)
+                if (endos.Trim().Count() > 58)
                 {
-                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
+                    throw new AeronologyException("ENDORSEMENT_TOO_LONG", "Endorsements are too long.(max characters permited: 58)");
                 }
 
                 command2 += $"¥ED/{endos}";
@@ -4106,7 +4106,7 @@ namespace SabreWebtopTicketingService.Services
                             FiledFare = true,
                             LastPurchaseDate = q.PQ.LastDateToPurchase,
                             BaseFare = q.PQ.BaseFare,
-                            CurrencyCode = q.PQ.CurrencyCode,
+                            BaseFareCurrency = q.PQ.CurrencyCode,
                             Endorsements = q.PQ.Endosements,
                             EquivFare = q.PQ.BaseFare,
                             FareCalculation = q.PQ.FareCalculation,
@@ -4268,7 +4268,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
-                    PlatingCarrier = quote.PlatingCarrier,
+                    PlatingCarrier = quote.PlatingCarrier.ToUpper(),
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
                     Destination = quote.TurnaroundPoint,
@@ -4322,7 +4322,7 @@ namespace SabreWebtopTicketingService.Services
                                 FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
                                 QuoteNumber = quote.QuoteNo.ToString(),
                                 PassengerNumber = quote.QuotePassenger.NameNumber,
-                                Currency = quote.CurrencyCode,
+                                Currency = quote.BaseFareCurrency,
                                 QuotedSectors = quote.QuoteSectors.Select(qsec => qsec.PQSectorNo.ToString()).ToArray()
                             }
                     }
@@ -4403,7 +4403,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
-                    PlatingCarrier = quote.PlatingCarrier,
+                    PlatingCarrier = quote.PlatingCarrier.ToUpper(),
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
                     Destination = quote.TurnaroundPoint,
@@ -4457,7 +4457,7 @@ namespace SabreWebtopTicketingService.Services
                                 FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
                                 QuoteNumber = quote.QuoteNo.ToString(),
                                 PassengerNumber = quote.QuotePassenger.NameNumber,
-                                Currency = quote.CurrencyCode,
+                                Currency = quote.BaseFareCurrency,
                                 QuotedSectors = quote.QuoteSectors.Select(qsec => qsec.PQSectorNo.ToString()).ToArray()
                             }
                     }
@@ -4635,7 +4635,7 @@ namespace SabreWebtopTicketingService.Services
                             new IssueExpressTicketQuote()
                             {
                                 BaseFare = quote.BaseFare,
-                                BaseFareCurrency = string.IsNullOrEmpty(quote.CurrencyCode) ? "AUD" : quote.CurrencyCode,
+                                BaseFareCurrency = string.IsNullOrEmpty(quote.BaseFareCurrency) ? "AUD" : quote.BaseFareCurrency,
                                 EquivFare = quote.EquivFare,
                                 EquivFareCurrency = quote.EquivFareCurrencyCode,
                                 AgentCommissions = quote.AgentCommissions,

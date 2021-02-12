@@ -844,7 +844,7 @@ namespace SabreWebtopTicketingService.Services
                                       BaseFare = pqs.ItinTotalFare.EquivFare == null ?
                                                 decimal.Parse(pqs.ItinTotalFare.BaseFare.Amount) :
                                                 decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
-                                      CurrencyCode = pqs.ItinTotalFare.EquivFare == null ?
+                                      BaseFareCurrency = pqs.ItinTotalFare.EquivFare == null ?
                                                         pqs.ItinTotalFare.BaseFare.CurrencyCode :
                                                         pqs.ItinTotalFare.EquivFare.CurrencyCode,
                                       Taxes = pqs.
@@ -906,7 +906,7 @@ namespace SabreWebtopTicketingService.Services
                                   {
                                       PlatingCarrier = s.Quote.PlatingCarrier,
                                       BaseFare = s.Quote.BaseFare,
-                                      CurrencyCode = s.Quote.CurrencyCode,
+                                      BaseFareCurrency = s.Quote.BaseFareCurrency,
                                       Endorsements = s.Quote.Endorsements,
                                       EquivFare = s.Quote.EquivFare,
                                       FareCalculation = s.Quote.FareCalculation,
@@ -958,7 +958,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         Warnings = item.Quote.Warnings,
                         BaseFare = item.Quote.BaseFare,
-                        CurrencyCode = item.Quote.CurrencyCode,
+                        BaseFareCurrency = item.Quote.BaseFareCurrency,
                         Endorsements = item.Quote.Endorsements,
                         EquivFare = item.Quote.EquivFare,
                         FareCalculation = item.Quote.FareCalculation,
@@ -1168,7 +1168,7 @@ namespace SabreWebtopTicketingService.Services
 
                 quoteSectors.Add(sec);
 
-                if (!isARUNK) { index++; }
+                if (!isARUNK || validpqs[index].FareBasis.SurfaceSegment == "/-") { index++; }
             }
 
             return quoteSectors;
