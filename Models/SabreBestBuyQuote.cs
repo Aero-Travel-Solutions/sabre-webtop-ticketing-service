@@ -248,8 +248,8 @@ namespace SabreWebtopTicketingService.Models
                                                         farebasis.
                                                             First(f => pnrsec.Class == f.Substring(0, 1)) :
                                                         string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
-                                                            farebasis.First(f => pnrsec.Class == f.Substring(0, 1)) :
-                                                            farebasis.First(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
+                                                            farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
+                                                            farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
                                                         farebasis.FirstOrDefault(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"))??"";
                     var bagdata = baggageinfo.
                                         First(w =>
