@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using SabreWebtopTicketingService.Common;
 using SabreWebtopTicketingService.CustomException;
 using SabreWebtopTicketingService.Interface;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -75,6 +76,7 @@ namespace SabreWebtopTicketingService.Models
         public string PlatingCarrier { get; set; }
         public bool AlternativePricing { get; set; }
         public bool IsRTW { get; set; }
+        public DateTime? QuoteDate { get; set; }
     }
 
     public class SelectedQuoteSector

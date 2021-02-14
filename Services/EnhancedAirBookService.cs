@@ -231,7 +231,10 @@ namespace SabreWebtopTicketingService.Services
                                                                 ).
                                                                 ToArray()
                                                             }:
-                                                            null
+                                                            null,
+                                        BuyingDate = quoteRequest.QuoteDate.HasValue ?
+                                                        quoteRequest.QuoteDate.Value.ToString("yyyy-MM-dd"):
+                                                        ""
                                     },
                                     FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
                                     MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
@@ -540,7 +543,10 @@ namespace SabreWebtopTicketingService.Services
                                                                     Code = sec.FareBasis
                                                                 }
                                                             }).
-                                                            ToArray()
+                                                            ToArray(),
+                                        BuyingDate = quoteRequest.QuoteDate.HasValue ?
+                                                        quoteRequest.QuoteDate.Value.ToString("yyyy-MM-dd"):
+                                                        ""
                                     },
                                     FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
                                     MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&

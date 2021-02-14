@@ -72,6 +72,7 @@ namespace SabreWebtopTicketingService.Models
         public string PriceCode { get; set; }
         public string PlatingCarrier { get; set; }
         public bool AlternativePricing { get; set; }
+        public DateTime? QuoteDate { get; set; }
     }
 
     public class SelectedSector

@@ -95,6 +95,11 @@ functions:
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  GetHistoricalQuote:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::GetHistoricalQuote
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
   ValidateCommission:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::ValidateCommission
     timeout: 120
