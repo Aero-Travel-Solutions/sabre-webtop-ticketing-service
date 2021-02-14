@@ -78,7 +78,6 @@ namespace SabreWebtopTicketingService.Models
     {
         public int SectorNo { get; set; }
         public string FareBasis { get; set; }
-        public string TicketDesignator { get; set; }
     }
 
     //Fluent Validation

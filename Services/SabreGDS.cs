@@ -287,10 +287,10 @@ namespace SabreWebtopTicketingService.Services
                 {
                     CommissionData oldquotecomm = oldcommdata.First(f => f.QuoteNo == q.QuoteNo);
 
-                    string sysbspcomm = q.BspCommissionRate.HasValue ? string.Format("{0:0.00}", q.BspCommissionRate.Value.ToString()) : "Not Specified";
-                    string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.BspCommissionRate.Value.ToString()) : "Not Specified";
+                    string sysbspcomm = q.BspCommissionRate.HasValue ? q.BspCommissionRate.Value.ToString("0.00") : "Not Specified";
+                    string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? oldquotecomm.BspCommissionRate.Value.ToString("0.00") : "Not Specified";
                     if (sysbspcomm != userbspcomm)
-                    {
+                    {   
                         webtopWarnings.
                             Add(new WebtopWarning()
                             {
@@ -299,8 +299,8 @@ namespace SabreWebtopTicketingService.Services
                             });
                     }
 
-                    string sysagtcomm = q.AgentCommissionRate.HasValue ? string.Format("{0:0.00}", q.AgentCommissionRate.Value.ToString()) : "0.00";
-                    string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? string.Format("{0:0.00}", oldquotecomm.AgentCommissionRate.Value.ToString()) : "Not Specified";
+                    string sysagtcomm = q.AgentCommissionRate.HasValue ? q.AgentCommissionRate.Value.ToString("0.00") : "0.00";
+                    string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? oldquotecomm.AgentCommissionRate.Value.ToString("0.00") : "Not Specified";
                     if (sysagtcomm != useragtcomm)
                     {
                         webtopWarnings.
@@ -311,8 +311,8 @@ namespace SabreWebtopTicketingService.Services
                             });
                     }
 
-                    string sysagtfee = string.Format("{0:0.00}", q.Fee.ToString());
-                    string useragtfee = string.Format("{0:0.00}", oldquotecomm.Fee.ToString());
+                    string sysagtfee = q.Fee.ToString("0.00");
+                    string useragtfee = oldquotecomm.Fee.ToString("0.00");
                     if (sysagtfee != useragtfee)
                     {
                         webtopWarnings.
@@ -1043,19 +1043,18 @@ namespace SabreWebtopTicketingService.Services
                           CCFeeData = s == null ? "" : s.CCFeeData,
                           PriceCode = request.PriceCode,
                           QuotePassenger = pax,
-                          QuoteSectors = (from selsec in request.SelectedSectors
-                                         let pnrsec = pnr.Sectors.First(f=> f.SectorNo == selsec.SectorNo)
-                                         let fbdata = pnrsec.From == "ARUNK" ? null : s.Farebasis.First(f => f.SectorNo == selsec.SectorNo)
-                                          select new QuoteSector()
-                                         {
-                                             PQSectorNo = selsec.SectorNo,
-                                             Arunk = pnrsec.From == "ARUNK",
-                                             DepartureCityCode = pnrsec.From,
-                                             ArrivalCityCode = pnrsec.From == "ARUNK" ? "" : pnrsec.To,
-                                             DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate,
-                                             FareBasis = fbdata == null ? "" : fbdata.Farebasis,
-                                             Baggageallowance = fbdata == null ? "" : fbdata.Baggage
-                                          }).
+                          QuoteSectors = (from selsec in request.SelectedSectors.Where(w=> pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK")
+                                            let pnrsec = pnr.Sectors.First(f=> f.SectorNo == selsec.SectorNo)
+                                            let fbdata = s.Farebasis.First(f => f.SectorNo == selsec.SectorNo)
+                                            select new QuoteSector()
+                                            {
+                                                PQSectorNo = selsec.SectorNo,
+                                                DepartureCityCode = pnrsec.From,
+                                                ArrivalCityCode = pnrsec.To,
+                                                DepartureDate = pnrsec.DepartureDate,
+                                                FareBasis = fbdata == null ? "" : fbdata.Farebasis,
+                                                Baggageallowance = fbdata == null ? "" : fbdata.Baggage
+                                            }).
                                          ToList(),
                           PlatingCarrier = platingcarrier,
                           SectorCount = request.SelectedSectors.Count,

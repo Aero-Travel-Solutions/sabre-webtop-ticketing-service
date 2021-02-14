@@ -537,8 +537,7 @@ namespace SabreWebtopTicketingService.Services
                                                                 RPH = sec.SectorNo.ToString(),
                                                                 FareBasis = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricingFareBasis()
                                                                 {
-                                                                    Code = sec.FareBasis,
-                                                                    TicketDesignator = sec.TicketDesignator
+                                                                    Code = sec.FareBasis
                                                                 }
                                                             }).
                                                             ToArray()
