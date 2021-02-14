@@ -133,7 +133,7 @@ namespace SabreWebtopTicketingService.Services
                                 }).
                                 ToArray();
 
-            return new EnhancedAirBookRQ()
+            EnhancedAirBookRQ enhancedAirBookRQ = new EnhancedAirBookRQ()
             {
                 version = Constants.EnhancedAirBookVersion,
                 PreProcessing = new EnhancedAirBookRQPreProcessing()
@@ -231,10 +231,7 @@ namespace SabreWebtopTicketingService.Services
                                                                 ).
                                                                 ToArray()
                                                             }:
-                                                            null,
-                                        BuyingDate = quoteRequest.QuoteDate.HasValue ?
-                                                        quoteRequest.QuoteDate.Value.ToString("yyyy-MM-dd"):
-                                                        ""
+                                                            null
                                     },
                                     FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
                                     MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
@@ -264,6 +261,19 @@ namespace SabreWebtopTicketingService.Services
                         }
                 }
             };
+
+            if (quoteRequest.QuoteDate.HasValue)
+            {
+                enhancedAirBookRQ.
+                        OTA_AirPriceRQ.
+                        First().
+                        PriceRequestInformation.
+                        OptionalQualifiers.
+                        PricingQualifiers.
+                        BuyingDate = quoteRequest.QuoteDate.Value.ToString("yyyy-MM-dd");
+            }
+
+            return enhancedAirBookRQ;
         }
 
         private static EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFOP_Qualifiers getFormOfPayment(FOP fop)
@@ -464,7 +474,7 @@ namespace SabreWebtopTicketingService.Services
                                 }).
                                 ToArray();
 
-            return new EnhancedAirBookRQ()
+            EnhancedAirBookRQ enhancedAirBookRQ = new EnhancedAirBookRQ()
             {
                 version = Constants.EnhancedAirBookVersion,
                 PreProcessing = new EnhancedAirBookRQPreProcessing()
@@ -543,10 +553,7 @@ namespace SabreWebtopTicketingService.Services
                                                                     Code = sec.FareBasis
                                                                 }
                                                             }).
-                                                            ToArray(),
-                                        BuyingDate = quoteRequest.QuoteDate.HasValue ?
-                                                        quoteRequest.QuoteDate.Value.ToString("yyyy-MM-dd"):
-                                                        ""
+                                                            ToArray()
                                     },
                                     FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
                                     MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
@@ -576,6 +583,19 @@ namespace SabreWebtopTicketingService.Services
                         }
                 }
             };
+
+            if(quoteRequest.QuoteDate.HasValue)
+            {
+                enhancedAirBookRQ.
+                        OTA_AirPriceRQ.
+                        First().
+                        PriceRequestInformation.
+                        OptionalQualifiers.
+                        PricingQualifiers.
+                        BuyingDate = quoteRequest.QuoteDate.Value.ToString("yyyy-MM-dd");
+            }
+
+            return enhancedAirBookRQ;
         }
 
         internal async Task<List<Quote>> ForceFarebasis(ForceFBQuoteRQ request, string sessionID, Pcc pcc, PNR pnr, string ticketingpcc)
