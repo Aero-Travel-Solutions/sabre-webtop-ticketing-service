@@ -607,7 +607,9 @@ namespace SabreWebtopTicketingService.Services
                             request.SelectedPassengers,
                             request.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
                             pnr,
-                            Models.PriceType.Manual);
+                            Models.PriceType.Manual,
+                            null,
+                            true);
         }
 
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
@@ -820,7 +822,8 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, List<QuotePassenger> paxsdata, List<SectorData> sectordata, PNR pnr, Models.PriceType priceType, List<pnrquotedata> pqnos = null)
+        private List<Quote> ParseSabreQuote(EnhancedAirBookRSOTA_AirPriceRS[] res, List<QuotePassenger> paxsdata, 
+            List<SectorData> sectordata, PNR pnr, Models.PriceType priceType, List<pnrquotedata> pqnos = null, bool forcefb = false)
         {
             int index = pqnos.IsNullOrEmpty() ?
                             1 :
@@ -844,6 +847,7 @@ namespace SabreWebtopTicketingService.Services
                                                             resp.PriceQuote.PricedItinerary.AirItineraryPricingInfo.First().FareCalculationBreakdown.First().FareBasis.FilingCarrier :
                                                             resp.PriceQuote.MiscInformation.ValidatingCarrier.First().Ticket.First().CarrierCode
                               let isCat35 = resp.PriceQuote.MiscInformation.HeaderInformation.SelectMany(s => s.Text).Where(w => w == "PRIVATE ¤").Count() > 0
+                              let pricehint = forcefb ? string.Join(". ", resp.PriceQuote.MiscInformation.HeaderInformation.SelectMany(s => s.Text).SkipWhile(w=> !w.StartsWith("**")).Skip(1).TakeWhile(w=> !w.StartsWith("**"))) : ""
                               from pqs in resp.PriceQuote.PricedItinerary.AirItineraryPricingInfo
                               let lastpurchasedate = getLastPurchaseDate(resp, pqs)
                               let sectors = GetQuoteSectors(sectordata, pnr, pqs)
@@ -917,9 +921,10 @@ namespace SabreWebtopTicketingService.Services
                                       SectorCount = pqsecdata.SectorCount,
                                       Route = pqsecdata.Route,
                                       LastPurchaseDate = lastpurchasedate,
+                                      PricingHint = pricehint
                                   },
                                   PaxType = pqs.PassengerTypeQuantity.Code,
-                                  Qty = int.Parse(pqs.PassengerTypeQuantity.Quantity),
+                                  Qty = int.Parse(pqs.PassengerTypeQuantity.Quantity)
                               };
 
             List<TempQuote> tempQuotes = airpricepqs.ToList();
@@ -966,7 +971,8 @@ namespace SabreWebtopTicketingService.Services
                                       LastPurchaseDate = s.Quote.LastPurchaseDate,
                                       DifferentPaxType = returnedPTCs.Any(a => (a.StartsWith("C") && a.Substring(0, 1) == pax.PaxType.Substring(0, 1)) || a == pax.PaxType) ? 
                                                                 new List<string>() : 
-                                                                returnedPTCs.Distinct().Except(paxsdata.Select(S=> s.PaxType).Distinct()).ToList()
+                                                                returnedPTCs.Distinct().Except(paxsdata.Select(S=> s.PaxType).Distinct()).ToList(),
+                                      PricingHint = s.Quote.PricingHint
                                   };
 
             quotes.AddRange(singlepaxquotes.ToList());
@@ -1017,7 +1023,8 @@ namespace SabreWebtopTicketingService.Services
                         Route = item.Quote.Route,
                         DifferentPaxType = returnedPTCs.Any(a => (a.StartsWith("C") && a.Substring(0,1) == item.PaxType.Substring(0,1)) || a == item.PaxType) ?
                                                                 new List<string>() :
-                                                                returnedPTCs.Distinct().Except(paxsdata.Select(s => s.PaxType).Distinct()).ToList()
+                                                                returnedPTCs.Distinct().Except(paxsdata.Select(s => s.PaxType).Distinct()).ToList(),
+                        PricingHint = item.Quote.PricingHint
                     };
 
                     quotes.Add(multipaxquotes.Quote);
