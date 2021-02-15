@@ -3123,12 +3123,12 @@ namespace SabreWebtopTicketingService.Services
                     {
                         string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ?
                                                         "" :
-                                                        $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").Replace("NONIL", "NIL").PadLeft(3, '0')}";
+                                                        $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").Replace("NONIL", "NIL").Trim().PadLeft(3, '0')}";
                         string nvbnva =  GetNVANVB(quoteSector);
 
                         command2 += $"¥L{index}" +//connection indicator
                                                   //farebasis
-                                        $"-{quoteSector.FareBasis}" +
+                                        $"-{quoteSector.FareBasis.Trim()}" +
                                         //NVB, NVA
                                         nvbnva +
                                         //baggage allowance
@@ -3137,12 +3137,12 @@ namespace SabreWebtopTicketingService.Services
                     index++;
                 }
                 //base fare and currency
-                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{string.Format("{0:0.00}", quote.BaseFare)}";
+                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{quote.BaseFare.ToString("0.00")}";
 
                 //equiv fare and currency
                 if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency))
                 {
-                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{string.Format("{0:0.00}", quote.EquivFare.Value)}";
+                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{quote.EquivFare.Value.ToString("0.00")}";
                 }
 
                 //taxes
@@ -3163,7 +3163,7 @@ namespace SabreWebtopTicketingService.Services
                         taxes = GroupTax(taxes);
                     }
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{string.Format("{0:0.00}", tax.Amount)}{tax.Code.Trim().ToUpper()}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString("0.00")}{tax.Code.Trim().ToUpper()}"));
                 }
 
                 //commission
