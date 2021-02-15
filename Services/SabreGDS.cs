@@ -3186,14 +3186,25 @@ namespace SabreWebtopTicketingService.Services
 
                 string farecalc = quote.FareCalculation.Trim().ToUpper();
 
-                if(!farecalc.IsMatch(@".*END"))
+                if(!farecalc.Contains("END"))
                 {
                     farecalc += " END";
                 }
 
-                if (farecalc.Contains("NUC"))
+                if (!farecalc.Contains("ROE"))
                 {
-                    farecalc += $" ROE {quote.ROE}";
+                    if (farecalc.Contains("NUC"))
+                    {
+                        string[] fcitems = farecalc.SplitOn("END");
+                        if (fcitems.Count() == 1)
+                        {
+                            farecalc += $" ROE {quote.ROE}";
+                        }
+                        else if (fcitems.Count() > 1)
+                        {
+                            farecalc = fcitems.First() + "END" + $" ROE {quote.ROE}" + fcitems.Last();
+                        }
+                    }
                 }
 
                 command2 += $"¥C{farecalc}";
