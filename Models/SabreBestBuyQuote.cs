@@ -251,7 +251,9 @@ namespace SabreWebtopTicketingService.Models
                                                             farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
                                                             farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
                                                         farebasis.FirstOrDefault(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"))??"";
-                    var bagdata = baggageinfo.
+                    var bagdata = baggageinfo.IsNullOrEmpty() ?
+                                    null:
+                                    baggageinfo.
                                         First(w =>
                                             w.PaxType == paxtype)?.
                                         SectorBags.
