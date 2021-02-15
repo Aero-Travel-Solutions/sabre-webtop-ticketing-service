@@ -1824,6 +1824,16 @@ namespace SabreWebtopTicketingService.Services
                     await AddAgentCommissionRemarks(ticketData, request, ticketingpcc, user, token);
                 }
 
+                //Remove ARUNK sectors
+                pnr.
+                    Quotes.
+                    ForEach(q =>
+                    {
+                        var oldquotesecs = q.QuoteSectors;
+                        q.QuoteSectors = new List<QuoteSector>();
+                        q.QuoteSectors = oldquotesecs.Where(w => w.DepartureCityCode != "ARUNK").ToList();
+                    });
+
                 var transactionData = new IssueTicketTransactionData
                 {
                     SessionId = request.SessionID,
