@@ -242,11 +242,11 @@ namespace SabreWebtopTicketingService.Models
                     int sectorno = selectedsectors[j];
                     PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
                     if (pnrsec.From == "ARUNK") { continue; }
-                    string changesec = changesecs.IsNullOrEmpty()? "" :  changesecs.FirstOrDefault(f => int.Parse(f.LastMatch(@"(\d+)[A-Z]")) == sectorno);
+                    string changesec = changesecs.IsNullOrEmpty()? "" :  changesecs.FirstOrDefault(f => f.LastMatch(@"(\d+)[A-Z]") == sectorno.ToString());
                     string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
                                                     usedfbs.IsNullOrEmpty() ?
                                                         farebasis.
-                                                            First(f => pnrsec.Class == f.Substring(0, 1)) :
+                                                            FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
                                                         string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
                                                             farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
                                                             farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
