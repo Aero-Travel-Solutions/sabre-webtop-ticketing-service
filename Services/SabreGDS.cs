@@ -3358,7 +3358,7 @@ namespace SabreWebtopTicketingService.Services
                                              CreditAmount = quo.QuotePassenger.FormOfPayment.CreditAmount
                                          }
                                      },
-                                     PriceIt = quo.PriceIt,
+                                     PriceIt = quo.PriceIt == decimal.MinValue ? rqquo.TotalFare: quo.PriceIt,
                                      PartialIssue = quo.PartialIssue,
                                      BaseFare = rqquo.BaseFare,
                                      BaseFareCurrency = rqquo.BaseFareCurrency,
@@ -3430,7 +3430,7 @@ namespace SabreWebtopTicketingService.Services
                                    Total = rqemd.Total,
                                    RFISC = rqemd.RFISC,
                                    FormOfPayment = emd.FormOfPayment,
-                                   PriceIt = emd.PriceIt,
+                                   PriceIt = emd.PriceIt == decimal.MinValue ? rqemd.Total : emd.PriceIt,
                                    SectorCount = rqemd.SectorCount
                                };
 

@@ -560,7 +560,7 @@ namespace SabreWebtopTicketingService
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
-                                                    error = result.Errors.Select(s=> s.Error.message).ToList(),
+                                                    error = result.Errors.Select(s=> s.Error).ToList(),
                                                     data = result.Tickets.IsNullOrEmpty() ? null : result
                                                 },
                                                 new JsonSerializerSettings()
