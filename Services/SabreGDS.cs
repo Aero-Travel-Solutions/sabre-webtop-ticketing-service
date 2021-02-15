@@ -1855,6 +1855,8 @@ namespace SabreWebtopTicketingService.Services
                     TicketingResult = ticketData
                 };
 
+                logger.LogInformation(JsonConvert.SerializeObject(transactionData));
+
                 if (!string.IsNullOrEmpty(request.MerchantData?.OrderID))
                 {
                     transactionData.TicketingResult.OrderId = request.MerchantData.OrderID;
