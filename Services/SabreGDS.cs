@@ -3271,6 +3271,7 @@ namespace SabreWebtopTicketingService.Services
                                             f.TotalFare * f.AgentCommissionRate.Value:
                                             0.00M;
                         f.PriceIt = f.TotalFare;
+                        f.TotalFare = f.BaseFare + f.TotalTax;
                     });
             }
 
