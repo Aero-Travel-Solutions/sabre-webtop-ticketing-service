@@ -1043,15 +1043,15 @@ namespace SabreWebtopTicketingService.Services
                           CCFeeData = s == null ? "" : s.CCFeeData,
                           PriceCode = request.PriceCode,
                           QuotePassenger = pax,
-                          QuoteSectors = (from selsec in request.SelectedSectors.Where(w=> pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "ARUNK")
+                          QuoteSectors = (from selsec in request.SelectedSectors
                                             let pnrsec = pnr.Sectors.First(f=> f.SectorNo == selsec.SectorNo)
-                                            let fbdata = s.Farebasis.First(f => f.SectorNo == selsec.SectorNo)
+                                            let fbdata = pnrsec.From == "ARUNK" ? null : s.Farebasis.First(f => f.SectorNo == selsec.SectorNo)
                                             select new QuoteSector()
                                             {
                                                 PQSectorNo = selsec.SectorNo,
                                                 DepartureCityCode = pnrsec.From,
-                                                ArrivalCityCode = pnrsec.To,
-                                                DepartureDate = pnrsec.DepartureDate,
+                                                ArrivalCityCode = pnrsec.From == "ARUNK" ?  "" : pnrsec.To,
+                                                DepartureDate = pnrsec.From == "ARUNK" ? "" : pnrsec.DepartureDate,
                                                 FareBasis = fbdata == null ? "" : fbdata.Farebasis,
                                                 Baggageallowance = fbdata == null ? "" : fbdata.Baggage
                                             }).
