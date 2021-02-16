@@ -194,7 +194,7 @@ namespace SabreWebtopTicketingService.Models
                                         items[i + 1].SplitOn("\n").First(f => f.StartsWith("CHANGE BOOKING CLASS")) :
                                         "";
 
-                string[] farecalcitems = string.Join("", items[i + 1].
+                string[] farecalcitems = string.Join(" ", items[i + 1].
                                                     SplitOn("\n").
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
                                                     SplitOnRegex(@"(ROE\d+\.\d+)\s*");
@@ -285,7 +285,7 @@ namespace SabreWebtopTicketingService.Models
                                                 Last().
                                                 Trim(),
                         Endorsements = endos,
-                        FareCalculation = farecalcitems.Count() == 1? farecalcitems.First().SplitOn("END").First(): farecalcitems.First(),
+                        FareCalculation = string.Join("", farecalcitems),
                         ROE = farecalcitems.Count() == 1? "1.0000": farecalcitems[1].Substring(3).Trim(),
                         Taxes = taxitems.
                                     SelectMany(s => s.Taxes).
