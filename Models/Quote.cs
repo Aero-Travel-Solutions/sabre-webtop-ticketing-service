@@ -9,6 +9,7 @@ namespace SabreWebtopTicketingService.Models
     public class Quote
     {
         private decimal? agtcommrate = 0;
+        decimal agtcom = 0.00M;
 
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
@@ -80,9 +81,20 @@ namespace SabreWebtopTicketingService.Models
         public decimal? GSTRate { get; set; }
         public decimal? FuelSurcharge => AgentCommissions?.FirstOrDefault()?.FuelSurcharge;
         public decimal? CommissionGST => IsGST && GSTRate.HasValue ? (Commission * (GSTRate.Value / 100)) : default(decimal?);
-        public decimal Commission => AgentCommissions.IsNullOrEmpty() || !AgentCommissions.First().AgtComm.Amount.HasValue ?
-                                            0.00M:
-                                            AgentCommissions.First().AgtComm.Amount.Value;
+        public decimal Commission
+        {
+            get
+            {
+                agtcom = AgentCommissions.IsNullOrEmpty() || !AgentCommissions.First().AgtComm.Amount.HasValue ?
+                                    agtcom :
+                                    AgentCommissions.First().AgtComm.Amount.Value;
+                return agtcom;
+            }
+            set
+            {
+                agtcom = value;
+            }
+        }
         public decimal Fee { get; set; }
         public List<AgentCommission> AgentCommissions { get; set; }
     }

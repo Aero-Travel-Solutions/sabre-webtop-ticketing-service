@@ -1748,7 +1748,8 @@ namespace SabreWebtopTicketingService.Services
                                         Taxes = q.Taxes,
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
-                                        TicketingPCC = ticketingpcc
+                                        TicketingPCC = ticketingpcc,
+                                        Commission = q.AgentCommissionRate.HasValue ? q.BaseFare * q.AgentCommissionRate.Value : 0.00M
                                     }).
                                     ToList();
                 }
@@ -2075,9 +2076,9 @@ namespace SabreWebtopTicketingService.Services
                                                 "",
                                 PriceIt = rq.GrandPriceItAmount == decimal.MinValue ? 0.00M :
                                             result.DocumentType == "TKT" && quote != null ?
-                                                quote.PriceIt :
+                                                decimal.Parse(result.TotalAmount.content) :
                                                  result.DocumentType == "EMD" && emd != null ?
-                                                    emd.PriceIt :
+                                                    decimal.Parse(result.TotalAmount.content) :
                                                     0.00M,
                                 CashAmount = result.DocumentType == "TKT" && quote != null ?
                                                 quote.FormOfPayment == null || quote.FormOfPayment.PaymentType == PaymentType.CA ?
