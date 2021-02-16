@@ -1749,7 +1749,17 @@ namespace SabreWebtopTicketingService.Services
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
                                         TicketingPCC = ticketingpcc,
-                                        Commission = q.AgentCommissionRate.HasValue ? q.BaseFare * q.AgentCommissionRate.Value : 0.00M
+                                        Commission = q.AgentCommissionRate.HasValue ? q.BaseFare * q.AgentCommissionRate.Value : 0.00M,
+                                        AgentPrice = q.QuotePassenger.FormOfPayment == null ?
+                                                            q.PriceIt - q.Commission :
+                                                            //Cash Only
+                                                            q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
+                                                                q.PriceIt - q.Commission :
+                                                                //Part Cash part credit
+                                                                q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CreditAmount < q.TotalFare ?
+                                                                    q.TotalFare - q.QuotePassenger.FormOfPayment.CreditAmount + q.Fee + (q.FeeGST ?? 0.00M) - q.Commission :
+                                                                    //Credit only
+                                                                    q.Fee + (q.FeeGST ?? 0.00M) - q.Commission
                                     }).
                                     ToList();
                 }
