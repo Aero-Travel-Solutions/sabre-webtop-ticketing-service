@@ -1751,15 +1751,15 @@ namespace SabreWebtopTicketingService.Services
                                         TicketingPCC = ticketingpcc,
                                         Commission = q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value/100) : 0.00M,
                                         AgentPrice = q.QuotePassenger.FormOfPayment == null ?
-                                                            q.PriceIt - q.Commission :
+                                                            q.TotalFare - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                             //Cash Only
                                                             q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                                                q.TotalFare - q.Commission :
+                                                                q.TotalFare - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                                 //Part Cash part credit
                                                                 q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CreditAmount < q.TotalFare ?
-                                                                    q.TotalFare - q.QuotePassenger.FormOfPayment.CreditAmount + q.Fee + (q.FeeGST ?? 0.00M) - q.Commission :
+                                                                    q.TotalFare - q.QuotePassenger.FormOfPayment.CreditAmount + q.Fee + (q.FeeGST ?? 0.00M) - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                                     //Credit only
-                                                                    q.Fee + (q.FeeGST ?? 0.00M) - q.Commission
+                                                                    q.Fee + (q.FeeGST ?? 0.00M) - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M)
                                     }).
                                     ToList();
                 }
