@@ -2594,7 +2594,7 @@ namespace SabreWebtopTicketingService.Services
                             Error = new WebtopError()
                             {
                                 code = "TICKETING_ERROR",
-                                message = string.Join(", ", s.Select(p => p.Error).ToList().Distinct())
+                                message = string.Join(", ", s.Select(p => p.Error?.message).ToList().Distinct())
                             }
                         }).
                         ToList();
