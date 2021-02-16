@@ -285,7 +285,7 @@ namespace SabreWebtopTicketingService.Models
                                                 Last().
                                                 Trim(),
                         Endorsements = endos,
-                        FareCalculation = string.Join("", farecalcitems),
+                        FareCalculation = GetFareCalc(farecalcitems),
                         ROE = farecalcitems.Count() == 1? "1.0000": farecalcitems[1].Substring(3).Trim(),
                         Taxes = taxitems.
                                     SelectMany(s => s.Taxes).
@@ -300,6 +300,29 @@ namespace SabreWebtopTicketingService.Models
             }
 
             return bestBuyItems;
+        }
+
+        private string GetFareCalc(string[] farecalcitems)
+        {
+            if(farecalcitems.Count() == 1)
+            {
+                return string.Join("", farecalcitems).SplitOn("END").First() + "END";
+            }
+
+            string farecalc = farecalcitems.First() + farecalcitems[1];
+            if (farecalcitems[2].Contains("XF"))
+            {
+                //SYD QF TYO AA LAX AA HNL QF SYD2860.27NUC2860.27END ROE1.293231 XFHNL4.5
+                //MEL LH X/HKG LH X/FRA LH LON193.31/-ROM LH X/MUC LH NYC//LAX QF MEL386.62NUC579.93END ROE1.293231 XFLAX4.5
+                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d+)\s+")[1];
+            }
+
+            if (farecalcitems[2].Contains("ZP"))
+            {
+                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(ZP[A-Z]{3}\d+\.*\d+)\s+")[1];
+            }
+
+            return farecalc;
         }
 
         private List<BaggageInfo> GetBestBuyBaggageAllowance(string wpbag)
