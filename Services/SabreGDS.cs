@@ -1748,8 +1748,7 @@ namespace SabreWebtopTicketingService.Services
                                         Taxes = q.Taxes,
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
-                                        TicketingPCC = ticketingpcc,
-                                        
+                                        TicketingPCC = ticketingpcc
                                     }).
                                     ToList();
                 }
@@ -3254,7 +3253,14 @@ namespace SabreWebtopTicketingService.Services
                 quotegrp.
                     Select(s => s).
                     ToList().
-                    ForEach(f => f.QuoteNo = groupindex);
+                    ForEach(f =>
+                    {
+                        f.QuoteNo = groupindex;
+                        f.Commission = f.AgentCommissionRate.HasValue ?
+                                            f.TotalFare * f.AgentCommissionRate.Value:
+                                            0.00M;
+                        f.PriceIt = f.TotalFare;
+                    });
             }
 
             //receieve and end transact

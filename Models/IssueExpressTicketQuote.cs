@@ -7,6 +7,7 @@ namespace SabreWebtopTicketingService.Models
 { 
     public class IssueExpressTicketQuote: IIssueExpressTicketDocument
     {
+        decimal agtcom = 0.00M;
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
         public FareType FareType { get; set; }
@@ -21,9 +22,20 @@ namespace SabreWebtopTicketingService.Models
         public decimal TotalTax { get; set; }
         public decimal? AgentCommissionRate { get; set; }
         public decimal? BSPCommissionRate { get; set; }
-        public decimal Commission => AgentCommissions.IsNullOrEmpty() || !AgentCommissions.First().AgtComm.Amount.HasValue ?
-                                    0.00M :
+        public decimal Commission
+        {
+            get
+            {
+                agtcom = AgentCommissions.IsNullOrEmpty() || !AgentCommissions.First().AgtComm.Amount.HasValue ?
+                                    agtcom :
                                     AgentCommissions.First().AgtComm.Amount.Value;
+                return agtcom;
+            }
+            set
+            {
+                agtcom = value;
+            }
+        }
         public List<AgentCommission> AgentCommissions { get; set; }
         public decimal Fee { get; set; }
         public decimal? FeeGST { get; set; }
