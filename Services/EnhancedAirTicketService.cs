@@ -535,15 +535,15 @@ namespace SabreWebtopTicketingService.Services
                                     PlatingCarrier = s.PlatingCarrier,
                                     TotalFare = s.BaseFare + s.TotalTax,
                                     TotalTax = s.TotalTax,
-                                    Commission = Math.Round(((s.TotalFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero),
+                                    Commission = Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero),
                                     Fee = s.Fee,
                                     FeeGST = s.FeeGST,
                                     FormOfPayment = s.QuotePassenger.FormOfPayment,
                                     AgentPrice = s.QuotePassenger.FormOfPayment == null || s.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                                        (s.BaseFare + s.TotalTax + s.Fee + +(s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M)) - Math.Round(((s.TotalFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
+                                                        s.TotalFare + s.Fee + +(s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
                                                         s.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && s.QuotePassenger.FormOfPayment.CreditAmount < (s.BaseFare + s.TotalTax) ?
-                                                            (s.BaseFare + s.TotalTax) - s.QuotePassenger.FormOfPayment.CreditAmount + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.TotalFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
-                                                            s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.TotalFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero)
+                                                            s.TotalFare - s.QuotePassenger.FormOfPayment.CreditAmount + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
+                                                            s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero)
                                 }).ToList(),
                     EMDNos = issueExpressTicketRQ.EMDs.IsNullOrEmpty() ?
                                 new List<IssueTicketDocumentData>() :

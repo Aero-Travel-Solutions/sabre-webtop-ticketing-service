@@ -3268,7 +3268,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         f.QuoteNo = groupindex;
                         f.Commission = f.AgentCommissionRate.HasValue ?
-                                            f.TotalFare * f.AgentCommissionRate.Value:
+                                            f.BaseFare * f.AgentCommissionRate.Value:
                                             0.00M;
                         f.PriceIt = f.TotalFare;
                         f.TotalFare = f.BaseFare + f.TotalTax;
