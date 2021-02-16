@@ -3376,7 +3376,7 @@ namespace SabreWebtopTicketingService.Services
                                              CreditAmount = quo.QuotePassenger.FormOfPayment.CreditAmount
                                          }
                                      },
-                                     PriceIt = quo.PriceIt == decimal.MinValue ? rqquo.TotalFare: quo.PriceIt,
+                                     PriceIt = rqquo.TotalFare,
                                      PartialIssue = quo.PartialIssue,
                                      BaseFare = rqquo.BaseFare,
                                      BaseFareCurrency = rqquo.BaseFareCurrency,
