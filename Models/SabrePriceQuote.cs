@@ -76,8 +76,8 @@ namespace SabreWebtopTicketingService.Models
 
         public decimal TotalTax => decimal.Parse(pq.
                             GetFirstElement("FareInfo").
-                            GetFirstElement("TotalTax").
-                            Value);
+                            GetFirstElement("TotalTax")?.
+                            Value??"0.00");
 
         public decimal TotalFare => decimal.Parse(pq.
                             GetFirstElement("FareInfo").
@@ -219,8 +219,8 @@ namespace SabreWebtopTicketingService.Models
 
                 taxes.AddRange(pq.
                                 GetFirstElement("FareInfo").
-                                GetFirstElement("TaxInfo").
-                                GetElements("Tax").
+                                GetFirstElement("TaxInfo")?.
+                                GetElements("Tax")?.
                                 Select(t => new PQTax(t)).
                                 ToList());
                 return taxes;

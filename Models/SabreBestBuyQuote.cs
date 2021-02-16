@@ -310,16 +310,18 @@ namespace SabreWebtopTicketingService.Models
             }
 
             string farecalc = farecalcitems.First() + farecalcitems[1];
+
+            //SYD QF TYO AA LAX AA HNL QF SYD2860.27NUC2860.27END ROE1.293231 XFHNL4.5
+            //MEL LH X/HKG LH X/FRA LH LON193.31/-ROM LH X/MUC LH NYC//LAX QF MEL386.62NUC579.93END ROE1.293231 XFLAX4.5
+            //LAX AA HNL134.96USD134.96END ZPLAX XFLAX4.5
             if (farecalcitems[2].Contains("XF"))
             {
-                //SYD QF TYO AA LAX AA HNL QF SYD2860.27NUC2860.27END ROE1.293231 XFHNL4.5
-                //MEL LH X/HKG LH X/FRA LH LON193.31/-ROM LH X/MUC LH NYC//LAX QF MEL386.62NUC579.93END ROE1.293231 XFLAX4.5
                 farecalc += " " + farecalcitems[2].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d+)\s+")[1];
             }
 
             if (farecalcitems[2].Contains("ZP"))
             {
-                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(ZP[A-Z]{3}\d+\.*\d+)\s+")[1];
+                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(ZP[A-Z]{3})\s+")[1];
             }
 
             return farecalc;
