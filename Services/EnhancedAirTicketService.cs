@@ -37,7 +37,8 @@ namespace SabreWebtopTicketingService.Services
             string ticketprinter,
             string printerbypass,
             string bcode,
-            bool enableextendedendo)
+            bool enableextendedendo,
+            string decimalformatstring)
         {
             List<AirTicketRQTicketing> ticketing = new List<AirTicketRQTicketing>();
 
@@ -51,6 +52,7 @@ namespace SabreWebtopTicketingService.Services
                                 {
                                     FOP_Qualifiers = getFormOfPayment(
                                                         quotegrp.Select(s => s.QuotePassenger.FormOfPayment).ToList(),
+                                                        decimalformatstring,
                                                         quotegrp.Sum(s => s.TotalFare),
                                                         bcode),
                                     MiscQualifiers = GetMiscQualifiers(
@@ -86,6 +88,7 @@ namespace SabreWebtopTicketingService.Services
                             {
                                 FOP_Qualifiers = getFormOfPayment(
                                                     emdgrp.Select(s => s.FormOfPayment).Distinct().ToList(),
+                                                    decimalformatstring,
                                                     emdgrp.Sum(s => s.Total),
                                                     ""),
                                 MiscQualifiers = GetMiscQualifiers(
@@ -292,7 +295,7 @@ namespace SabreWebtopTicketingService.Services
             return pricinginstructions;
         }
 
-        private static AirTicketRQTicketingFOP_Qualifiers getFormOfPayment(List<FOP> fops, decimal total = 0M, string bcode = "")
+        private static AirTicketRQTicketingFOP_Qualifiers getFormOfPayment(List<FOP> fops, string decimalformatstring, decimal total = 0M, string bcode = "")
         {
             AirTicketRQTicketingFOP_Qualifiers res = new AirTicketRQTicketingFOP_Qualifiers();
 
@@ -389,7 +392,7 @@ namespace SabreWebtopTicketingService.Services
                                     },
                                     Fare = new AirTicketRQTicketingFOP_QualifiersBSP_TicketingMultipleFOPFare()
                                     {
-                                        Amount = cashamount.ToString()
+                                        Amount = cashamount.ToString(decimalformatstring)
                                     }
                                 }
                             }
@@ -451,7 +454,7 @@ namespace SabreWebtopTicketingService.Services
                             },
                             Fare = new AirTicketRQTicketingFOP_QualifiersMultipleCC_FOPFare()
                             {
-                                Amount = cc2.CreditAmount.ToString()
+                                Amount = cc2.CreditAmount.ToString(decimalformatstring)
                             }
                         }
                     };
@@ -469,19 +472,20 @@ namespace SabreWebtopTicketingService.Services
             string ticketingprinter,
             string printerbypass,
             string bcode,
-            bool enableextendedendo)
+            bool enableextendedendo,
+            string decimalformatstring)
         {
             List<issueticketresponse> issueticketresponses = new List<issueticketresponse>();
             EnableTLS();
 
-            await IssueDocument(issueExpressTicketRQ, pcc, token, ticketingpcc, issueticketresponses, ticketingprinter, printerbypass, bcode, enableextendedendo);
+            await IssueDocument(issueExpressTicketRQ, pcc, token, ticketingpcc, issueticketresponses, ticketingprinter, printerbypass, bcode, enableextendedendo, decimalformatstring);
 
             return issueticketresponses;
         }
 
         private async Task IssueDocument(IssueExpressTicketRQ issueExpressTicketRQ, string pcc, Token token, 
                 string ticketingpcc, List<issueticketresponse> issueticketresponses, string ticketprinter, 
-                string printerbypass, string bcode, bool enableextendedendo)
+                string printerbypass, string bcode, bool enableextendedendo, string decimalformatstring)
         {
             List<IssueExpressTicketQuote> quote = issueExpressTicketRQ.Quotes;
 
@@ -495,7 +499,8 @@ namespace SabreWebtopTicketingService.Services
                                         ticketprinter,
                                         printerbypass,
                                         bcode,
-                                        enableextendedendo);
+                                        enableextendedendo,
+                                        decimalformatstring);
 
             //generate json request
             string json = JsonConvert.

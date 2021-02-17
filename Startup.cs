@@ -103,6 +103,7 @@ namespace SabreWebtopTicketingService
             services.AddScoped<LambdaHelper>();
             services.AddScoped<SessionDataSource>();
             services.AddScoped<ApiInvoker>();
+            services.AddScoped<S3Helper>();
 
             services.AddScoped<INotificationHelper, NotificationHelper>();
             services.AddScoped<IGetTurnaroundPointDataSource, GetTurnaroundPointDataSource>();

@@ -55,6 +55,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly IBCodeDataSource bCodeDataSource;
         private readonly INotificationHelper _notificationHelper;
         private readonly ICacheDataSource _cacheDataSource;
+        private readonly S3Helper _s3Helper;
 
         public User user { get; set; }
         public Pcc pcc { get; set; }
@@ -90,7 +91,8 @@ namespace SabreWebtopTicketingService.Services
             IOptions<BackofficeOptions> backofficeOptions,
             IOrdersTransactionDataSource ordersTransactionDataSource,
             GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy,
-            ICacheDataSource cacheDataSource)
+            ICacheDataSource cacheDataSource,
+            S3Helper s3Helper)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -122,6 +124,7 @@ namespace SabreWebtopTicketingService.Services
             _ordersTransactionDataSource = ordersTransactionDataSource;
             _getOrderSequenceFailedRetryPolicy = getOrderSquenceRetryPolicy.CheckConditionFailedPolicy;
             _cacheDataSource = cacheDataSource;
+            _s3Helper = s3Helper;
             this.session = session;
         }
 
@@ -1083,19 +1086,16 @@ namespace SabreWebtopTicketingService.Services
             string route = "";
             for (int i = 0; i < tktcoupons.Count(); i++)
             {
-                if (i == 0)
+                if (i == 0 || route.Last(2) == "//")
                 {
-                    route += tktcoupons[i].From;
-                    route += "-" + tktcoupons[i].To;
+                    route += $"{tktcoupons[i].From}-{tktcoupons[i].To}";
                     continue;
                 }
 
                 if (i < tktcoupons.Count()
                     && tktcoupons[i - 1].To != tktcoupons[i].From)
                 {
-                    route += "//-";
-                    route += tktcoupons[i].From;
-                    route += "-" + tktcoupons[i].To;
+                    route += "//";
                     continue;
                 }
 
@@ -1614,12 +1614,13 @@ namespace SabreWebtopTicketingService.Services
             User user = await session.GetSessionUser(sessionID);
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
             Agent agent = await getAgentData(
-                                    request.SessionID,
-                                    user.ConsolidatorId,
-                                    request.AgentID,
-                                    pcc.PccCode);
+                        request.SessionID,
+                        user.ConsolidatorId,
+                        request.AgentID,
+                        pcc.PccCode);
+            string decimalformatstring = await GetCurrencyFormatString(agent);
 
-            if(agent != null)
+            if (agent != null)
             {
                 logger.LogInformation($"AgentID: {agent.AgentId}");
                 logger.LogInformation($"Consolidator ID: {agent.ConsolidatorId}");
@@ -1676,10 +1677,10 @@ namespace SabreWebtopTicketingService.Services
                 GetReservationRS getReservationRS = null;
                 getReservationRS = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
                 pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, contextID, true, true);
-                
+
                 //check commission
                 IssueExpressTicketRS issueExpressTicketRS = await CheckCommission(request, contextID, pnr);
-                if(!issueExpressTicketRS.Errors.IsNullOrEmpty())
+                if (!issueExpressTicketRS.Errors.IsNullOrEmpty())
                 {
                     return issueExpressTicketRS;
                 }
@@ -1717,7 +1718,8 @@ namespace SabreWebtopTicketingService.Services
                                 contextID,
                                 ticketingprinter,
                                 printerbypass,
-                                sessionID);
+                                sessionID,
+                                decimalformatstring);
 
                     //Remove the client added quotes
                     request.Quotes = new List<IssueExpressTicketQuote>();
@@ -1747,11 +1749,11 @@ namespace SabreWebtopTicketingService.Services
                                         Route = GetRoute(pnr.Sectors.Where(w => q.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList()),
                                         Taxes = q.Taxes.Select(s => new Tax() { Code = s.Code.Trim().ToUpper(), Amount = s.Amount }).ToList(),
                                         GST = q.Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount,
-                                        GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode),
+                                        GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult(),
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
                                         TicketingPCC = ticketingpcc,
-                                        Commission = q.AgentCommissionRate.HasValue ? Math.Round(q.BaseFare * (q.AgentCommissionRate.Value/100) , 2, MidpointRounding.AwayFromZero): 0.00M,
+                                        Commission = q.AgentCommissionRate.HasValue ? Math.Round(q.BaseFare * (q.AgentCommissionRate.Value / 100), 2, MidpointRounding.AwayFromZero) : 0.00M,
                                         AgentPrice = q.QuotePassenger.FormOfPayment == null ?
                                                             q.TotalFare - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                             //Cash Only
@@ -1826,7 +1828,8 @@ namespace SabreWebtopTicketingService.Services
                                                                     ticketingprinter,
                                                                     printerbypass,
                                                                     bcode,
-                                                                    enableextendedendo);
+                                                                    enableextendedendo,
+                                                                    decimalformatstring);
 
                 var ticketData = await ParseSabreTicketData(response, request, statefultoken, pcc, ticketingpcc, pnr, bcode, token, user);
 
@@ -1947,6 +1950,14 @@ namespace SabreWebtopTicketingService.Services
                     await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
                 }
             }
+        }
+
+        private async Task<string> GetCurrencyFormatString(Agent agent)
+        {
+            var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
+            int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim() == agent?.Consolidator?.CountryCode.ToUpper().Trim())?.decimal_places ?? 2;
+            string decimalformatstring = noofdecimals == 0 ? "0" : "0.".PadRight(noofdecimals + 2, '0');
+            return decimalformatstring;
         }
 
         private async Task<IssueExpressTicketRS> CheckCommission(IssueExpressTicketRQ request, string contextID, PNR pnr)
@@ -3072,7 +3083,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID)
+        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, string decimalformatstring)
         {
             //Assign printer
             await _sabreCommandService.
@@ -3161,12 +3172,12 @@ namespace SabreWebtopTicketingService.Services
                     index++;
                 }
                 //base fare and currency
-                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{quote.BaseFare.ToString("0.00")}";
+                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{quote.BaseFare.ToString(decimalformatstring)}";
 
                 //equiv fare and currency
                 if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency))
                 {
-                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{quote.EquivFare.Value.ToString("0.00")}";
+                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{quote.EquivFare.Value.ToString(decimalformatstring)}";
                 }
 
                 //taxes
@@ -3187,7 +3198,7 @@ namespace SabreWebtopTicketingService.Services
                         taxes = GroupTax(taxes);
                     }
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString("0.00")}{tax.Code.Trim().ToUpper()}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code.Trim().ToUpper()}"));
                 }
 
                 //commission
@@ -3274,7 +3285,7 @@ namespace SabreWebtopTicketingService.Services
                                             0.00M;
                         f.PriceIt = f.TotalFare;
                         f.TotalFare = f.BaseFare + f.TotalTax;
-                        f.FeeGST = f.Taxes.Select(s => s.Code).Contains("UO") ? f.Fee * GetGSTPercentage(agent?.Consolidator?.CountryCode): default;
+                        f.FeeGST = f.Taxes.Select(s => s.Code).Contains("UO") ? f.Fee * GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult(): default;
                         f.Route = GetRoute(pnr.Sectors.Where(w => f.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList());
                     });
             }
@@ -4288,7 +4299,7 @@ namespace SabreWebtopTicketingService.Services
                                     Math.Round(Convert.ToDecimal(calculateCommissionResponse.PlatingCarrierAgentFee.Amount.Value), 2);
                 quote.AgentCommissions = calculateCommissionResponse.AgentCommissions == null ? new List<AgentCommission>() : calculateCommissionResponse.AgentCommissions.ToList();
                 quote.BspCommissionRate = bspCommission;
-                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode);
+                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult();
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
@@ -4423,7 +4434,7 @@ namespace SabreWebtopTicketingService.Services
                                     Math.Round(Convert.ToDecimal(calculateCommissionResponse.PlatingCarrierAgentFee.Amount.Value), 2);
                 quote.AgentCommissions = calculateCommissionResponse.AgentCommissions == null ? new List<AgentCommission>() : calculateCommissionResponse.AgentCommissions.ToList();
                 quote.BspCommissionRate = bspCommission;
-                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode);
+                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult();
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
@@ -4436,7 +4447,7 @@ namespace SabreWebtopTicketingService.Services
         }
 
 
-        private decimal? GetGSTPercentage(string country)
+        private async Task<decimal?> GetGSTPercentage(string country)
         {
             string countrycode = country;
             if (string.IsNullOrEmpty(countrycode))
@@ -4444,6 +4455,7 @@ namespace SabreWebtopTicketingService.Services
                 countrycode = "AU";
             }
 
+            //_s3Helper.Read("", "");
             switch (countrycode)
             {
                 case "AU":
@@ -4823,6 +4835,15 @@ namespace SabreWebtopTicketingService.Services
 
             return !excludedrfiscs.Contains(rfisc);
         }
+    }
+
+    internal class CurrencyData
+    {
+        public string country { get; set; }
+        public string currency { get; set; }
+        public string currency_code { get; set; }
+        public int decimal_places { get; set; }
+
     }
 
     internal class CommissionData
