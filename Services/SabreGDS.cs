@@ -1746,6 +1746,8 @@ namespace SabreWebtopTicketingService.Services
                                         QuoteSectors = q.QuoteSectors,
                                         Route = GetRoute(pnr.Sectors.Where(w=> q.QuoteSectors.Select(s=> s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList()),
                                         Taxes = q.Taxes,
+                                        GST = q.Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount,
+                                        GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode),
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
                                         TicketingPCC = ticketingpcc,

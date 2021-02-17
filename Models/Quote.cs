@@ -10,6 +10,7 @@ namespace SabreWebtopTicketingService.Models
     {
         private decimal? agtcommrate = 0;
         decimal agtcom = 0.00M;
+        decimal? ticketgst = null;
 
         public int QuoteNo { get; set; }
         public PriceType PriceType { get; set; }
@@ -23,7 +24,19 @@ namespace SabreWebtopTicketingService.Models
         public string EquivFareCurrencyCode { get; internal set; }
         public decimal CreditCardFee { get; set; } = 0.00M;
         public decimal CreditCardFeeRate { get; set; }
-        public decimal? GST => Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount;
+        public decimal? GST
+        {
+            get
+            {
+                ticketgst = Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount;
+                return ticketgst;
+            }
+            set
+            {
+                ticketgst = value;
+            }
+        }
+        
         public bool IsGST => GST.HasValue;
         public decimal? FeeGST => IsGST && GSTRate.HasValue ? (Fee * GSTRate.Value) / 100 : default(decimal?);
         public decimal TotalFare => BaseFare + TotalTax;
