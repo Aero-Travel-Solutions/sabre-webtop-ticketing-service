@@ -645,10 +645,11 @@ namespace SabreWebtopTicketingService.Services
                 string wpbagres = "";
                 if (bestbuyresponse.Contains("BAGGAGE INFO AVAILABLE"))
                 {
-                    logger.LogInformation($"Baggage information found. Executing WP*BAG");
+                    logger.LogInformation("Baggage information found. Executing WP*BAG");
 
                     string wpbagcommand = "WP*BAG";
                     wpbagres = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, wpbagcommand);
+                    logger.LogInformation($"{wpbagres}");
                 }
 
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier, wpbagres);
