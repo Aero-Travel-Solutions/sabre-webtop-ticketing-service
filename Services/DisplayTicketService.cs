@@ -90,7 +90,7 @@ namespace SabreWebtopTicketingService.Services
                 client.ClientCredentials.UserName.Password = pcc.Password;
 
                 logger.LogInformation($"Start {nameof(DisplayDocument)} execution");
-                //client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
+                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
 
                 var sw = Stopwatch.StartNew();
 
@@ -440,6 +440,14 @@ namespace SabreWebtopTicketingService.Services
 
         private FOP GetTicketFOP(TicketingDocumentPaymentED[] payment)
         {
+            if (payment.IsNullOrEmpty()) 
+            {
+                return new FOP()
+                {
+                    PaymentType = PaymentType.CA
+                };
+            }
+
             return payment.Count() == 1 ?
                             (payment.First().Cash != null && payment.First().Cash.cashIndicator) || "CA|MS".Contains(payment.First().type) ?
                                 new FOP()
