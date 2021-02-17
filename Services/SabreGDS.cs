@@ -1093,7 +1093,7 @@ namespace SabreWebtopTicketingService.Services
                 if (i < tktcoupons.Count()
                     && tktcoupons[i - 1].To != tktcoupons[i].From)
                 {
-                    route += "//";
+                    route += "//-";
                     route += tktcoupons[i].From;
                     route += "-" + tktcoupons[i].To;
                     continue;
@@ -1744,14 +1744,14 @@ namespace SabreWebtopTicketingService.Services
                                         PriceType = q.PriceType,
                                         QuotePassenger = q.QuotePassenger,
                                         QuoteSectors = q.QuoteSectors,
-                                        Route = GetRoute(pnr.Sectors.Where(w=> q.QuoteSectors.Select(s=> s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList()),
-                                        Taxes = q.Taxes,
+                                        Route = GetRoute(pnr.Sectors.Where(w => q.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList()),
+                                        Taxes = q.Taxes.Select(s => new Tax() { Code = s.Code.Trim().ToUpper(), Amount = s.Amount }).ToList(),
                                         GST = q.Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount,
                                         GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode),
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
                                         TicketingPCC = ticketingpcc,
-                                        Commission = q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value/100) : 0.00M,
+                                        Commission = q.AgentCommissionRate.HasValue ? Math.Round(q.BaseFare * (q.AgentCommissionRate.Value/100) , 2, MidpointRounding.AwayFromZero): 0.00M,
                                         AgentPrice = q.QuotePassenger.FormOfPayment == null ?
                                                             q.TotalFare - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                             //Cash Only

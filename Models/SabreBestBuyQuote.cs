@@ -316,7 +316,7 @@ namespace SabreWebtopTicketingService.Models
             //LAX AA HNL134.96USD134.96END ZPLAX XFLAX4.5
             if (farecalcitems[2].Contains("XF"))
             {
-                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d+)\s+")[1];
+                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d*)\s+")[1];
             }
 
             if (farecalcitems[2].Contains("ZP"))
