@@ -90,7 +90,6 @@ namespace SabreWebtopTicketingService.Models
             }
         }
         public decimal? BspCommissionRate { get; set; }
-        [JsonIgnore]
         public decimal? GSTRate { get; set; }
         public decimal? FuelSurcharge => AgentCommissions?.FirstOrDefault()?.FuelSurcharge;
         public decimal? CommissionGST => IsGST && GSTRate.HasValue ? (Commission * (GSTRate.Value / 100)) : default(decimal?);
