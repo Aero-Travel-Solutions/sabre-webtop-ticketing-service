@@ -201,15 +201,15 @@ namespace SabreWebtopTicketingService.Models
 
                 List<string> endos = items[i + 1].Contains("ROE") ?
                                         items[i + 1].
-                                            SplitOnRegex(@"(ROE\d+\.\d+)\s*").
-                                            Last().
                                             SplitOn("\n").
+                                            SkipWhile(s => !s.Contains("ROE")).
+                                            Skip(1).
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
                                             ToList() :
                                         items[i + 1].
-                                            SplitOnRegex(@"(END)").
-                                            Last().
                                             SplitOn("\n").
+                                            SkipWhile(s => !s.Contains("END")).
+                                            Skip(1).
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
                                             ToList();
 
