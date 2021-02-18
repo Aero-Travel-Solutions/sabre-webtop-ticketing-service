@@ -141,7 +141,7 @@ namespace SabreWebtopTicketingService.Services
                 AgentId = agentid,
                 Agent = agentDetails,
                 ConsolidatorId = consolidatorid,
-                Consolidator = agentDetails?.Consolidator,
+                Consolidator = user?.Consolidator,
                 Permissions = agentDetails?.Permission,
                 CustomerNo = agentDetails?.CustomerNo,
                 FullName = agentDetails?.Name,
@@ -149,7 +149,8 @@ namespace SabreWebtopTicketingService.Services
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
                 TicketingPcc = await GetTicketingPCC(sessionid),
-                Logo = agentDetails.Logo            };
+                Logo = agentDetails.Logo
+            };
 
             if (user?.Agent != null)
             {
