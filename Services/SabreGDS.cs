@@ -3120,6 +3120,7 @@ namespace SabreWebtopTicketingService.Services
                                     grp.QuotePassenger.FormOfPayment.CardNumber,
                                     grp.QuotePassenger.FormOfPayment.CreditAmount
                                 });
+
             foreach (var quotegrp in quotegroups)
             {
                 IssueExpressTicketQuote quote = quotegrp.First();
@@ -4472,6 +4473,7 @@ namespace SabreWebtopTicketingService.Services
 
         private  decimal? GetGSTPercentage(List<Tax> taxes)
         {
+            if (taxes.IsNullOrEmpty()) { return default; }
             string taxcodes = string.Join("|", taxes.Select(s => s.Code));
             return taxcodes.Contains("UO") ? 10M : taxcodes.Contains("NZ") ? 15M : 0M;
         }
