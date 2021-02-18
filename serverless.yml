@@ -10,8 +10,8 @@ provider:
     SABRE_URL: ${self:custom.sabre_soap_uri.${self:provider.stage}}
     REST_URL: ${self:custom.sabre_rest_uri.${self:provider.stage}}
     SNS_TOPIC_TICKETS_ISSUED: ${self:custom.sns_topic_tickets_issued.${self:provider.stage}}
-    BACKOFFICE_URL :${self:custom.backoffice_url.${self:provider.stage}}
-    ENVIRONMENT: ${self:provider.stage}  
+    BACKOFFICE_URL: ${self:custom.backoffice_url.${self:provider.stage}}
+    ENVIRONMENT: ${self:provider.stage}
   tracing:
     lambda: true
   iamRoleStatements:
