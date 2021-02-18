@@ -237,12 +237,13 @@ namespace SabreWebtopTicketingService.Models
                     ccfeedata = ccfeedataarray[ccfeedataindex] + ccfeedataarray[ccfeedataindex + 1].SplitOn("AIR EXTRAS AVAILABLE").First().Trim();
                 }
                 sectors = new List<SectorFBData>();
+                string previousbagallowance = "";
                 for (int j = 0; j < selectedsectors.Count; j++)
                 {
                     int sectorno = selectedsectors[j];
                     PNRSector pnrsec = pnrsecs.First(p => p.SectorNo == sectorno);
                     if (pnrsec.From == "ARUNK") { continue; }
-                    string changesec = changesecs.IsNullOrEmpty()? "" :  changesecs.FirstOrDefault(f => f.LastMatch(@"(\d+)[A-Z]") == sectorno.ToString());
+                    string changesec = changesecs.IsNullOrEmpty() ? "" : changesecs.FirstOrDefault(f => f.LastMatch(@"(\d+)[A-Z]") == sectorno.ToString());
                     string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
                                                     usedfbs.IsNullOrEmpty() ?
                                                         farebasis.
@@ -250,16 +251,10 @@ namespace SabreWebtopTicketingService.Models
                                                         string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
                                                             farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
                                                             farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
-                                                        farebasis.FirstOrDefault(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])"))??"";
-                    var bagdata = baggageinfo.IsNullOrEmpty() ?
-                                    null:
-                                    baggageinfo.
-                                        First(w =>
-                                            w.PaxType == paxtype)?.
-                                        SectorBags.
-                                        FirstOrDefault(f => f.From == pnrsec.From &&
-                                                   f.To == pnrsec.To);
-                    string baggage = bagdata == null ? "" : bagdata.BaggageAllowance;
+                                                        farebasis.FirstOrDefault(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])")) ?? "";
+
+                    string baggage = GetBaggage(baggageinfo, paxtype, ref previousbagallowance, pnrsec);
+
                     sectors.
                         Add(new SectorFBData()
                         {
@@ -300,6 +295,21 @@ namespace SabreWebtopTicketingService.Models
             }
 
             return bestBuyItems;
+        }
+
+        private static string GetBaggage(List<BaggageInfo> baggageinfo, string paxtype, ref string previousbagallowance, PNRSector pnrsec)
+        {
+            var bagdata = baggageinfo.IsNullOrEmpty() ?
+                            null :
+                            baggageinfo.
+                                First(w =>
+                                    w.PaxType == paxtype)?.
+                                SectorBags.
+                                FirstOrDefault(f => (f.From == pnrsec.From &&
+                                           f.To == pnrsec.To) || f.From == pnrsec.From);
+            string baggage = bagdata == null ? string.IsNullOrEmpty(previousbagallowance) ? "" : previousbagallowance : bagdata.BaggageAllowance;
+            previousbagallowance = bagdata == null ? previousbagallowance : bagdata.BaggageAllowance;
+            return baggage;
         }
 
         private string GetFareCalc(string[] farecalcitems)
