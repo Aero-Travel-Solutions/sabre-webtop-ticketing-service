@@ -3108,7 +3108,7 @@ namespace SabreWebtopTicketingService.Services
                             $"PTR/{ticketingprinter}",
                             ticketingpcc);
 
-            foreach (var quotegrp in manualquotes.GroupBy(grp => grp.QuotePassenger.PaxType))
+            foreach (var quotegrp in manualquotes.GroupBy(grp => new { grp.QuotePassenger.PaxType, grp.BaseFare, grp.Commission, grp.Fee, grp.AgentCommissionRate,  grp.TotalTax }))
             {
                 IssueExpressTicketQuote quote = quotegrp.First();
                 string fopstring = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
