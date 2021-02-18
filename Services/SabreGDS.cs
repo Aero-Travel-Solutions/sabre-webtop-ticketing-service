@@ -3284,9 +3284,9 @@ namespace SabreWebtopTicketingService.Services
                         f.Commission = f.AgentCommissionRate.HasValue ?
                                             f.BaseFare * f.AgentCommissionRate.Value:
                                             0.00M;
-                        f.PriceIt = f.TotalFare;
                         f.TotalFare = f.BaseFare + f.TotalTax;
                         f.FeeGST = f.Taxes.Select(s => s.Code).Contains("UO") ? ((f.Fee * GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult()) / 100): default;
+                        f.PriceIt = f.TotalFare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M);
                         f.Route = GetRoute(pnr.Sectors.Where(w => f.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList());
                     });
             }
