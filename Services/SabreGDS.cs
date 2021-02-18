@@ -128,9 +128,9 @@ namespace SabreWebtopTicketingService.Services
             this.session = session;
         }
 
-        private async Task<Agent> getAgentData(string sessionid, string consolidatorid, string agentid, string webservicepcc)
+        private async Task<Agent> getAgentData(string sessionid, User user, string agentid, string webservicepcc)
         {
-            var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(consolidatorid, agentid, sessionid);
+            var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(user.ConsolidatorId, agentid, sessionid);
 
             if(agentDetails == null) { throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction fail."); }
 
@@ -140,8 +140,8 @@ namespace SabreWebtopTicketingService.Services
                 PccList = (await _agentPccDataSource.RetrieveAgentPccs(agentid, sessionid)).PccList,
                 AgentId = agentid,
                 Agent = agentDetails,
-                ConsolidatorId = consolidatorid,
-                Consolidator = user?.Consolidator,
+                ConsolidatorId = user.ConsolidatorId,
+                Consolidator = user.Consolidator,
                 Permissions = agentDetails?.Permission,
                 CustomerNo = agentDetails?.CustomerNo,
                 FullName = agentDetails?.Name,
@@ -174,7 +174,7 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"AgentID not null. {request.AgentID}");
                 agent = await getAgentData(
                             request.SessionID,
-                            user.ConsolidatorId,
+                            user,
                             request.AgentID,
                             pcc.PccCode);
 
@@ -259,7 +259,7 @@ namespace SabreWebtopTicketingService.Services
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID);
             agent = await getAgentData(
                                     rq.SessionID,
-                                    user.ConsolidatorId,
+                                    user,
                                     rq.AgentID,
                                     pcc.PccCode);
             string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
@@ -356,7 +356,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     agent = await getAgentData(
                                     sessionid,
-                                    user.ConsolidatorId,
+                                    user,
                                     agents.First().AgentId,
                                     pcc.PccCode);
                 }
@@ -555,7 +555,7 @@ namespace SabreWebtopTicketingService.Services
                 pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
                 agent = await getAgentData(
                                         request.SessionID,
-                                        user.ConsolidatorId,
+                                        user,
                                         request.AgentID,
                                         pcc.PccCode);
 
@@ -688,7 +688,7 @@ namespace SabreWebtopTicketingService.Services
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
             agent = await getAgentData(
                                     request.SessionID,
-                                    user.ConsolidatorId,
+                                    user,
                                     request.AgentID,
                                     pcc.PccCode);
 
@@ -874,7 +874,7 @@ namespace SabreWebtopTicketingService.Services
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
             agent = await getAgentData(
                                     request.SessionID,
-                                    user.ConsolidatorId,
+                                    user,
                                     request.AgentID,
                                     pcc.PccCode);
 
@@ -1621,7 +1621,7 @@ namespace SabreWebtopTicketingService.Services
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
             Agent agent = await getAgentData(
                         request.SessionID,
-                        user.ConsolidatorId,
+                        user,
                         request.AgentID,
                         pcc.PccCode);
             string decimalformatstring = await GetCurrencyFormatString(agent);
@@ -1961,7 +1961,9 @@ namespace SabreWebtopTicketingService.Services
         private async Task<string> GetCurrencyFormatString(Agent agent)
         {
             var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
-            int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim() == agent?.Consolidator?.CountryCode.ToUpper().Trim())?.decimal_places ?? 2;
+            RegionInfo cultureInfo = new RegionInfo($"{(agent?.Consolidator?.CountryCode??"AU").Trim().ToLower()}");
+            string countrycode = cultureInfo.EnglishName;
+            int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim().Contains(countrycode.ToUpper().Trim()))?.decimal_places ?? 2;
             string decimalformatstring = noofdecimals == 0 ? "0" : "0.".PadRight(noofdecimals + 2, '0');
             return decimalformatstring;
         }
@@ -3140,7 +3142,7 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"##### Manual build command 1 : {command1}");
                 logger.LogInformation($"##### Manual build command 1 response : {response1}");
 
-                if(!(response1.StartsWith("PQ") || response1.StartsWith("PRICE QUOTE RECORD - SUMMARY BY NAME NUMBER")))
+                if(!(response1.Trim().StartsWith("PQ") || response1.Trim().StartsWith("PRICE QUOTE RECORD - SUMMARY BY NAME NUMBER")))
                 {
                     throw new AeronologyException("MANUAL_BUILD_SHELL_FAIL", $"Unexpected response received from GDS(Command:{command1}, Response:{response1}).");
                 }
@@ -3148,9 +3150,12 @@ namespace SabreWebtopTicketingService.Services
                 string pqnumber = response1.SplitOn(quote.QuotePassenger.PaxType).First().LastMatch(@"PQ\s*(\d+)\s*");
                 if (string.IsNullOrEmpty(pqnumber))
                 {
-                    string paxtype = quotegrp.Key.Trim().ToUpper().Replace("HD", "NN");
-                    List<string> paxlines = response1.SplitOn("\n").Where(w => w.Contains(paxtype)).ToList();
-                    pqnumber = paxlines.OrderBy(o => o.LastMatch(@"\s+(\d{2}{A_Z]{3})\s*")).First().LastMatch(@"(\d+)\s*"+ quotegrp.Key);
+                    pqnumber = response1.
+                                    SplitOn("\n").
+                                    Where(w => w.IsMatch(@".*\s+\d{2}[A-Z]{3}\s*")).
+                                    OrderBy(o => o.LastMatch(@"\.*\s+(\d{2}[A-Z]{3})\s*")).
+                                    Last().
+                                    LastMatch(@"(\d+)\s*"+ quotegrp.Key);
                 }
                 int groupindex = int.Parse(pqnumber);
                 logger.LogInformation($"##### PQ number : {groupindex}");
