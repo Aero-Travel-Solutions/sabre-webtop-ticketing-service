@@ -1961,7 +1961,9 @@ namespace SabreWebtopTicketingService.Services
         private async Task<string> GetCurrencyFormatString(Agent agent)
         {
             var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
-            RegionInfo cultureInfo = new RegionInfo($"{(agent?.Consolidator?.CountryCode??"AU").Trim().ToLower()}");
+            var specificCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
+            string specifcregion = specificCultures.First(f => f.Name.Contains((agent?.Consolidator?.CountryCode??"AU").ToUpper())).Name;
+            RegionInfo cultureInfo = new RegionInfo($"{specifcregion}");
             string countrycode = cultureInfo.EnglishName;
             int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim().Contains(countrycode.ToUpper().Trim()))?.decimal_places ?? 2;
             string decimalformatstring = noofdecimals == 0 ? "0" : "0.".PadRight(noofdecimals + 2, '0');
