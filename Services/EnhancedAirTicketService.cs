@@ -382,7 +382,8 @@ namespace SabreWebtopTicketingService.Services
                                                             fops.
                                                             First().
                                                             CardNumber.
-                                                            ToString())
+                                                            ToString()),
+                                                //ManualOBFee = 
                                             }
                                         }
                                     },

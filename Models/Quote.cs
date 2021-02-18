@@ -28,7 +28,10 @@ namespace SabreWebtopTicketingService.Models
         {
             get
             {
-                ticketgst = Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount;
+                ticketgst = Taxes?.
+                                FirstOrDefault(f => 
+                                        f.Code == "UO" || 
+                                        f.Code == "NZ")?.Amount;
                 return ticketgst;
             }
             set
