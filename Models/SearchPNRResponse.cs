@@ -7,7 +7,7 @@ namespace SabreWebtopTicketingService.Models
     public class SearchPNRResponse
     {
         public PNR PNR { get; set; }
-        public GST GST { get; set; }
+        public List<GST> GST { get; set; }
         public List<WebtopError> Errors { get; set; }
     }
 

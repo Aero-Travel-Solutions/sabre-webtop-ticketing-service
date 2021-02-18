@@ -167,6 +167,7 @@ namespace SabreWebtopTicketingService.Services
             user = await session.GetSessionUser(request.SessionID);
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
             agent = null;
+            List<GST> gst = null;
             if (!string.IsNullOrEmpty(request.AgentID))
             {
                 logger.LogInformation($"AgentID not null. {request.AgentID}");
@@ -175,6 +176,9 @@ namespace SabreWebtopTicketingService.Services
                             user.ConsolidatorId,
                             request.AgentID,
                             pcc.PccCode);
+
+                gst = GetGST(agent?.Consolidator?.CountryCode);
+
             }
 
             try
@@ -198,7 +202,7 @@ namespace SabreWebtopTicketingService.Services
 
                     logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
 
-                    return new SearchPNRResponse() { PNR = pnr };
+                    return new SearchPNRResponse() { PNR = pnr, GST = gst };
                 }
                 catch (GDSException gdsex)
                 {
@@ -290,7 +294,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     CommissionData oldquotecomm = oldcommdata.First(f => f.QuoteNo == q.QuoteNo);
 
-                    string sysbspcomm = q.BspCommissionRate.HasValue ? q.BspCommissionRate.Value.ToString("0.00") : "Not Specified";
+                    string sysbspcomm = q.BspCommissionRate.HasValue ? q.BspCommissionRate.Value.ToString("0.00") : "0.00";
                     string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? oldquotecomm.BspCommissionRate.Value.ToString("0.00") : "Not Specified";
                     if (sysbspcomm != userbspcomm)
                     {   
@@ -1749,8 +1753,8 @@ namespace SabreWebtopTicketingService.Services
                                         QuoteSectors = q.QuoteSectors,
                                         Route = GetRoute(pnr.Sectors.Where(w => q.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList()),
                                         Taxes = q.Taxes.Select(s => new Tax() { Code = s.Code.Trim().ToUpper(), Amount = s.Amount }).ToList(),
-                                        GST = q.Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount,
-                                        GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult(),
+                                        GST = q.Taxes?.FirstOrDefault(f => f.Code == "UO" || f.Code == "NZ")?.Amount,
+                                        GSTRate = GetGSTPercentage(q.Taxes.Select(s => new Tax() { Code = s.Code.Trim().ToUpper(), Amount = s.Amount }).ToList()),
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
                                         TicketingPCC = ticketingpcc,
@@ -3285,7 +3289,7 @@ namespace SabreWebtopTicketingService.Services
                                             f.BaseFare * f.AgentCommissionRate.Value:
                                             0.00M;
                         f.TotalFare = f.BaseFare + f.TotalTax;
-                        f.FeeGST = f.Taxes.Select(s => s.Code).Contains("UO") ? ((f.Fee * GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult()) / 100): default;
+                        f.FeeGST = f.Taxes.Select(s => s.Code).Contains("UO") ? ((f.Fee * GetGSTPercentage(f.Taxes)) / 100): default;
                         f.PriceIt = f.TotalFare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M);
                         f.Route = GetRoute(pnr.Sectors.Where(w => f.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList());
                     });
@@ -4300,7 +4304,7 @@ namespace SabreWebtopTicketingService.Services
                                     Math.Round(Convert.ToDecimal(calculateCommissionResponse.PlatingCarrierAgentFee.Amount.Value), 2);
                 quote.AgentCommissions = calculateCommissionResponse.AgentCommissions == null ? new List<AgentCommission>() : calculateCommissionResponse.AgentCommissions.ToList();
                 quote.BspCommissionRate = bspCommission;
-                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult();
+                quote.GSTRate = GetGSTPercentage(quote.Taxes);
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
@@ -4435,7 +4439,7 @@ namespace SabreWebtopTicketingService.Services
                                     Math.Round(Convert.ToDecimal(calculateCommissionResponse.PlatingCarrierAgentFee.Amount.Value), 2);
                 quote.AgentCommissions = calculateCommissionResponse.AgentCommissions == null ? new List<AgentCommission>() : calculateCommissionResponse.AgentCommissions.ToList();
                 quote.BspCommissionRate = bspCommission;
-                quote.GSTRate = GetGSTPercentage(agent?.Consolidator?.CountryCode).GetAwaiter().GetResult();
+                quote.GSTRate = GetGSTPercentage(quote.Taxes);
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
@@ -4448,23 +4452,55 @@ namespace SabreWebtopTicketingService.Services
         }
 
 
-        private async Task<decimal?> GetGSTPercentage(string country)
+        private  decimal? GetGSTPercentage(List<Tax> taxes)
         {
-            string countrycode = country;
-            if (string.IsNullOrEmpty(countrycode))
+            string taxcodes = string.Join("|", taxes.Select(s => s.Code));
+            return taxcodes.Contains("UO") ? 10M : taxcodes.Contains("NZ") ? 15M : 0M;
+        }
+
+        private List<GST> GetGST(string country)
+        {
+            if (string.IsNullOrEmpty(country))
             {
-                countrycode = "AU";
+                country = "AU";
             }
 
             //_s3Helper.Read("", "");
-            switch (countrycode)
+            switch (country)
             {
                 case "AU":
-                    return 10M;
-                //case "NZ":
-                //    return 15M;
                 default:
-                    return default(decimal?);
+                    return new List<GST>()
+                    {
+                        new GST()
+                        {
+                            CountryOfSale = "AU",
+                            TaxCode = "UO",
+                            GSTRate = "10"
+                        },
+                        new GST()
+                        {
+                            CountryOfSale = "AU",
+                            TaxCode = "NZ",
+                            GSTRate = "15"
+                        }
+                    };
+                case "NZ":
+                    return new List<GST>()
+                    {
+                        new GST()
+                        {
+                            CountryOfSale = "NZ",
+                            TaxCode = "UO",
+                            GSTRate = "10"
+                        },
+                        new GST()
+                        {
+                            CountryOfSale = "NZ",
+                            TaxCode = "NZ",
+                            GSTRate = "15"
+                        }
+                    };
             }
         }
 
