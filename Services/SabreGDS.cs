@@ -2120,11 +2120,12 @@ namespace SabreWebtopTicketingService.Services
                                             result.DocumentType == "EMD" && emd != null ?
                                                 emd.Route :
                                                 "",
-                                PriceIt = rq.GrandPriceItAmount == decimal.MinValue ? 0.00M :
+                                PriceIt = rq.GrandPriceItAmount == decimal.MinValue ? 
+                                            0.00M :
                                             result.DocumentType == "TKT" && quote != null ?
-                                                decimal.Parse(result.TotalAmount.content) :
+                                                quote.PriceIt :
                                                  result.DocumentType == "EMD" && emd != null ?
-                                                    decimal.Parse(result.TotalAmount.content) :
+                                                    emd.PriceIt :
                                                     0.00M,
                                 CashAmount = result.DocumentType == "TKT" && quote != null ?
                                                 quote.FormOfPayment == null || quote.FormOfPayment.PaymentType == PaymentType.CA ?
