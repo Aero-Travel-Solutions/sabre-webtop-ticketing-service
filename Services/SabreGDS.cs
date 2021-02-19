@@ -168,7 +168,7 @@ namespace SabreWebtopTicketingService.Services
             user = await session.GetSessionUser(request.SessionID);
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
             agent = null;
-            List<GST> gst = null;
+            List<GST> gst = GetGST(user?.Consolidator?.CountryCode??"AU"); 
             if (!string.IsNullOrEmpty(request.AgentID))
             {
                 logger.LogInformation($"AgentID not null. {request.AgentID}");
@@ -177,9 +177,6 @@ namespace SabreWebtopTicketingService.Services
                             user,
                             request.AgentID,
                             pcc.PccCode);
-
-                gst = GetGST(agent?.Consolidator?.CountryCode);
-
             }
 
             try
