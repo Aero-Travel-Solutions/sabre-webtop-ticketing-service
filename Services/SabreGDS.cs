@@ -638,7 +638,7 @@ namespace SabreWebtopTicketingService.Services
 
                 //Generate bestbuy command
                 string command = GetBestbuyCommand(request, platingcarrier);
-                logger.LogInformation($"Sabre bestbuy command: {command}");
+                logger.LogMaskInformation($"Sabre bestbuy command: {command}");
 
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
@@ -651,7 +651,7 @@ namespace SabreWebtopTicketingService.Services
 
                     string wpbagcommand = "WP*BAG";
                     wpbagres = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, wpbagcommand);
-                    logger.LogInformation($"{wpbagres}");
+                    logger.LogMaskInformation($"{wpbagres}");
                 }
 
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier, wpbagres);
@@ -1020,10 +1020,10 @@ namespace SabreWebtopTicketingService.Services
         {
             List<Quote> quotes = new List<Quote>();
 
-            logger.LogInformation($"BESTBUY RESPONSE{Environment.NewLine}{bestbuyresponse}");
+            logger.LogMaskInformation($"BESTBUY RESPONSE{Environment.NewLine}{bestbuyresponse}");
 
             IBestBuyQuote bestbuyquote = bestbuyresponse.Contains("TAXES/FEES/CHARGES")?
-                                                        (IBestBuyQuote)new SabreBestBuyQuote(
+                                                            (IBestBuyQuote)new SabreBestBuyQuote(
                                                                 bestbuyresponse, 
                                                                 request.SelectedSectors.Select(s=>s.SectorNo).ToList(), 
                                                                 pnr.Sectors,
@@ -1040,14 +1040,15 @@ namespace SabreWebtopTicketingService.Services
                       let s = bestbuyquote.
                                     BestBuyItems.
                                     FirstOrDefault(f => f.PaxType == pax.PaxType||
-                                                         (pax.PaxType.StartsWith("C") && f.PaxType == "CNN"))
+                                                         (pax.PaxType.StartsWith("C") && f.PaxType == "CNN" || f.PaxType == "ADT") ||
+                                                         (pax.PaxType.StartsWith("I") && f.PaxType == pax.PaxType || f.PaxType == "ADT"))
                       select new Quote()
                       {
                           QuoteNo = index++,
                           Taxes = s == null ? new List<Tax>(): s.Taxes,
                           PricingHint = s == null ? "" : s.PriceHint,
                           CCFeeData = s == null ? "" : s.CCFeeData,
-                          CreditCardFee = string.IsNullOrEmpty(s.CCFeeData) ? 0.00M : GetCCFee(s.CCFeeData),
+                          CreditCardFee = string.IsNullOrEmpty(s.CCFeeData) ? 0.00M : GetBestBuyCCFee(s.CCFeeData),
                           PriceCode = request.PriceCode,
                           QuotePassenger = pax,
                           QuoteSectors = (from selsec in request.SelectedSectors
@@ -1085,7 +1086,7 @@ namespace SabreWebtopTicketingService.Services
             return quotes;
         }
 
-        private decimal GetCCFee(string cCFeeData)
+        private decimal GetBestBuyCCFee(string cCFeeData)
         {
             if (string.IsNullOrEmpty(cCFeeData)) { return 0.00M; }
 
