@@ -184,6 +184,10 @@ namespace SabreWebtopTicketingService.Models
                                         fareline.SplitOnRegex(@"EQUIV\s+[A-Z]{3}\s*(\d+\.*\d*)s*")[1]:
                                         fareline.SplitOnRegex(@"FARE\s+[A-Z]{3}\s*(\d+\.*\d*)s*")[1];
 
+                string basefarecurrency = fareline.Contains("EQUIV") ?
+                        fareline.SplitOnRegex(@"EQUIV\s+([A-Z]{3})\s*\d+\.*\d*s*")[1] :
+                        fareline.SplitOnRegex(@"FARE\s+([A-Z]{3})\s*\d+\.*\d*s*")[1];
+
 
                 string[] farebasis = items[i+1].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
 
@@ -276,7 +280,8 @@ namespace SabreWebtopTicketingService.Models
                                         Amount = s.Amount
                                     }).
                                     ToList(),
-                        BaseFare = decimal.Parse(basefare)
+                        BaseFare = decimal.Parse(basefare),
+                        BaseFareCurrency = basefarecurrency
                     });
             }
 

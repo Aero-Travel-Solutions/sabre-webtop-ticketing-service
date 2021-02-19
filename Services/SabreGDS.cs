@@ -1071,6 +1071,7 @@ namespace SabreWebtopTicketingService.Services
                           ROE = s.ROE,
                           FareCalculation = s.FareCalculation,
                           BaseFare = s.BaseFare,
+                          BaseFareCurrency = s.BaseFareCurrency,
                           LastPurchaseDate = s.LastPurchaseDate,
                           Endorsements = s.Endorsements,
                           Warnings = new List<WebtopWarning>()
@@ -3166,8 +3167,8 @@ namespace SabreWebtopTicketingService.Services
                             command1,
                             ticketingpcc);
 
-                logger.LogInformation($"##### Manual build command 1 : {command1}");
-                logger.LogInformation($"##### Manual build command 1 response : {response1}");
+                logger.LogMaskInformation($"##### Manual build command 1 : {command1}");
+                logger.LogMaskInformation($"##### Manual build command 1 response : {response1}");
 
                 if(!(response1.Trim().StartsWith("PQ") || response1.Trim().StartsWith("PRICE QUOTE RECORD - SUMMARY BY NAME NUMBER")))
                 {
@@ -3307,14 +3308,14 @@ namespace SabreWebtopTicketingService.Services
                                                     ticketingpcc);
 
 
-                logger.LogInformation($"##### Manual build command 2 : {command2}");
-                logger.LogInformation($"##### Manual build command 2 response : {response2}");
+                logger.LogMaskInformation($"##### Manual build command 2 : {command2}");
+                logger.LogMaskInformation($"##### Manual build command 2 response : {response2}");
 
                 if (!response2.StartsWith("OK"))
                 {
                     logger.LogInformation("##### INVALID_MANUAL_BUILD_RESPONSE #####");
-                    logger.LogInformation(response2);
-                    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command2}, Response:{response2}).");
+                    logger.LogMaskInformation(response2);
+                    throw new GDSException("INVALID_MANUAL_BUILD_RESPONSE", $"Unknown response received from GDS (Command:{command2.Mask()}, Response:{response2.Mask()}).");
                 }
 
                 //update quoteno and partial issue

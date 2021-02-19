@@ -12,6 +12,7 @@ namespace SabreWebtopTicketingService.Models
         public string LastPurchaseDate { get; set; }
         public string PaxType { get; set; }
         public decimal BaseFare { get; set; }
+        public string BaseFareCurrency { get; set; }
         public List<Tax> Taxes { get; set; }
         public string PriceHint { get; set; }
         public string FareCalculation { get; set; }

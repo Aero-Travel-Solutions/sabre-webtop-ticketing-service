@@ -188,6 +188,12 @@ namespace SabreWebtopTicketingService.Models
                                     taxlines[paxtypeindex].
                                         SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}(\d+\.{0,1}\d*)")[1];
 
+                string basefarecurrency = items[0].Contains("EQUIV AMT") ?
+                                    taxlines[paxtypeindex].
+                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+([A-Z]{3})\d+\.{0,1}\d*\s+")[1] :
+                                    taxlines[paxtypeindex].
+                                        SplitOnRegex(@"\d+\s*-\s+([A-Z]{3})\d+\.{0,1}\d*")[1];
+
 
                 string[] farebasis = items[i].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
                 string pricehint = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
@@ -290,7 +296,8 @@ namespace SabreWebtopTicketingService.Models
                                         Amount = s.Amount
                                     }).
                                     ToList(),
-                        BaseFare = decimal.Parse(basefare)
+                        BaseFare = decimal.Parse(basefare),
+                        BaseFareCurrency = basefarecurrency
                     });
             }
 
