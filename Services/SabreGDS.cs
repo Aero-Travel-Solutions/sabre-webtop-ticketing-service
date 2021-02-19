@@ -3170,8 +3170,14 @@ namespace SabreWebtopTicketingService.Services
                                     Where(w => w.IsMatch(@".*\s+\d{2}[A-Z]{3}\s*")).
                                     OrderBy(o => o.LastMatch(@"\.*\s+(\d{2}[A-Z]{3})\s*")).
                                     Last().
-                                    LastMatch(@"(\d+)\s*"+ quotegrp.Key);
+                                    LastMatch(@"\s+(\d+)\s+"+ quotegrp.Key.PaxType.Replace("HD","NN"));
                 }
+
+                if(pqnumber.IsNullOrEmpty())
+                {
+                    throw new AeronologyException("QUOTE_NU_NOT_FOUND", "Quote number not fund.");
+                }
+
                 int groupindex = int.Parse(pqnumber);
                 logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
