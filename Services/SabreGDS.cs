@@ -3342,7 +3342,7 @@ namespace SabreWebtopTicketingService.Services
             }
             else
             {
-                nvbnva = $"*{nva}{nvb}";
+                nvbnva = $"*{nvb}{nva}";
             }
 
             return nvbnva;
