@@ -1047,6 +1047,7 @@ namespace SabreWebtopTicketingService.Services
                           Taxes = s == null ? new List<Tax>(): s.Taxes,
                           PricingHint = s == null ? "" : s.PriceHint,
                           CCFeeData = s == null ? "" : s.CCFeeData,
+                          CreditCardFee = string.IsNullOrEmpty(s.CCFeeData) ? 0.00M : GetCCFee(s.CCFeeData),
                           PriceCode = request.PriceCode,
                           QuotePassenger = pax,
                           QuoteSectors = (from selsec in request.SelectedSectors
@@ -1082,6 +1083,19 @@ namespace SabreWebtopTicketingService.Services
                       }).
                       ToList();
             return quotes;
+        }
+
+        private decimal GetCCFee(string cCFeeData)
+        {
+            if (string.IsNullOrEmpty(cCFeeData)) { return 0.00M; }
+
+            var items = cCFeeData.SplitOn("\n")[1].SplitOnRegex(@"\s+");
+
+            string ccfee = items[items.Count() - 2];
+
+            if(string.IsNullOrEmpty(ccfee) || !ccfee.IsMatch(@"\d+\.\d+")) { return 0.00M; }
+            
+            return decimal.Parse(ccfee);
         }
 
         private string GetRoute(List<PNRSector> tktcoupons)
@@ -4490,7 +4504,6 @@ namespace SabreWebtopTicketingService.Services
                 country = "AU";
             }
 
-            //_s3Helper.Read("", "");
             switch (country)
             {
                 case "AU":
