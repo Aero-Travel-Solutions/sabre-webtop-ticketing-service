@@ -4507,7 +4507,7 @@ namespace SabreWebtopTicketingService.Services
                         {
                             CountryOfSale = "AU",
                             TaxCode = "NZ",
-                            GSTRate = "15"
+                            GSTRate = "10"
                         }
                     };
                 case "NZ":
@@ -4517,7 +4517,7 @@ namespace SabreWebtopTicketingService.Services
                         {
                             CountryOfSale = "NZ",
                             TaxCode = "UO",
-                            GSTRate = "10"
+                            GSTRate = "15"
                         },
                         new GST()
                         {
