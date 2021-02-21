@@ -3241,10 +3241,10 @@ namespace SabreWebtopTicketingService.Services
 
                 if (!taxes.IsNullOrEmpty())
                 {
-                    if (taxes.Count > 16)
-                    {
-                        taxes = GroupTax(taxes);
-                    }
+                    //if (taxes.Count > 16)
+                    //{
+                    //    taxes = GroupTax(taxes);
+                    //}
 
                     command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code.Trim().ToUpper()}"));
                 }
@@ -3332,7 +3332,9 @@ namespace SabreWebtopTicketingService.Services
                                             f.BaseFare * f.AgentCommissionRate.Value:
                                             0.00M;
                         f.TotalFare = f.BaseFare + f.TotalTax;
-                        f.FeeGST = f.Taxes.Select(s => s.Code).Contains("UO") ? ((f.Fee * GetGSTPercentage(f.Taxes, agent?.Consolidator?.CountryCode ?? "AU")) / 100): default;
+                        f.FeeGST = (f.Taxes.Select(s => s.Code).Contains("UO") || f.Taxes.Select(s => s.Code).Contains("NZ")) ? 
+                                                ((f.Fee * GetGSTPercentage(f.Taxes, agent?.Consolidator?.CountryCode ?? "AU")) / 100): 
+                                                default;
                         f.PriceIt = f.TotalFare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M);
                         f.Route = GetRoute(pnr.Sectors.Where(w => f.QuoteSectors.Select(s => s.PQSectorNo).ToList().Contains(w.SectorNo)).ToList());
                     });

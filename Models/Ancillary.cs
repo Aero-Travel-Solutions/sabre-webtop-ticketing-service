@@ -31,7 +31,7 @@ namespace SabreWebtopTicketingService.Models
         public bool AlreadyTicketed { get; set; }
         public bool TicketAssociated { get; set; }
         public decimal? Commission { get; set; }
-        public decimal? GST => Taxes?.FirstOrDefault(f => f.Code == "UO")?.Amount;
+        public decimal? GST => Taxes?.FirstOrDefault(f => f.Code == "UO" || f.Code == "NZ")?.Amount;
         public bool IsGST => GST.HasValue;
         public decimal? Fee { get; set; }
         public decimal? FeeGST => IsGST? Fee * (GSTRate.HasValue? (GSTRate.Value / 100) : default(decimal?)) : default;
