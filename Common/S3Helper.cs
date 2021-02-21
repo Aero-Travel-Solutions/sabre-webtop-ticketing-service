@@ -30,7 +30,8 @@ namespace SabreWebtopTicketingService.Common
 
                 var getObjectResponse = await _s3Client.GetObjectAsync(getObjectRequest);
 
-                _logger.LogInformation($"S3-{bucketName}/{key} - RS: {JsonSerializer.DeserializeAsync<T>(getObjectResponse.ResponseStream)}");
+                _logger.LogInformation($"S3-{bucketName}/{key}");
+                _logger.LogInformation($"RS: { JsonSerializer.DeserializeAsync<T>(getObjectResponse.ResponseStream)}");
 
                 using (var stream = getObjectResponse.ResponseStream)
                 {
