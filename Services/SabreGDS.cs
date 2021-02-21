@@ -1975,6 +1975,7 @@ namespace SabreWebtopTicketingService.Services
         {
             var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
             var specificCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
+            logger.LogInformation($"Country code in use : {agent?.Consolidator?.CountryCode ?? "AU"}");
             string specifcregion = specificCultures.First(f => f.Name.Contains((agent?.Consolidator?.CountryCode??"AU").ToUpper())).Name;
             RegionInfo cultureInfo = new RegionInfo($"{specifcregion}");
             string countrycode = cultureInfo.EnglishName;
