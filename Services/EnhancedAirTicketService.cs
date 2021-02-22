@@ -211,17 +211,53 @@ namespace SabreWebtopTicketingService.Services
                                         0
                 };
 
-                if(!string.IsNullOrEmpty(quotes.First().TourCode) )
+                if(quotes.First().FareType == FareType.BT)
                 {
                     miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
                     {
-                        Text = quotes.First().TourCode,
-                        SuppressIT = quotes.Any(a=> a.ApplySupressITFlag) ? 
-                                            new  AirTicketRQTicketingMiscQualifiersTourCodeSuppressIT()
+                        SuppressFareReplaceWithBT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressFareReplaceWithBT()
+                        {
+                            Ind = true
+                        }
+                    };
+                }
+
+                    
+                if (!string.IsNullOrEmpty(quotes.First().TourCode))
+                {
+                    if (quotes.First().FareType == FareType.IT)
+                    {
+                        miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
+                        {
+                            SuppressITSupressFare = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressITSupressFare()
+                            {
+                                Ind = true
+                            }
+                        };
+                    }
+                    else
+                    {
+                        miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
+                        {
+                            Text = quotes.First().TourCode,
+                            SuppressIT = quotes.
+                                            Any(a => a.ApplySupressITFlag) ?
+                                            new AirTicketRQTicketingMiscQualifiersTourCodeSuppressIT()
                                             {
                                                 Ind = true
-                                            }:
+                                            } :
                                             null
+                        };
+                    }
+                }
+                else
+                {
+                    miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
+                    {
+                        SuppressFareReplaceWithIT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressFareReplaceWithIT()
+                        {
+                            Ind = true
+                        }
                     };
                 }
             }

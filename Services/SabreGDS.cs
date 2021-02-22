@@ -1037,11 +1037,14 @@ namespace SabreWebtopTicketingService.Services
 
             int index = 0;
             quotes = (from pax in request.SelectedPassengers
-                      let s = bestbuyquote.
+                      let spesificpaxquote = bestbuyquote.
                                     BestBuyItems.
                                     FirstOrDefault(f => f.PaxType == pax.PaxType||
-                                                         (pax.PaxType.StartsWith("C") && f.PaxType == "CNN" || f.PaxType == "ADT") ||
-                                                         (pax.PaxType.StartsWith("I") && f.PaxType == pax.PaxType || f.PaxType == "ADT"))
+                                                         (pax.PaxType.StartsWith("C") && f.PaxType == "CNN"))
+                      let adtquote = bestbuyquote.
+                                    BestBuyItems.
+                                    FirstOrDefault(f => f.PaxType == "ADT")
+                      let s = spesificpaxquote == null ? adtquote : spesificpaxquote
                       select new Quote()
                       {
                           QuoteNo = index++,
@@ -2268,6 +2271,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 foreach (var conj in tktconjs)
                 {
+                    //logger.LogInformation($"Sector Countr: {conj.SectorCount}");
                     int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4)));
                     var selectedtkt = ticketdata.FirstOrDefault(f => f.DocumentType == "TKT" && f.PassengerName.StartsWith(conj.PassengerName));
                     if (selectedtkt != null)
