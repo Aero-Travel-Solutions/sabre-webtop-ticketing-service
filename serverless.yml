@@ -11,6 +11,8 @@ provider:
     REST_URL: ${self:custom.sabre_rest_uri.${self:provider.stage}}
     SNS_TOPIC_TICKETS_ISSUED: ${self:custom.sns_topic_tickets_issued.${self:provider.stage}}
     BACKOFFICE_URL: ${self:custom.backoffice_url.${self:provider.stage}}
+    BACKOFFICE_SQS_URL: ${self:custom.backoffice_sqs_url.${self:provider.stage}}
+    BACKOFFICE_VOID_SQS_URL: ${self:custom.backoffice_void_sqs_url.${self:provider.stage}}
     ENVIRONMENT: ${self:provider.stage}
   tracing:
     lambda: true
@@ -73,6 +75,14 @@ custom:
     dev: ${ssm:/dev/backoffice-service/url}
     stg: ${ssm:/stg/backoffice-service/url}
     prod: ${ssm:/prod/backoffice-service/url}
+  backoffice_sqs_url:
+    dev: ${ssm:/dev/backoffice/config/SqsQueueUrl}
+    stg: ${ssm:/stg/backoffice/config/SqsQueueUrl}
+    prod: ${ssm:/prod/backoffice/config/SqsQueueUrl}
+  backoffice_void_sqs_url:
+    dev: ${ssm:/dev/backoffice/config/SqsVoidQueueUrl}
+    stg: ${ssm:/stg/backoffice/config/SqsVoidQueueUrl}
+    prod: ${ssm:/prod/backoffice/config/SqsVoidQueueUrl}
 
 functions:
   SearchPNR:
