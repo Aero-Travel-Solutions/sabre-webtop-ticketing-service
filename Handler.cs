@@ -862,7 +862,11 @@ namespace SabreWebtopTicketingService
                 contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
                 try
                 {
-                    List<WebtopWarning> result = await sabreGDS.ValidateCommission(rq, contextid);
+                    List<ValidateCommissionWarning> validateCommissionWarnings = await sabreGDS.ValidateCommission(rq, contextid);
+                    List<WebtopWarning> result = validateCommissionWarnings.
+                                                        SelectMany(m => m.Warnings).
+                                                        DistinctBy(d => d.message).
+                                                        ToList();
                     lambdaResponse.statusCode = 200;
                     lambdaResponse.body = JsonConvert.
                                                 SerializeObject

@@ -249,9 +249,9 @@ namespace SabreWebtopTicketingService.Services
             return ticketingpcc;
         }
 
-        internal async Task<List<WebtopWarning>> ValidateCommission(ValidateCommissionRQ rq, string contextid)
+        internal async Task<List<ValidateCommissionWarning>> ValidateCommission(ValidateCommissionRQ rq, string contextid)
         {
-            List<WebtopWarning> webtopWarnings = new List<WebtopWarning>();
+            List<ValidateCommissionWarning> validateCommissionWarnings = new List<ValidateCommissionWarning>();
             user = await session.GetSessionUser(rq.SessionID);
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID);
             agent = await getAgentData(
@@ -290,13 +290,19 @@ namespace SabreWebtopTicketingService.Services
                 Quotes.
                 ForEach(q =>
                 {
+                    ValidateCommissionWarning validateCommissionWarning = new ValidateCommissionWarning()
+                    {
+                        QuoteNo = q.QuoteNo,
+                        Warnings = new List<WebtopWarning>()
+                    };
                     CommissionData oldquotecomm = oldcommdata.First(f => f.QuoteNo == q.QuoteNo);
 
                     string sysbspcomm = q.BspCommissionRate.HasValue ? q.BspCommissionRate.Value.ToString("0.00") : "0.00";
-                    string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? oldquotecomm.BspCommissionRate.Value.ToString("0.00") : "Not Specified";
+                    string userbspcomm = oldquotecomm.BspCommissionRate.HasValue ? oldquotecomm.BspCommissionRate.Value.ToString("0.00") : "0.00";
                     if (sysbspcomm != userbspcomm)
-                    {   
-                        webtopWarnings.
+                    {
+                        validateCommissionWarning.
+                            Warnings.
                             Add(new WebtopWarning()
                             {
                                 code = "BSP_COMM_MISSMATCH",
@@ -305,10 +311,11 @@ namespace SabreWebtopTicketingService.Services
                     }
 
                     string sysagtcomm = q.AgentCommissionRate.HasValue ? q.AgentCommissionRate.Value.ToString("0.00") : "0.00";
-                    string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? oldquotecomm.AgentCommissionRate.Value.ToString("0.00") : "Not Specified";
+                    string useragtcomm = oldquotecomm.AgentCommissionRate.HasValue ? oldquotecomm.AgentCommissionRate.Value.ToString("0.00") : "0.00";
                     if (sysagtcomm != useragtcomm)
                     {
-                        webtopWarnings.
+                        validateCommissionWarning.
+                            Warnings.
                             Add(new WebtopWarning()
                             {
                                 code = "AGENT_COMM_MISSMATCH",
@@ -320,16 +327,22 @@ namespace SabreWebtopTicketingService.Services
                     string useragtfee = oldquotecomm.Fee.ToString("0.00");
                     if (sysagtfee != useragtfee)
                     {
-                        webtopWarnings.
+                        validateCommissionWarning.
+                            Warnings.
                             Add(new WebtopWarning()
                             {
                                 code = "AGENT_FEE_MISSMATCH",
                                 message = $"Agent fee missmatch. (System:{sysagtfee}, User: {useragtfee}). Please verify before proceeding to ticketing."
                             });
                     }
+
+                    if(!validateCommissionWarning.Warnings.IsNullOrEmpty())
+                    {
+                        validateCommissionWarnings.Add(validateCommissionWarning);
+                    }
                 });
 
-            return webtopWarnings;
+            return validateCommissionWarnings;
         }
 
         public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
@@ -1702,7 +1715,7 @@ namespace SabreWebtopTicketingService.Services
 
                 //check commission
                 IssueExpressTicketRS issueExpressTicketRS = await CheckCommission(request, contextID, pnr);
-                if (!issueExpressTicketRS.Errors.IsNullOrEmpty())
+                if (!issueExpressTicketRS.ValidateCommissionWarnings.IsNullOrEmpty())
                 {
                     return issueExpressTicketRS;
                 }
@@ -1999,49 +2012,37 @@ namespace SabreWebtopTicketingService.Services
             //Check commission
             if (request.CheckCommission)
             {
-                List<WebtopWarning> warnings = new List<WebtopWarning>();
-                warnings = await ValidateCommission(
-                                    new ValidateCommissionRQ()
-                                    {
-                                        AgentID = request.AgentID,
-                                        GDSCode = "1W",
-                                        Locator = request.Locator,
-                                        SessionID = request.SessionID,
-                                        Sectors = pnr.Sectors,
-                                        Quotes = request.
-                                                    Quotes.
-                                                    Select(q => new Quote()
-                                                    {
-                                                        QuoteNo = q.QuoteNo,
-                                                        PlatingCarrier = q.PlatingCarrier,
-                                                        FareCalculation = q.FareCalculation,
-                                                        TourCode = q.TourCode,
-                                                        QuotePassenger = q.QuotePassenger,
-                                                        QuoteSectors = q.QuoteSectors,
-                                                        Taxes = q.Taxes,
-                                                        BaseFare = q.BaseFare,
-                                                        BaseFareCurrency = q.BaseFareCurrency,
+                List<ValidateCommissionWarning> validateCommissionWarnings = new List<ValidateCommissionWarning>();
+                validateCommissionWarnings = await ValidateCommission(
+                                                        new ValidateCommissionRQ()
+                                                        {
+                                                            AgentID = request.AgentID,
+                                                            GDSCode = "1W",
+                                                            Locator = request.Locator,
+                                                            SessionID = request.SessionID,
+                                                            Sectors = pnr.Sectors,
+                                                            Quotes = request.
+                                                                        Quotes.
+                                                                        Select(q => new Quote()
+                                                                        {
+                                                                            QuoteNo = q.QuoteNo,
+                                                                            PlatingCarrier = q.PlatingCarrier,
+                                                                            FareCalculation = q.FareCalculation,
+                                                                            TourCode = q.TourCode,
+                                                                            QuotePassenger = q.QuotePassenger,
+                                                                            QuoteSectors = q.QuoteSectors,
+                                                                            Taxes = q.Taxes,
+                                                                            BaseFare = q.BaseFare,
+                                                                            BaseFareCurrency = q.BaseFareCurrency,
 
-                                                    }).
-                                                    ToList()
-                                    },
-                                    contextID);
+                                                                        }).
+                                                                        ToList()
+                                                        },
+                                                        contextID);
 
-                if(!warnings.IsNullOrEmpty())
+                if(!validateCommissionWarnings.IsNullOrEmpty())
                 {
-                    foreach (var war in warnings)
-                    {
-                        issueExpressTicketRS.
-                            Errors.
-                            Add(new IssueTicketError()
-                            {
-                                Error = new WebtopError()
-                                {
-                                    code = war.code,
-                                    message = war.message
-                                }
-                            });
-                    }
+                    issueExpressTicketRS.ValidateCommissionWarnings = validateCommissionWarnings;
                 }
             }
 

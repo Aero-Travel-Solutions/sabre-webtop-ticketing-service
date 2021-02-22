@@ -14,8 +14,14 @@ namespace SabreWebtopTicketingService.Models
         public List<IssueTicketDetails> Tickets { get; set; }
         public decimal MerchantFee { get; set; }
         public string ApprovalCode { get; set; }
+        public List<ValidateCommissionWarning> ValidateCommissionWarnings { get; set; }
     }
 
+    public class ValidateCommissionWarning
+    {
+        public int QuoteNo { get; set; }
+        public List<WebtopWarning> Warnings { get; set; }
+    }
 
     public class MerchantFOP
     {
