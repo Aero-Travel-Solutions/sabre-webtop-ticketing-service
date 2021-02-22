@@ -1182,7 +1182,7 @@ namespace SabreWebtopTicketingService.Services
         {
             List<QuoteSector> quoteSectors = new List<QuoteSector>();
 
-            var validpqs = pqs.FareCalculationBreakdown.ToList();//.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment))
+            var validpqs = pqs.FareCalculationBreakdown.Where(w => string.IsNullOrEmpty(w.FareBasis.SurfaceSegment)).ToList();
 
             int index = 0;
             foreach (var s in sectors)
@@ -1200,7 +1200,7 @@ namespace SabreWebtopTicketingService.Services
 
                 quoteSectors.Add(sec);
 
-                if (!isARUNK || validpqs[index].FareBasis.SurfaceSegment == "/-") { index++; }
+                if (!isARUNK) { index++; }
             }
 
             return quoteSectors;
