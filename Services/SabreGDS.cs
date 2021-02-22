@@ -1974,13 +1974,11 @@ namespace SabreWebtopTicketingService.Services
         private async Task<string> GetCurrencyFormatString(Agent agent)
         {
             var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
-            var specificCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
+            var countrydata = await _s3Helper.Read<List<Country>>("aerotickets-resources", "countries.json");
             logger.LogInformation($"Agent country code in use : {agent?.Consolidator?.CountryCode ?? "AU"}");
-            string specifcregion = specificCultures.First(f => f.Name.Contains((agent?.Consolidator?.CountryCode??"AU").ToUpper())).Name;
-            RegionInfo cultureInfo = new RegionInfo($"{specifcregion}");
-            string countrycode = cultureInfo.EnglishName;
-            logger.LogInformation($"Country Name: {countrycode}");
-            int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim().Contains(countrycode.ToUpper().Trim()))?.decimal_places ?? 2;
+            string countryname = countrydata.First(f => f.code.ToUpper().Trim() == (agent?.Consolidator?.CountryCode??"AU").ToUpper()).name;
+            logger.LogInformation($"Country Name: {countryname}");
+            int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim().Contains(countryname.ToUpper().Trim()))?.decimal_places ?? 2;
             string decimalformatstring = noofdecimals == 0 ? "0" : "0.".PadRight(noofdecimals + 2, '0');
             logger.LogInformation($"Decimal formating string {decimalformatstring}");
             return decimalformatstring;
@@ -4937,6 +4935,16 @@ namespace SabreWebtopTicketingService.Services
         public string currency_code { get; set; }
         public int decimal_places { get; set; }
 
+    }
+
+    public class Country
+    {
+        public string name { get; set; }
+        public string code { get; set; }
+        public string areaCode { get; set; }
+        public string tariffConf { get; set; }
+        public string continent { get; set; }
+        public string subarea { get; set; }
     }
 
     internal class CommissionData
