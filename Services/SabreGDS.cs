@@ -2252,7 +2252,7 @@ namespace SabreWebtopTicketingService.Services
             return issueExpressTicketRS;
         }
 
-        private static void GetConjunctionPostfix(IssueExpressTicketRQ rq, List<IssueTicketDetails> issueTicketDetails, List<IssueTicketDetails> ticketdata)
+        private void GetConjunctionPostfix(IssueExpressTicketRQ rq, List<IssueTicketDetails> issueTicketDetails, List<IssueTicketDetails> ticketdata)
         {
             List<IIssueExpressTicketDocument> tktconjs = new List<IIssueExpressTicketDocument>();
             List<IIssueExpressTicketDocument> emdconjs = new List<IIssueExpressTicketDocument>();
@@ -2271,8 +2271,9 @@ namespace SabreWebtopTicketingService.Services
             {
                 foreach (var conj in tktconjs)
                 {
-                    //logger.LogInformation($"Sector Countr: {conj.SectorCount}");
+                    logger.LogInformation($"Sector Countr: {conj.SectorCount}");
                     int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4)));
+                    logger.LogInformation($"Conjunction Count: {noofticketsallocated.ToString()}");
                     var selectedtkt = ticketdata.FirstOrDefault(f => f.DocumentType == "TKT" && f.PassengerName.StartsWith(conj.PassengerName));
                     if (selectedtkt != null)
                     {
