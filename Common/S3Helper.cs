@@ -34,7 +34,6 @@ namespace SabreWebtopTicketingService.Common
 
                 using (var stream = getObjectResponse.ResponseStream)
                 {
-                    _logger.LogInformation($"RS: {stream}");
                     return await JsonSerializer.DeserializeAsync<T>(stream);
                 }
             }
