@@ -205,6 +205,8 @@ namespace SabreWebtopTicketingService.Models
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
                                                     SplitOnRegex(@"(ROE\d+\.\d+)\s*");
 
+                string farecalc = GetFareCalc(farecalcitems);
+
                 List<string> endos = items[i + 1].Contains("ROE") ?
                                         items[i + 1].
                                             SplitOn("\n").
@@ -218,6 +220,13 @@ namespace SabreWebtopTicketingService.Models
                                             Skip(1).
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
                                             ToList();
+
+                //remove XF and ZP from endorsements
+                if (!endos.IsNullOrEmpty())
+                {
+                    endos[0] = endos[0].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d*)").Last();
+                    endos[0] = endos[0].SplitOnRegex(@"(ZP[A-Z]{3})").Last();
+                }
 
                 IEnumerable<string> changesecs = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
                                                     items[i+1].
@@ -285,7 +294,7 @@ namespace SabreWebtopTicketingService.Models
                                                 SplitOn("LAST DAY TO PURCHASE").
                                                 Last().
                                                 Trim(),
-                        Endorsements = endos,
+                        Endorsements = endos.Where(w=> !string.IsNullOrEmpty(w)).ToList(),
                         FareCalculation = GetFareCalc(farecalcitems),
                         ROE = farecalcitems.Count() == 1? "1.0000": farecalcitems[1].Substring(3).Trim(),
                         Taxes = taxitems.
@@ -333,12 +342,12 @@ namespace SabreWebtopTicketingService.Models
             //LAX AA HNL134.96USD134.96END ZPLAX XFLAX4.5
             if (farecalcitems[2].Contains("XF"))
             {
-                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d*)\s+")[1];
+                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d*)\s*")[1];
             }
 
             if (farecalcitems[2].Contains("ZP"))
             {
-                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(ZP[A-Z]{3})\s+")[1];
+                farecalc += " " + farecalcitems[2].SplitOnRegex(@"(ZP[A-Z]{3})\s*")[1];
             }
 
             return farecalc;
