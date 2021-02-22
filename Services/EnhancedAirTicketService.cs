@@ -250,7 +250,7 @@ namespace SabreWebtopTicketingService.Services
                         };
                     }
                 }
-                else
+                else if (quotes.First().FareType == FareType.IT)
                 {
                     miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
                     {
