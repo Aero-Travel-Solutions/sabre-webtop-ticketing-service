@@ -12,8 +12,8 @@ namespace SabreWebtopTicketingService.Common
     public class S3Helper
     {
         private readonly IAmazonS3 _s3Client;
-        private readonly ILogger<S3Helper> _logger;
-        public S3Helper(IAmazonS3 s3Client, ILogger<S3Helper> logger)
+        private readonly ILogger _logger;
+        public S3Helper(IAmazonS3 s3Client, ILogger logger)
         {
             _s3Client = s3Client;
             _logger = logger;
@@ -40,7 +40,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
+                _logger.LogError(ex.Message);
                 throw;
             }            
         }
@@ -67,7 +67,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
+                _logger.LogError(ex.Message);
                 throw;
             }
         }
