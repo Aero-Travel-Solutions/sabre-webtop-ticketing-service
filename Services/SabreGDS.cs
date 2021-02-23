@@ -4340,8 +4340,7 @@ namespace SabreWebtopTicketingService.Services
                         new WebtopError()
                         {
                             code = "COMM_REC_NOT_FOUND",
-                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found." +
-                                                $" Please contact the consolidator\\ticket office for more information."
+                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found."
                         }
                     };
                     return;
