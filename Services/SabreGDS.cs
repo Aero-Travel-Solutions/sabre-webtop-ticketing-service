@@ -4505,12 +4505,6 @@ namespace SabreWebtopTicketingService.Services
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
-
-            if (rq.Quotes.All(a => !a.Errors.IsNullOrEmpty()))
-            {
-                throw new AeronologyException("COMM_REC_NOT_FOUND",
-                                                string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Select(s=> s.message).Distinct()));
-            }
         }
 
 
