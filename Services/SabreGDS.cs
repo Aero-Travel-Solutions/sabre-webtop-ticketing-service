@@ -4116,7 +4116,7 @@ namespace SabreWebtopTicketingService.Services
                                 PassengerName = q.PQSummary.Passenger.LastName + "/" + q.PQSummary.Passenger.FisrtName,
                                 PaxType = SabreSharedServices.GetPaxType(q.PQ.PaxType),
                                 NameNumber = q.PQSummary.Passenger.NameNumber,
-                                FormOfPayment = GetFOP(q.PQ.PricingCommand)
+                                FormOfPayment = GetFOP(q.PQ.PricingCommand, (q.PQ.BaseFare + q.PQ.TotalTax))
                             },
                             QuoteSectors = q.
                                             PQ.
@@ -4630,7 +4630,7 @@ namespace SabreWebtopTicketingService.Services
             });
         }
 
-        private FOP GetFOP(string pricingcommand)
+        private FOP GetFOP(string pricingcommand, decimal TotalFare)
         {
             List<StoredCreditCard> cards = CreditCardOperations.GetStoredCards(pricingcommand);
 
@@ -4640,7 +4640,8 @@ namespace SabreWebtopTicketingService.Services
                 {
                     PaymentType = PaymentType.CC,
                     CardNumber = cards.First().CreditCard.Trim().MaskNumber(),
-                    ExpiryDate = cards.First().Expiry
+                    ExpiryDate = cards.First().Expiry,
+                    CreditAmount = TotalFare
                 };
             }
 
