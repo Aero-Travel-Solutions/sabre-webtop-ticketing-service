@@ -39,6 +39,8 @@ namespace SabreWebtopTicketingService.Models
     {
         public WebtopError Error { get; set; }
         public DocumentType DocumentType{get;set;}
-        public List<int> DocumentNumber { get; set; }
+        public int DocumentNumber { get; set; }
+        public string NameNumber { get; set; }
+        public string PassengerName { get; set; }
     }
 }

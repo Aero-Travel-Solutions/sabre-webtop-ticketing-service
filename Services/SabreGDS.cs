@@ -2401,7 +2401,7 @@ namespace SabreWebtopTicketingService.Services
 
             List<int> errEMDs = errors.
                                     Where(doc => doc.DocumentType == Models.DocumentType.EMD).
-                                    SelectMany(s => s.DocumentNumber).
+                                    Select(s => s.DocumentNumber).
                                     ToList();
 
             if (!emds.IsNullOrEmpty())
@@ -2630,11 +2630,13 @@ namespace SabreWebtopTicketingService.Services
 
             //group errors by document number and type
             errors = errors.
-                        GroupBy(g => new { DocumentNumbers = g.DocumentNumber.IsNullOrEmpty() ? "" : string.Join(",", g.DocumentNumber), g.DocumentType }).
+                        GroupBy(g => new { g.DocumentNumber , g.DocumentType }).
                         Select(s => new IssueTicketError()
                         {
-                            DocumentNumber = s.Where(w => !w.DocumentNumber.IsNullOrEmpty()).SelectMany(m => m.DocumentNumber).Distinct().ToList(),
+                            DocumentNumber = s.Key.DocumentNumber,
                             DocumentType = s.Key.DocumentType,
+                            PassengerName = s.First().PassengerName,
+                            NameNumber = s.First().NameNumber,
                             Error = new WebtopError()
                             {
                                 code = "TICKETING_ERROR",
@@ -2749,18 +2751,28 @@ namespace SabreWebtopTicketingService.Services
                 issueTicketError.DocumentNumber = erroreditem.PricingQualifiers != null ?
                                                     erroreditem.PricingQualifiers.PriceQuote != null &&
                                                     erroreditem.PricingQualifiers.PriceQuote != null ?
-                                                            erroreditem.PricingQualifiers.PriceQuote.SelectMany(m => m.Record).Select(s => s.Number).Distinct().ToList() :
+                                                            erroreditem.PricingQualifiers.PriceQuote.SelectMany(m => m.Record).Select(s => s.Number).Distinct().FirstOrDefault() :
                                                     erroreditem.PricingQualifiers.NameSelect != null ?
-                                                            rq.Quotes.
-                                                            Where(w =>
-                                                                erroreditem.PricingQualifiers.NameSelect.Select(s => s.NameNumber).Contains(w.QuotePassenger.NameNumber)).
-                                                            Select(s => s.QuoteNo).
-                                                            Distinct().
-                                                                ToList() :
+                                                            rq.
+                                                                Quotes.
+                                                                FirstOrDefault(w => erroreditem.PricingQualifiers.NameSelect.Select(s => s.NameNumber).Contains(w.QuotePassenger.NameNumber))?.
+                                                                QuoteNo ?? 0 :
                                                             erroreditem.MiscQualifiers.AirExtras != null ?
-                                                                erroreditem.MiscQualifiers.AirExtras.Select(e => e.Number).Distinct().ToList() :
-                                                                new List<int>() :
-                                                            new List<int>();
+                                                                erroreditem.MiscQualifiers.AirExtras.Select(e => e.Number).Distinct().FirstOrDefault() :
+                                                                0 :
+                                                            0;
+
+                issueTicketError.PassengerName = issueTicketError.DocumentNumber == 0 ?
+                                                        "" :
+                                                        issueTicketError.DocumentType == Models.DocumentType.Quote ?
+                                                            rq.Quotes.First(f => f.QuoteNo == issueTicketError.DocumentNumber).QuotePassenger.PassengerName :
+                                                            "";
+
+                issueTicketError.NameNumber = issueTicketError.DocumentNumber == 0 ?
+                                        "" :
+                                        issueTicketError.DocumentType == Models.DocumentType.Quote ?
+                                            rq.Quotes.First(f => f.QuoteNo == issueTicketError.DocumentNumber).QuotePassenger.NameNumber :
+                                            "";
             }
 
             string[] delimiters =  {
