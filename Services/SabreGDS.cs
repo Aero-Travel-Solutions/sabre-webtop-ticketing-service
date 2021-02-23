@@ -4129,7 +4129,7 @@ namespace SabreWebtopTicketingService.Services
                                 PassengerName = q.PQSummary.Passenger.LastName + "/" + q.PQSummary.Passenger.FisrtName,
                                 PaxType = SabreSharedServices.GetPaxType(q.PQ.PaxType),
                                 NameNumber = q.PQSummary.Passenger.NameNumber,
-                                FormOfPayment = GetFOP(q.PQ.PricingCommand)
+                                FormOfPayment = GetFOP(q.PQ.PricingCommand, (q.PQ.BaseFare + q.PQ.TotalTax))
                             },
                             QuoteSectors = q.
                                             PQ.
@@ -4353,8 +4353,7 @@ namespace SabreWebtopTicketingService.Services
                         new WebtopError()
                         {
                             code = "COMM_REC_NOT_FOUND",
-                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found." +
-                                                $" Please contact the consolidator\\ticket office for more information."
+                            message = $"Commission or fee record not found."
                         }
                     };
                     return;
@@ -4488,8 +4487,7 @@ namespace SabreWebtopTicketingService.Services
                         new WebtopError()
                         {
                             code = "COMM_REC_NOT_FOUND",
-                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found." +
-                                                $" Please contact the consolidator\\ticket office for more information."
+                            message = $"Commission or fee record not found."
                         }
                     };
                     return;
@@ -4510,7 +4508,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (rq.Quotes.All(a => !a.Errors.IsNullOrEmpty()))
             {
-                throw new AeronologyException("COMMISSION_REC_NOT_FOUND",
+                throw new AeronologyException("COMM_REC_NOT_FOUND",
                                                 string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Select(s=> s.message).Distinct()));
             }
         }
@@ -4643,7 +4641,7 @@ namespace SabreWebtopTicketingService.Services
             });
         }
 
-        private FOP GetFOP(string pricingcommand)
+        private FOP GetFOP(string pricingcommand, decimal TotalFare)
         {
             List<StoredCreditCard> cards = CreditCardOperations.GetStoredCards(pricingcommand);
 
@@ -4653,7 +4651,8 @@ namespace SabreWebtopTicketingService.Services
                 {
                     PaymentType = PaymentType.CC,
                     CardNumber = cards.First().CreditCard.Trim().MaskNumber(),
-                    ExpiryDate = cards.First().Expiry
+                    ExpiryDate = cards.First().Expiry,
+                    CreditAmount = TotalFare
                 };
             }
 
