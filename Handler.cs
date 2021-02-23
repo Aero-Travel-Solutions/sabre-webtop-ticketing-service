@@ -31,7 +31,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> SearchPNR(SearchPNRRequest rq)
         {
             logger.LogInformation("*****SearchPNR invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -102,7 +102,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -110,7 +110,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> GetPublishQuote(GetQuoteRQ rq)
         {
             logger.LogInformation("*****GetPublishQuote invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -181,7 +181,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -189,7 +189,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> PriceOverride(GetQuoteRQ rq)
         {
             logger.LogInformation("*****PriceOveride invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -260,7 +260,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -268,7 +268,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> BestBuy(GetQuoteRQ rq)
         {
             logger.LogInformation("*****BestBuy invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -339,7 +339,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -347,7 +347,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> ForceFarebasis(ForceFBQuoteRQ rq)
         {
             logger.LogInformation("*****ForceFarebasis invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -418,7 +418,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -426,7 +426,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> GetHistoricalQuote(GetQuoteRQ rq)
         {
             logger.LogInformation("*****GetPastDateQuote invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -497,7 +497,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -505,7 +505,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> ManualBuildAndIssue(IssueExpressTicketRQ rq)
         {
             logger.LogInformation("*****ManualBuildIssue invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -576,7 +576,7 @@ namespace SabreWebtopTicketingService
                                             );
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -584,7 +584,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> GetPNRText(SearchPNRRequest rq)
         {
             logger.LogInformation("*****GetPNRText invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -691,7 +691,7 @@ namespace SabreWebtopTicketingService
                 }
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -699,7 +699,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> GetQuoteText(GetQuoteTextRequest rq)
         {
             logger.LogInformation("*****GetQuoteText invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -806,7 +806,7 @@ namespace SabreWebtopTicketingService
                 }
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -814,7 +814,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> ValidateCommission(ValidateCommissionRQ rq)
         {
             logger.LogInformation("*****ValidateCommission invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -954,7 +954,7 @@ namespace SabreWebtopTicketingService
                 }
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
@@ -962,7 +962,7 @@ namespace SabreWebtopTicketingService
         public async Task<LambdaResponse> CurrencyConvert(ConvertCurrencyRequest rq)
         {
             logger.LogInformation("*****CurrencyConvert invoked *****");
-            logger.LogInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
             LambdaResponse lambdaResponse = new LambdaResponse()
             {
@@ -1069,7 +1069,7 @@ namespace SabreWebtopTicketingService
                 }
             }
 
-            logger.LogInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
 
             return lambdaResponse;
         }
