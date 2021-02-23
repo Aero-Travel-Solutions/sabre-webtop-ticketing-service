@@ -4340,7 +4340,7 @@ namespace SabreWebtopTicketingService.Services
                         new WebtopError()
                         {
                             code = "COMM_REC_NOT_FOUND",
-                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found."
+                            message = $"Commission or fee record not found."
                         }
                     };
                     return;
@@ -4474,8 +4474,7 @@ namespace SabreWebtopTicketingService.Services
                         new WebtopError()
                         {
                             code = "COMM_REC_NOT_FOUND",
-                            message = $"(Context ID - {_commissionDataService.ContextID}){Environment.NewLine}Commission or fee record not found." +
-                                                $" Please contact the consolidator\\ticket office for more information."
+                            message = $"Commission or fee record not found."
                         }
                     };
                     return;
@@ -4496,7 +4495,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (rq.Quotes.All(a => !a.Errors.IsNullOrEmpty()))
             {
-                throw new AeronologyException("COMMISSION_REC_NOT_FOUND",
+                throw new AeronologyException("COMM_REC_NOT_FOUND",
                                                 string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Select(s=> s.message).Distinct()));
             }
         }
