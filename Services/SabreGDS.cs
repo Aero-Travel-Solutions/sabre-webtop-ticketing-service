@@ -3219,11 +3219,21 @@ namespace SabreWebtopTicketingService.Services
                 int index = 1;
                 foreach (var quoteSector in quote.QuoteSectors)
                 {
+                    var bag = quoteSector.
+                                    Baggageallowance.
+                                        RegexReplace(@"\s+", "").
+                                        Replace("KG", "K").
+                                        Replace("PC", "P").
+                                        Replace("NIN", "NIL").
+                                        Replace("NONIL", "NIL").
+                                        Trim().
+                                        PadLeft(3, '0');
+
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
                         string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ?
                                                         "" :
-                                                        $"*BA{quoteSector.Baggageallowance.RegexReplace(@"\s+", "").Replace("KG", "K").Replace("PC", "P").Replace("NIN", "NIL").Replace("NONIL", "NIL").Trim().PadLeft(3, '0')}";
+                                                        $"*BA{bag}";
                         string nvbnva =  GetNVANVB(quoteSector);
 
                         command2 += $"¥L{index}" +//connection indicator
@@ -4676,6 +4686,10 @@ namespace SabreWebtopTicketingService.Services
 
         private string GetTicketingQuoteKey(Quote quote, string bcode = "", bool applySupressITFlag = false)
         {
+            quote.QuotePassenger.FormOfPayment.CreditAmount = quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
+                                                                        quote.TotalFare :
+                                                                        0.00M;
+
             return JsonConvert.
                         SerializeObject
                         (
