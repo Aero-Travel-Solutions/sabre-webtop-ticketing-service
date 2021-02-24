@@ -2273,7 +2273,7 @@ namespace SabreWebtopTicketingService.Services
                 foreach (var conj in tktconjs)
                 {
                     logger.LogInformation($"Sector Countr: {conj.SectorCount}");
-                    int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4)));
+                    int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4))) -1;
                     logger.LogInformation($"Conjunction Count: {noofticketsallocated.ToString()}");
                     var selectedtkt = ticketdata.FirstOrDefault(f => f.DocumentType == "TKT" && f.PassengerName.StartsWith(conj.PassengerName));
                     if (selectedtkt != null)
