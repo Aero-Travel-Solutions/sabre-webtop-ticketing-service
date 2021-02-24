@@ -85,7 +85,7 @@ custom:
     stg: ${ssm:/stg/backoffice/config/SqsVoidQueueUrl}
     prod: ${ssm:/prod/backoffice/config/SqsVoidQueueUrl}
   webtop_service_key:
-    dev: ${ssm:/dev/sabre_webtop_service_key}
+    dev: ${ssm:/dev/sabre_webtop_service_key/secureparam~true}
     stg: ${ssm:/stg/sabre_webtop_service_key}
     prod: ${ssm:/prod/sabre_webtop_service_key}
 
