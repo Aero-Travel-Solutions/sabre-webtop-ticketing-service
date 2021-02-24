@@ -249,17 +249,18 @@ namespace SabreWebtopTicketingService.Services
             return ticketingpcc;
         }
 
-        internal async Task<List<ValidateCommissionWarning>> ValidateCommission(ValidateCommissionRQ rq, string contextid)
+        internal async Task<List<ValidateCommissionWarning>> ValidateCommission(
+            ValidateCommissionRQ rq, string contextid, User user = null, Pcc pcc = null, Agent agent = null, string tktpcc = "")
         {
             List<ValidateCommissionWarning> validateCommissionWarnings = new List<ValidateCommissionWarning>();
-            user = await session.GetSessionUser(rq.SessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID);
-            agent = await getAgentData(
-                                    rq.SessionID,
-                                    user,
-                                    rq.AgentID,
-                                    pcc.PccCode);
-            string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
+            user = user == null ? await session.GetSessionUser(rq.SessionID): user;
+            pcc = pcc == null ? await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID): pcc;
+            agent = agent == null ? await getAgentData(
+                                        rq.SessionID,
+                                        user,
+                                        rq.AgentID,
+                                        pcc.PccCode): agent;
+            string ticketingpcc = string.IsNullOrEmpty(tktpcc) ? GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode): tktpcc;
 
             var invalidquotes = rq.Quotes.Where(w => !w.BspCommissionRate.HasValue && !w.AgentCommissionRate.HasValue);
             if (!invalidquotes.IsNullOrEmpty())
@@ -1714,7 +1715,14 @@ namespace SabreWebtopTicketingService.Services
                 pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, contextID, true, true);
 
                 //check commission
-                IssueExpressTicketRS issueExpressTicketRS = await CheckCommission(request, contextID, pnr);
+                IssueExpressTicketRS issueExpressTicketRS = await CheckCommission(
+                                                                        request, 
+                                                                        contextID, 
+                                                                        pnr,
+                                                                        user,
+                                                                        pcc,
+                                                                        agent,
+                                                                        ticketingpcc);
                 if (!issueExpressTicketRS.ValidateCommissionWarnings.IsNullOrEmpty())
                 {
                     return issueExpressTicketRS;
@@ -2000,7 +2008,8 @@ namespace SabreWebtopTicketingService.Services
             return decimalformatstring;
         }
 
-        private async Task<IssueExpressTicketRS> CheckCommission(IssueExpressTicketRQ request, string contextID, PNR pnr)
+        private async Task<IssueExpressTicketRS> CheckCommission(
+            IssueExpressTicketRQ request, string contextID, PNR pnr, User user, Pcc pcc, Agent agent, string ticketingpcc)
         {
             IssueExpressTicketRS issueExpressTicketRS = new IssueExpressTicketRS()
             {
@@ -2013,7 +2022,7 @@ namespace SabreWebtopTicketingService.Services
             if (request.CheckCommission)
             {
                 List<ValidateCommissionWarning> validateCommissionWarnings = new List<ValidateCommissionWarning>();
-                validateCommissionWarnings = await ValidateCommission(
+                validateCommissionWarnings =  await ValidateCommission(
                                                         new ValidateCommissionRQ()
                                                         {
                                                             AgentID = request.AgentID,
@@ -2034,11 +2043,17 @@ namespace SabreWebtopTicketingService.Services
                                                                             Taxes = q.Taxes,
                                                                             BaseFare = q.BaseFare,
                                                                             BaseFareCurrency = q.BaseFareCurrency,
-
+                                                                            AgentCommissionRate = q.AgentCommissionRate,
+                                                                            BspCommissionRate = q.BSPCommissionRate,
+                                                                            Fee = q.Fee
                                                                         }).
                                                                         ToList()
                                                         },
-                                                        contextID);
+                                                        contextID,
+                                                        user,
+                                                        pcc,
+                                                        agent,
+                                                        ticketingpcc);
 
                 if(!validateCommissionWarnings.IsNullOrEmpty())
                 {
