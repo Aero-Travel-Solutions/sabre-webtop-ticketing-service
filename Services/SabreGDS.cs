@@ -305,8 +305,8 @@ namespace SabreWebtopTicketingService.Services
                             Warnings.
                             Add(new WebtopWarning()
                             {
-                                code = "BSP_COMM_MISSMATCH",
-                                message = $"BSP commission rate missmatch. (System:{sysbspcomm}, User: {userbspcomm}). Please verify before proceeding to ticketing."
+                                code = "BSP_COMM_MISMATCH",
+                                message = $"BSP commission rate mismatch. (System:{sysbspcomm}, User: {userbspcomm}). Please verify before proceeding to ticketing."
                             });
                     }
 
@@ -318,8 +318,8 @@ namespace SabreWebtopTicketingService.Services
                             Warnings.
                             Add(new WebtopWarning()
                             {
-                                code = "AGENT_COMM_MISSMATCH",
-                                message = $"Agent commission rate missmatch. (System:{sysagtcomm}, User: {useragtcomm}). Please verify before proceeding to ticketing."
+                                code = "AGENT_COMM_MISMATCH",
+                                message = $"Agent commission rate mismatch. (System:{sysagtcomm}, User: {useragtcomm}). Please verify before proceeding to ticketing."
                             });
                     }
 
@@ -331,8 +331,8 @@ namespace SabreWebtopTicketingService.Services
                             Warnings.
                             Add(new WebtopWarning()
                             {
-                                code = "AGENT_FEE_MISSMATCH",
-                                message = $"Agent fee missmatch. (System:{sysagtfee}, User: {useragtfee}). Please verify before proceeding to ticketing."
+                                code = "AGENT_FEE_MISMATCH",
+                                message = $"Agent fee mismatch. (System:{sysagtfee}, User: {useragtfee}). Please verify before proceeding to ticketing."
                             });
                     }
 
