@@ -461,7 +461,9 @@ namespace SabreWebtopTicketingService.Services
                                     CardNumber = payment.First().Card.MaskedCardNumber,
                                     CardType = payment.First().Card.cardType,
                                     ExpiryDate = payment.First().Card.ExpireDate,
-                                    ApprovalCode = payment.First().Card.ApprovalCode.Value
+                                    ApprovalCode = payment.First().Card.ApprovalCode == null?
+                                                        "":
+                                                        payment.First().Card.ApprovalCode.Value
                                 } :
                             throw new AeronologyException("PAYMENT_NOT_SUPPORTED", "Payment method not supported!") :
                             payment.Count() == 2 ?
@@ -471,7 +473,9 @@ namespace SabreWebtopTicketingService.Services
                                     CardNumber = payment.First(p => p.Card != null || p.type == "CC").Card.MaskedCardNumber,
                                     CardType = payment.First(p => p.Card != null || p.type == "CC").Card.cardType,
                                     ExpiryDate = payment.First(p => p.Card != null || p.type == "CC").Card.ExpireDate,
-                                    ApprovalCode = payment.First(p => p.Card != null || p.type == "CC").Card.ApprovalCode.Value
+                                    ApprovalCode = payment.First(p => p.Card != null || p.type == "CC").Card.ApprovalCode == null ?
+                                                                "":
+                                                                payment.First(p => p.Card != null || p.type == "CC").Card.ApprovalCode.Value
                                 } :
                                 throw new AeronologyException("PAYMENT_NOT_SUPPORTED", "Payment method not supported!");
         }
