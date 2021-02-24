@@ -3221,6 +3221,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     var bag = quoteSector.
                                     Baggageallowance.
+                                    ToUpper().
                                         RegexReplace(@"\s+", "").
                                         Replace("KG", "K").
                                         Replace("PC", "P").
@@ -3238,7 +3239,7 @@ namespace SabreWebtopTicketingService.Services
 
                         command2 += $"¥L{index}" +//connection indicator
                                                   //farebasis
-                                        $"-{quoteSector.FareBasis.Trim()}" +
+                                        $"-{quoteSector.FareBasis.ToUpper().Trim()}" +
                                         //NVB, NVA
                                         nvbnva +
                                         //baggage allowance
@@ -3263,7 +3264,7 @@ namespace SabreWebtopTicketingService.Services
                                     GroupBy(grp => grp.Code.Substring(0,2)).
                                     Select(s => new Tax()
                                     {
-                                        Code = s.Key,
+                                        Code = s.Key.Trim().ToUpper(),
                                         Amount = Math.Round(s.Sum(t => t.Amount), decimalformatstring.SplitOn(".").Last().ToCharArray().Count())
                                     }).
                                     ToList();
@@ -3275,7 +3276,7 @@ namespace SabreWebtopTicketingService.Services
                     //    taxes = GroupTax(taxes);
                     //}
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code.Trim().ToUpper()}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code}"));
                 }
 
                 //commission
@@ -3319,7 +3320,7 @@ namespace SabreWebtopTicketingService.Services
                     }
                 }
 
-                command2 += $"¥C{farecalc}";
+                command2 += $"¥C{farecalc.ToUpper().Trim()}";
 
 
                 //endorsements
@@ -3330,7 +3331,7 @@ namespace SabreWebtopTicketingService.Services
                     throw new AeronologyException("ENDORSEMENT_TOO_LONG", "Endorsements are too long.(max characters permited: 58)");
                 }
 
-                command2 += $"¥ED/{endos}";
+                command2 += $"¥ED/{endos.Trim().ToUpper()}";
 
                 string response2 = await _sabreCommandService.
                                                 ExecuteCommand(
