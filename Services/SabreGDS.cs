@@ -2271,7 +2271,7 @@ namespace SabreWebtopTicketingService.Services
                 foreach (var conj in tktconjs)
                 {
                     logger.LogInformation($"Sector Countr: {conj.SectorCount}");
-                    int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4)));
+                    int noofticketsallocated = Convert.ToInt32(Math.Ceiling((double)(conj.SectorCount / 4))) -1;
                     logger.LogInformation($"Conjunction Count: {noofticketsallocated.ToString()}");
                     var selectedtkt = ticketdata.FirstOrDefault(f => f.DocumentType == "TKT" && f.PassengerName.StartsWith(conj.PassengerName));
                     if (selectedtkt != null)
@@ -3219,13 +3219,21 @@ namespace SabreWebtopTicketingService.Services
                 {
                     var bag = quoteSector.
                                     Baggageallowance.
+                                    ToUpper().
                                         RegexReplace(@"\s+", "").
                                         Replace("KG", "K").
                                         Replace("PC", "P").
                                         Replace("NIN", "NIL").
                                         Replace("NONIL", "NIL").
+                                        Replace("NON", "NIL").
+                                        Replace("NONE", "NIL").
                                         Trim().
                                         PadLeft(3, '0');
+
+                    if(!string.IsNullOrEmpty(bag.LastMatch(@"\d+", "")) && int.Parse(bag.LastMatch(@"\d+").Replace(".", "")) == 0)
+                    {
+                        bag = "NIL";
+                    }
 
                     if (quoteSector.DepartureCityCode != "ARUNK")
                     {
@@ -3236,7 +3244,7 @@ namespace SabreWebtopTicketingService.Services
 
                         command2 += $"¥L{index}" +//connection indicator
                                                   //farebasis
-                                        $"-{quoteSector.FareBasis.Trim()}" +
+                                        $"-{quoteSector.FareBasis.ToUpper().Trim()}" +
                                         //NVB, NVA
                                         nvbnva +
                                         //baggage allowance
@@ -3261,7 +3269,7 @@ namespace SabreWebtopTicketingService.Services
                                     GroupBy(grp => grp.Code.Substring(0,2)).
                                     Select(s => new Tax()
                                     {
-                                        Code = s.Key,
+                                        Code = s.Key.Trim().ToUpper(),
                                         Amount = Math.Round(s.Sum(t => t.Amount), decimalformatstring.SplitOn(".").Last().ToCharArray().Count())
                                     }).
                                     ToList();
@@ -3273,7 +3281,7 @@ namespace SabreWebtopTicketingService.Services
                     //    taxes = GroupTax(taxes);
                     //}
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code.Trim().ToUpper()}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code}"));
                 }
 
                 //commission
@@ -3317,7 +3325,7 @@ namespace SabreWebtopTicketingService.Services
                     }
                 }
 
-                command2 += $"¥C{farecalc}";
+                command2 += $"¥C{farecalc.ToUpper().Trim()}";
 
 
                 //endorsements
@@ -3328,7 +3336,7 @@ namespace SabreWebtopTicketingService.Services
                     throw new AeronologyException("ENDORSEMENT_TOO_LONG", "Endorsements are too long.(max characters permited: 58)");
                 }
 
-                command2 += $"¥ED/{endos}";
+                command2 += $"¥ED/{endos.Trim().ToUpper()}";
 
                 string response2 = await _sabreCommandService.
                                                 ExecuteCommand(
@@ -4513,6 +4521,13 @@ namespace SabreWebtopTicketingService.Services
                 quote.Fee = fee;
                 quote.TourCode = string.IsNullOrEmpty(quote.TourCode) ? calculateCommissionResponse.PlatingCarrierTourCode : quote.TourCode;
             });
+
+
+            if (rq.Quotes.All(a => !a.Errors.IsNullOrEmpty()))
+            {
+                throw new AeronologyException("COMM_REC_NOT_FOUND",
+                                                string.Join(",", rq.Quotes.SelectMany(q => q.Errors).Select(s => s.message).Distinct()));
+            }
         }
 
 
