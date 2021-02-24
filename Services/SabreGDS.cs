@@ -287,7 +287,7 @@ namespace SabreWebtopTicketingService.Services
             GetFuelSurcharge(rq.Quotes);
 
             //calculate commission
-            ValidateCommission(rq, ticketingpcc, rq.SessionID, agent);
+            ValidateCommission(rq, ticketingpcc, rq.SessionID, agent, pcc);
 
             //check for any missmatch in commission
             rq.
@@ -4404,7 +4404,7 @@ namespace SabreWebtopTicketingService.Services
             });
         }
 
-        private void ValidateCommission(ValidateCommissionRQ rq, string ticketingpcc, string sessionID, Agent agent)
+        private void ValidateCommission(ValidateCommissionRQ rq, string ticketingpcc, string sessionID, Agent agent, Pcc pcc)
         {
             var calculateCommissionTasks = new List<Task>();
             CancellationToken ct = new CancellationToken();
