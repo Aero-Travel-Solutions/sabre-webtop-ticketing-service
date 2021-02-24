@@ -86,8 +86,8 @@ custom:
     prod: ${ssm:/prod/backoffice/config/SqsVoidQueueUrl}
   webtop_service_key:
     dev: ${ssm:/dev/sabre_webtop_service_key~true}
-    stg: ${ssm:/stg/sabre_webtop_service_key}
-    prod: ${ssm:/prod/sabre_webtop_service_key}
+    stg: ${ssm:/stg/sabre_webtop_service_key~true}
+    prod: ${ssm:/prod/sabre_webtop_service_key~true}
 
 functions:
   SearchPNR:
