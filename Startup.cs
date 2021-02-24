@@ -16,6 +16,7 @@ using Amazon.S3;
 using Amazon.SQS;
 using SabreWebtopTicketingService.Models;
 using StackExchange.Redis;
+using Amazon.KeyManagementService;
 
 namespace SabreWebtopTicketingService
 {
@@ -80,7 +81,7 @@ namespace SabreWebtopTicketingService
             //AWS Configuration
             services.AddDefaultAWSOptions(Configuration.GetAWSOptions());
             services.AddAWSService<IAmazonDynamoDB>();
-            services.AddLogging();
+            services.AddAWSService<IAmazonKeyManagementService>();
 
             services.AddScoped<SabreGDS>();
             services.AddScoped<SessionCreateService>();
