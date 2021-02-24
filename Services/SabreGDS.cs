@@ -56,6 +56,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly INotificationHelper _notificationHelper;
         private readonly ICacheDataSource _cacheDataSource;
         private readonly S3Helper _s3Helper;
+        private readonly IStoredCardDataSource _storedCardDataSource;
 
         public User user { get; set; }
         public Pcc pcc { get; set; }
@@ -92,7 +93,8 @@ namespace SabreWebtopTicketingService.Services
             IOrdersTransactionDataSource ordersTransactionDataSource,
             GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy,
             ICacheDataSource cacheDataSource,
-            S3Helper s3Helper)
+            S3Helper s3Helper,
+            IStoredCardDataSource storedCardDataSource)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -126,6 +128,7 @@ namespace SabreWebtopTicketingService.Services
             _cacheDataSource = cacheDataSource;
             _s3Helper = s3Helper;
             this.session = session;
+            _storedCardDataSource = storedCardDataSource;
         }
 
         private async Task<Agent> getAgentData(string sessionid, User user, string agentid, string webservicepcc)
@@ -419,9 +422,7 @@ namespace SabreWebtopTicketingService.Services
                     var storedCreditCard = GetStoredCards(response);
 
                     //Encrypt card number
-                    storedCreditCard.ForEach(c => c.CreditCard = dataProtector.Protect(c.CreditCard));
-
-                    await _cacheDataSource.Set(cardAccessKey, storedCreditCard);
+                    await _storedCardDataSource.Save(cardAccessKey, storedCreditCard);
                 }
             }
 
@@ -596,10 +597,9 @@ namespace SabreWebtopTicketingService.Services
                     if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                     {
                         //Try get stored cards
-                        storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
+                        storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
                         if (!storedCreditCards.IsNullOrEmpty())
                         {
-                            storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
                             GetStoredCardDetails(request.SelectedPassengers, null, storedCreditCards);
                         }
                     }
@@ -725,10 +725,9 @@ namespace SabreWebtopTicketingService.Services
                                 q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
+                    storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
-                        storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
                         GetStoredCardDetails(request.SelectedPassengers, null, storedCreditCards);
                     }
                 }
@@ -906,10 +905,9 @@ namespace SabreWebtopTicketingService.Services
                 if (request.SelectedPassengers.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
                 {
                     //Try get stored cards
-                    storedCreditCards = await _cacheDataSource.Get<List<StoredCreditCard>>(cardAccessKey);
+                    storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
                     if (!storedCreditCards.IsNullOrEmpty())
                     {
-                        storedCreditCards.Where(w => w.CreditCard != null).ToList().ForEach(cc => cc.CreditCard = dataProtector.Unprotect(cc.CreditCard));
                         GetStoredCardDetails(request.SelectedPassengers, null, storedCreditCards);
                     }
                 }
