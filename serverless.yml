@@ -13,6 +13,7 @@ provider:
     BACKOFFICE_URL: ${self:custom.backoffice_url.${self:provider.stage}}
     BACKOFFICE_SQS_URL: ${self:custom.backoffice_sqs_url.${self:provider.stage}}
     BACKOFFICE_VOID_SQS_URL: ${self:custom.backoffice_void_sqs_url.${self:provider.stage}}
+    WEBTOP_SERVICE_KEY: ${self:custom.webtop_service_key.${self:provider.stage}}
     ENVIRONMENT: ${self:provider.stage}
   tracing:
     lambda: true
@@ -83,6 +84,10 @@ custom:
     dev: ${ssm:/dev/backoffice/config/SqsVoidQueueUrl}
     stg: ${ssm:/stg/backoffice/config/SqsVoidQueueUrl}
     prod: ${ssm:/prod/backoffice/config/SqsVoidQueueUrl}
+  webtop_service_key:
+    dev: ${ssm:/dev/sabre_webtop_service_key}
+    stg: ${ssm:/stg/sabre_webtop_service_key}
+    prod: ${ssm:/prod/sabre_webtop_service_key}
 
 functions:
   SearchPNR:

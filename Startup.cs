@@ -114,12 +114,14 @@ namespace SabreWebtopTicketingService
             services.AddScoped<IMerchantDataSource, MerchantDataSource>();
             services.AddScoped<IBCodeDataSource, BCodeDataSource>();
             services.AddScoped<IDbCache, DbCache>();
+            services.AddScoped<IStoredCardDataSource, StoredCardDataSource>();
 
             services.AddSingleton<ISessionManagementBackgroundTaskQueue, SessionManagementBackgroundTaskQueue>();
             services.AddSingleton<ICacheDataSource, RedisClient>();
             services.AddSingleton<ILogger, Logger>();
             services.AddSingleton<ExpiredTokenRetryPolicy>();
             services.AddSingleton<GetOrderSquenceRetryPolicy>();
+            services.AddSingleton<IKMSHelper, KMSHelper>();
 
             return services.BuildServiceProvider();
         }
