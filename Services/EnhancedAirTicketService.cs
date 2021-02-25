@@ -182,6 +182,8 @@ namespace SabreWebtopTicketingService.Services
                     endosement = bcode.Trim().StartsWith("INV") ? bcode.Trim().Substring(3) : bcode;
                 }
 
+                endosement = endosement.Trim();
+
                 int endosementength = enableextendedendo ? 
                                             endosement.Length > 990 ? 990 : endosement.Length : 
                                             endosement.Length > 58 ? 58 : endosement.Length;
