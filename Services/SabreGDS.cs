@@ -1377,7 +1377,7 @@ namespace SabreWebtopTicketingService.Services
                         ToList();
         }
 
-                private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, IEnumerable<StoredCreditCard> storedCreditCards = null)
+        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, IEnumerable<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
 

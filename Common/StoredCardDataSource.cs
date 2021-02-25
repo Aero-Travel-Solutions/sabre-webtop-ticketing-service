@@ -35,10 +35,17 @@ namespace SabreWebtopTicketingService.Common
         {
             try
             {
+                _logger.LogMaskInformation("Inside StoredCardDataSource => Get");
+                _logger.LogMaskInformation($"Inside StoredCardDataSource => {key}");
+
                 var storedCardsFromCache = await GetAsync(key, "cc_info");
 
+
                 if (string.IsNullOrEmpty(storedCardsFromCache))
+                {
+                    _logger.LogMaskInformation("Key not found in database");
                     return default;
+                }
 
                 var storedCards = JsonSerializer.Deserialize<List<StoredCreditCard>>(storedCardsFromCache);
 
@@ -52,7 +59,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex);
+                _logger.LogError($"StoredCardDataSource => Get Error: {ex}");
                 return default;
             }
         }
@@ -70,7 +77,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex);
+                _logger.LogError($"StoredCardDataSource => Save Error: {ex}");
                 throw;
             }
         }
@@ -81,6 +88,8 @@ namespace SabreWebtopTicketingService.Common
 
             if (item is null)
             {
+                _logger.LogMaskInformation("New item insert.");
+
                 item = new Document
                 {
                     ["cache_key"] = key,
@@ -92,6 +101,7 @@ namespace SabreWebtopTicketingService.Common
             }
             else
             {
+                _logger.LogMaskInformation("Item found on DB.");
                 item["ttl"] = DateTimeOffset.Now.AddMinutes(expirationInMins).ToUnixTimeSeconds();
                 item[attributeName] = JsonSerializer.Serialize(val);
 
@@ -104,6 +114,7 @@ namespace SabreWebtopTicketingService.Common
             var doc = await table.GetItemAsync(key);
             if (doc == null)
             {
+                _logger.LogError("GetAsync => No item found on DB");
                 return default;
             }
             return doc[attributeName];
