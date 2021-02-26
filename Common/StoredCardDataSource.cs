@@ -73,7 +73,7 @@ namespace SabreWebtopTicketingService.Common
                     card.CreditCard = await _kMSHelper.Encrypt(card.CreditCard);
                 }
 
-                await InsertOrUpdateAsync(key, "cc_info", JsonSerializer.Serialize(storedCardNumbers), 15);
+                await InsertOrUpdateAsync(key, "cc_info", JsonSerializer.Serialize(storedCardNumbers));
             }
             catch(Exception ex)
             {
@@ -82,7 +82,7 @@ namespace SabreWebtopTicketingService.Common
             }
         }
 
-        private async Task InsertOrUpdateAsync(string key, string attributeName, string val, double expirationInMins = 30)
+        private async Task InsertOrUpdateAsync(string key, string attributeName, string val, double expirationInMins = 1440) //Expired in one day
         {
             var item = await table.GetItemAsync(key);
 
