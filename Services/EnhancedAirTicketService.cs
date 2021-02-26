@@ -54,6 +54,8 @@ namespace SabreWebtopTicketingService.Services
                                                         quotegrp.Select(s => s.QuotePassenger.FormOfPayment).ToList(),
                                                         decimalformatstring,
                                                         quotegrp.Sum(s => s.TotalFare),
+                                                        quotegrp.First().PriceType,
+                                                        quotegrp.First().CreditCardFee,
                                                         bcode),
                                     MiscQualifiers = GetMiscQualifiers(
                                                             quotegrp.ToList(),
@@ -89,8 +91,7 @@ namespace SabreWebtopTicketingService.Services
                                 FOP_Qualifiers = getFormOfPayment(
                                                     emdgrp.Select(s => s.FormOfPayment).Distinct().ToList(),
                                                     decimalformatstring,
-                                                    emdgrp.Sum(s => s.Total),
-                                                    ""),
+                                                    emdgrp.Sum(s => s.Total)),
                                 MiscQualifiers = GetMiscQualifiers(
                                                         null, 
                                                         emdgrp.ToList(),
@@ -333,7 +334,7 @@ namespace SabreWebtopTicketingService.Services
             return pricinginstructions;
         }
 
-        private static AirTicketRQTicketingFOP_Qualifiers getFormOfPayment(List<FOP> fops, string decimalformatstring, decimal total = 0M, string bcode = "")
+        private static AirTicketRQTicketingFOP_Qualifiers getFormOfPayment(List<FOP> fops, string decimalformatstring, decimal total = 0M, PriceType pricetype = PriceType.Published, decimal ccfee = 0.00M, string bcode = "")
         {
             AirTicketRQTicketingFOP_Qualifiers res = new AirTicketRQTicketingFOP_Qualifiers();
 
@@ -421,7 +422,9 @@ namespace SabreWebtopTicketingService.Services
                                                             First().
                                                             CardNumber.
                                                             ToString()),
-                                                //ManualOBFee = 
+                                                ManualOBFee = pricetype == PriceType.Manual ?
+                                                                ccfee.ToString(decimalformatstring) :
+                                                                ""
                                             }
                                         }
                                     },
