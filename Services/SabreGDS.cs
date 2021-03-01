@@ -1640,7 +1640,6 @@ namespace SabreWebtopTicketingService.Services
 
         public async Task<IssueExpressTicketRS> IssueExpressTicket(IssueExpressTicketRQ request, string contextID)
         {
-
             SabreSession sabreSession = null;
             string statefultoken = "";
             PNR pnr = null;
@@ -1693,6 +1692,16 @@ namespace SabreWebtopTicketingService.Services
                 if (string.IsNullOrEmpty(ticketingpcc))
                 {
                     throw new ExpiredSessionException(request.SessionID, "INVALID_TICKETING_PCC", "Invalid ticketing pcc.");
+                }
+
+                //credit amount check
+                var novalquotes = request.Quotes.Where(w => w.TotalFare == 0.00M);
+                var novalemd = request.EMDs.Where(w => w.Total == 0.00M);
+
+                if((!novalquotes.IsNullOrEmpty() && novalquotes.Any(a=> a.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && a.QuotePassenger.FormOfPayment.CreditAmount > 0.00M))||
+                   (!novalemd.IsNullOrEmpty() && novalemd.Any(a => a.FormOfPayment.PaymentType == PaymentType.CC && a.FormOfPayment.CreditAmount > 0.00M)))
+                {
+                    throw new AeronologyException("NO_CREDIT_AMOUNT_ALLOWED", "Credit amount invalid.");
                 }
 
                 agentpcc = (await getagentpccs(user?.AgentId, pcc.PccCode, request.SessionID)).FirstOrDefault();
