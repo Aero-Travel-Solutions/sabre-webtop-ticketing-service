@@ -35,15 +35,14 @@ namespace SabreWebtopTicketingService.Common
         {
             try
             {
-                _logger.LogMaskInformation("Inside StoredCardDataSource => Get");
-                _logger.LogMaskInformation($"Inside StoredCardDataSource => {key}");
+                _logger.LogMaskInformation($"Inside StoredCardDataSource/Get => {key}");
 
                 var storedCardsFromCache = await GetAsync(key, "cc_info");
 
 
                 if (string.IsNullOrEmpty(storedCardsFromCache))
                 {
-                    _logger.LogMaskInformation("Key not found in database");
+                    _logger.LogMaskInformation($"StoredCardDataSource/Get => Key {key} not found in database");
                     return default;
                 }
 
@@ -59,7 +58,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch(Exception ex)
             {
-                _logger.LogError($"StoredCardDataSource => Get Error: {ex}");
+                _logger.LogError($"StoredCardDataSource/Get => {ex}");
                 return default;
             }
         }
@@ -77,7 +76,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch(Exception ex)
             {
-                _logger.LogError($"StoredCardDataSource => Save Error: {ex}");
+                _logger.LogError($"StoredCardDataSource/Save => {ex}");
                 throw;
             }
         }
@@ -88,7 +87,7 @@ namespace SabreWebtopTicketingService.Common
 
             if (item is null)
             {
-                _logger.LogMaskInformation($"New item {key} insert.");
+                _logger.LogMaskInformation($"StoredCardDataSource/InsertOrUpdateAsync => New item {key} insert.");
 
                 item = new Document
                 {
@@ -101,7 +100,7 @@ namespace SabreWebtopTicketingService.Common
             }
             else
             {
-                _logger.LogMaskInformation("Item found on DB.");
+                _logger.LogMaskInformation($"StoredCardDataSource/InsertOrUpdateAsync => Item {key} found on DB.");
                 item["ttl"] = DateTimeOffset.Now.AddMinutes(expirationInMins).ToUnixTimeSeconds();
                 item[attributeName] = JsonSerializer.Serialize(val);
 
@@ -114,7 +113,7 @@ namespace SabreWebtopTicketingService.Common
             var doc = await table.GetItemAsync(key);
             if (doc == null)
             {
-                _logger.LogError("GetAsync => No item found on DB");
+                _logger.LogError($"StoredCardDataSource/GetAsync=> No item {key} found on DB");
                 return default;
             }
             return doc[attributeName];
