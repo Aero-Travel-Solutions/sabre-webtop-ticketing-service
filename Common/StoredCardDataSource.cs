@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace SabreWebtopTicketingService.Common
 {
@@ -46,7 +47,8 @@ namespace SabreWebtopTicketingService.Common
                     return default;
                 }
 
-                var storedCards = JsonSerializer.Deserialize<List<StoredCreditCard>>(storedCardsFromCache);
+
+                var storedCards = JsonSerializer.Deserialize<List<StoredCreditCard>>(storedCardsFromCache.DecodeBase64());
 
                 //Decrypt
                 foreach(var card in storedCards)
@@ -72,7 +74,7 @@ namespace SabreWebtopTicketingService.Common
                     card.CreditCard = await _kMSHelper.Encrypt(card.CreditCard);
                 }
 
-                await InsertOrUpdateAsync(key, "cc_info", JsonSerializer.Serialize(storedCardNumbers));
+                await InsertOrUpdateAsync(key, "cc_info", JsonSerializer.Serialize(storedCardNumbers).EncodeBase64());
             }
             catch(Exception ex)
             {
