@@ -1869,18 +1869,27 @@ namespace SabreWebtopTicketingService.Services
                     enableextendedendo = resp.Contains("EXPANDED ENDORSEMENT - ON");
                 }
 
+                List<issueticketresponse> response = new List<issueticketresponse>();
+                //var firstquote = request.Quotes.First();
+
+                //if (firstquote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC &&
+                //    firstquote.PriceType == Models.PriceType.Manual)
+                //{
+                //    response = await IssueDocumentUsingCryptic(statefultoken, request, pcc, token, ticketingpcc, issueticketresponses, ticketingprinter, printerbypass, bcode, enableextendedendo, decimalformatstring);
+                //}
+
                 //issue ticket
-                List<issueticketresponse> response = await enhancedAirTicketService.
-                                                                IssueTicket(
-                                                                    request,
-                                                                    pcc.PccCode,
-                                                                    token,
-                                                                    ticketingpcc,
-                                                                    ticketingprinter,
-                                                                    printerbypass,
-                                                                    bcode,
-                                                                    enableextendedendo,
-                                                                    decimalformatstring);
+                response = await enhancedAirTicketService.
+                                            IssueTicket(
+                                                request,
+                                                pcc.PccCode,
+                                                token,
+                                                ticketingpcc,
+                                                ticketingprinter,
+                                                printerbypass,
+                                                bcode,
+                                                enableextendedendo,
+                                                decimalformatstring);
 
                 var ticketData = await ParseSabreTicketData(response, request, statefultoken, pcc, ticketingpcc, pnr, bcode, token, user);
 
@@ -2001,6 +2010,39 @@ namespace SabreWebtopTicketingService.Services
                     await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
                 }
             }
+        }
+
+        private async Task<List<issueticketresponse>> IssueDocumentUsingCryptic(string statefultoken, IssueExpressTicketRQ request, Pcc pcc, Token token, string ticketingpcc, object issueticketresponses, string ticketingprinter, string printerbypass, string bcode, bool enableextendedendo, string decimalformatstring)
+        {
+            List<issueticketresponse> issuetktresp = new List<issueticketresponse>();
+
+            //Assign printer
+            await _sabreCommandService.
+                        ExecuteCommand(
+                            statefultoken,
+                            pcc,
+                            $"W*{printerbypass}",
+                            ticketingpcc);
+
+            await _sabreCommandService.
+                        ExecuteCommand(
+                            statefultoken,
+                            pcc,
+                            $"PTR/{ticketingprinter}",
+                            ticketingpcc);
+
+            //Issue Tickets
+            foreach (var quote in request.Quotes)
+            {
+                string command = "";
+                
+            }
+
+            //Issue EMDs
+
+            //End Transaction
+
+            return issuetktresp;
         }
 
         private async Task<string> GetCurrencyFormatString(Agent agent)
@@ -3176,7 +3218,9 @@ namespace SabreWebtopTicketingService.Services
                                     grp.TotalTax, 
                                     grp.QuotePassenger.FormOfPayment.PaymentType,
                                     grp.QuotePassenger.FormOfPayment.CardNumber,
-                                    grp.QuotePassenger.FormOfPayment.CreditAmount
+                                    grp.QuotePassenger.FormOfPayment.CreditAmount,
+                                    Endorsements = string.Join("", grp.Endorsements),
+                                    grp.TourCode
                                 });
 
             foreach (var quotegrp in quotegroups)
