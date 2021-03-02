@@ -358,7 +358,8 @@ namespace SabreWebtopTicketingService.Services
                     //Single CC
                     if (fops.All(a => a.CreditAmount == 0M) ||
                         total == 0M ||
-                        total == fops.Sum(s => s.CreditAmount))
+                        total == fops.Sum(s => s.CreditAmount)||
+                        pricetype != PriceType.Manual)
                     {
                         //Full credit on one card
                         return new AirTicketRQTicketingFOP_Qualifiers()
@@ -394,7 +395,7 @@ namespace SabreWebtopTicketingService.Services
                     else
                     {
                         //Part cash part credit
-                        decimal cashamount = total - fops.Sum(s => s.CreditAmount);
+                        decimal cashamount = pricetype == PriceType.Manual ? 0.01M : (total - fops.Sum(s => s.CreditAmount));
                         return new AirTicketRQTicketingFOP_Qualifiers()
                         {
                             BSP_Ticketing = new AirTicketRQTicketingFOP_QualifiersBSP_Ticketing()

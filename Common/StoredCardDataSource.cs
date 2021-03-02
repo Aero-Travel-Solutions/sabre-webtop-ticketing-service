@@ -88,7 +88,7 @@ namespace SabreWebtopTicketingService.Common
 
             if (item is null)
             {
-                _logger.LogMaskInformation("New item insert.");
+                _logger.LogMaskInformation($"New item {key} insert.");
 
                 item = new Document
                 {
