@@ -351,8 +351,8 @@ namespace SabreWebtopTicketingService.Services
 
         public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
         {
-            var pnrAccessKey = $"{ticketingpcc}-{locator}-pnr".EncodeBase64();
-            var cardAccessKey = $"{ticketingpcc}-{locator}-card".EncodeBase64();
+            var pnrAccessKey = $"{locator}-pnr".EncodeBase64();
+            var cardAccessKey = $"{locator}-card".EncodeBase64();
 
             //get reservation
             GetReservationRS response = await _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc);
@@ -418,6 +418,7 @@ namespace SabreWebtopTicketingService.Services
                 //Save PNR in cache
                 await _cacheDataSource.Set(pnrAccessKey, pnr);
 
+                //Save stored credit cards
                 if (getStoredCards)
                 {
                     var storedCreditCard = GetStoredCards(response);
@@ -573,7 +574,7 @@ namespace SabreWebtopTicketingService.Services
 
                 List<StoredCreditCard> storedCreditCards = null;
                 string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
-                var pnrAccessKey = $"{ticketingpcc}-{request.Locator}-pnr".EncodeBase64();
+                var pnrAccessKey = $"{request.Locator}-pnr".EncodeBase64();
 
                 //Obtain session (if found from cache, else directly from sabre)
                 token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
@@ -581,7 +582,7 @@ namespace SabreWebtopTicketingService.Services
                 //Check to see if the session is from cache and usable
                 if (token.Stored && !token.Expired)
                 {
-                    var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
+                    var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
 
                     //Try get PNR in cache               
                     pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
@@ -705,7 +706,7 @@ namespace SabreWebtopTicketingService.Services
 
             List<StoredCreditCard> storedCreditCards = null;
             string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
-            var pnrAccessKey = $"{ticketingpcc}-{request.Locator}-pnr".EncodeBase64();
+            var pnrAccessKey = $"{request.Locator}-pnr".EncodeBase64();
 
             //Obtain session (if found from cache, else directly from sabre)
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
@@ -713,7 +714,7 @@ namespace SabreWebtopTicketingService.Services
             //Check to see if the session is from cache and usable
             if (token.Stored && !token.Expired)
             {
-                var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
+                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
@@ -890,7 +891,7 @@ namespace SabreWebtopTicketingService.Services
 
             List<StoredCreditCard> storedCreditCards = null;
             string ticketingpcc = GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode);
-            var pnrAccessKey = $"{ticketingpcc}-{request.Locator}-pnr".EncodeBase64();
+            var pnrAccessKey = $"{request.Locator}-pnr".EncodeBase64();
 
             //Obtain session (if found from cache, else directly from sabre)
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
@@ -898,7 +899,7 @@ namespace SabreWebtopTicketingService.Services
             //Check to see if the session is from cache and usable
             if (token.Stored && !token.Expired)
             {
-                var cardAccessKey = $"{ticketingpcc}-{request.Locator}-card".EncodeBase64();
+                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
 
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
