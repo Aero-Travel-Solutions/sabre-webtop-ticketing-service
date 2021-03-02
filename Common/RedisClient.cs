@@ -50,7 +50,7 @@ namespace SabreWebtopTicketingService.Common
 
         public async Task Set<T>(string key, T value)
         {
-            Console.WriteLine($"### Aeronology.DTO.Models.RedisClient.Set('{key}') ###");
+            Console.WriteLine($"### REDIS Set('{key}') ###");
 
             try
             {
@@ -65,7 +65,7 @@ namespace SabreWebtopTicketingService.Common
 
         public async Task Delete(string key)
         {
-            _logger.LogInformation($"### Aeronology.DTO.Models.RedisClient.Set('{key}') ###");
+            _logger.LogInformation($"### REDIS Delete('{key}') ###");
 
             try
             {
@@ -80,7 +80,7 @@ namespace SabreWebtopTicketingService.Common
 
         public async Task ListRightPushAsync<T>(string key, T value)
         {
-            _logger.LogInformation($"### Aeronology.DTO.Models.RedisClient.RightPushAsync('{key}') ###");
+            _logger.LogInformation($"### REDIS ListRightPushAsync('{key}') ###");
 
             try
             {
@@ -95,7 +95,7 @@ namespace SabreWebtopTicketingService.Common
 
         public async Task<long> ListLengthAsync(string key)
         {
-            _logger.LogInformation($"### Aeronology.DTO.Models.RedisClient.ListLengthAsync('{key}') ###");
+            _logger.LogInformation($"### ListLengthAsync('{key}') ###");
 
             try
             {
@@ -103,14 +103,14 @@ namespace SabreWebtopTicketingService.Common
             }
             catch (Exception ex)
             {
-                _logger.LogError($"### Aeronology.DTO.Models.RedisClient.ListLengthAsync('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
+                _logger.LogError($"### ListLengthAsync('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
                 return default;
             }
         }
 
         public async Task<List<T>> ListRangeAsync<T>(string key)
         {
-            _logger.LogInformation($"### Aeronology.DTO.Models.RedisClient.ListRangeAsync('{key}') ###");
+            _logger.LogInformation($"### ListRangeAsync('{key}') ###");
 
             try
             {
@@ -128,14 +128,14 @@ namespace SabreWebtopTicketingService.Common
             }
             catch (Exception ex)
             {
-                _logger.LogError($"### Aeronology.DTO.Models.RedisClient.ListRangeAsync('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
+                _logger.LogError($"### ListRangeAsync('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
                 return default;
             }
         }
 
         public async Task ListRemoveAtAsync(string key, int index)
         {
-            _logger.LogInformation($"### Aeronology.DTO.Models.RedisClient.ListRemoveAsyn('{key}') ###");
+            _logger.LogInformation($"### ListRemoveAtAsync('{key}') ###");
 
             try
             {
@@ -148,7 +148,7 @@ namespace SabreWebtopTicketingService.Common
             }
             catch (Exception ex)
             {
-                _logger.LogError($"### Aeronology.DTO.Models.RedisClient.ListRemoveAsyn('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
+                _logger.LogError($"### ListRemoveAtAsync('{key}') ### => ERROR => {ex.Message} => ${ex.StackTrace}");
             }
         }
 
