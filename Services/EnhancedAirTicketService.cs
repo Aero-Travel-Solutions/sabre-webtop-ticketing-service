@@ -356,9 +356,9 @@ namespace SabreWebtopTicketingService.Services
                 if (fops.All(a => a.CardNumber == fops.First().CardNumber))
                 {
                     //Single CC
-                    if (fops.All(a => a.CreditAmount == 0M) ||
+                    if ((fops.All(a => a.CreditAmount == 0M) ||
                         total == 0M ||
-                        total == fops.Sum(s => s.CreditAmount)||
+                        total == fops.Sum(s => s.CreditAmount)) &&
                         pricetype != PriceType.Manual)
                     {
                         //Full credit on one card
