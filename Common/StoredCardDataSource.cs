@@ -48,7 +48,7 @@ namespace SabreWebtopTicketingService.Common
                 }
 
 
-                var storedCards = JsonSerializer.Deserialize<List<StoredCreditCard>>(storedCardsFromCache.DecodeBase64());
+                var storedCards = JsonSerializer.Deserialize<List<StoredCreditCard>>(storedCardsFromCache.Trim('"').DecodeBase64());
 
                 //Decrypt
                 foreach(var card in storedCards)
