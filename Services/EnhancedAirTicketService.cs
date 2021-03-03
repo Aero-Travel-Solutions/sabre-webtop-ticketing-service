@@ -359,7 +359,7 @@ namespace SabreWebtopTicketingService.Services
                     if ((fops.All(a => a.CreditAmount == 0M) ||
                         total == 0M ||
                         total == fops.Sum(s => s.CreditAmount)) &&
-                        pricetype != PriceType.Manual)
+                        (pricetype != PriceType.Manual || ccfee == 0.00M))
                     {
                         //Full credit on one card
                         return new AirTicketRQTicketingFOP_Qualifiers()
