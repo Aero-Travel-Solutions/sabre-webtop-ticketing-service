@@ -648,7 +648,7 @@ namespace SabreWebtopTicketingService.Services
                 List<Quote> quotes = new List<Quote>();
 
                 //workout plating carrier
-                string platingcarrier = GetManualPlatingCarrier(pnr, request);
+                string platingcarrier = request.PlatingCarrier;
                 logger.LogInformation($"Plating carrier {platingcarrier}.");
 
                 //Generate bestbuy command
