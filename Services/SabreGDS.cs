@@ -1823,7 +1823,7 @@ namespace SabreWebtopTicketingService.Services
                 if (!pendingquotes.IsNullOrEmpty())
                 {
                     //Quoting
-                    await QuotingForTickting(pcc, request, statefultoken, pendingquotes, pnr, ticketingpcc, contextID);
+                    await QuotingForTickting(pcc, request, statefultoken, pendingquotes, pnr, ticketingpcc, contextID, agent);
                 }
 
                 //adding secure flight data for passengers if required - US itineraries
@@ -2994,7 +2994,7 @@ namespace SabreWebtopTicketingService.Services
             return agentpcc.PccList.Select(s => s.PccCode).ToList();
         }
 
-        private async Task QuotingForTickting(Pcc pcc, IssueExpressTicketRQ request, string statefultoken, IEnumerable<IssueExpressTicketQuote> pendingquotes, PNR pnr, string ticketingpcc, string contextID)
+        private async Task QuotingForTickting(Pcc pcc, IssueExpressTicketRQ request, string statefultoken, IEnumerable<IssueExpressTicketQuote> pendingquotes, PNR pnr, string ticketingpcc, string contextID, Agent agent)
         {
             List<Quote> quotes = new List<Quote>();
             List<IssueExpressTicketQuote> newissueticketquotes = new List<IssueExpressTicketQuote>();
