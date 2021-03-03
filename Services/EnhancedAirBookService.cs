@@ -1195,6 +1195,8 @@ namespace SabreWebtopTicketingService.Services
                     ArrivalCityCode = isARUNK ? "" : validpqs[index].Departure.ArrivalAirportCode,
                     DepartureDate = isARUNK ? "" : pnr.Sectors.First(f => f.SectorNo == s.SectorNo).DepartureDate,
                     FareBasis = isARUNK ? "" : validpqs[index].FareBasis.Code,
+                    //NVA = isARUNK ? "" : validpqs[index].not,
+                    //NVB = isARUNK ? "" : validpqs[index].FareBasis.Code,
                     Baggageallowance = isARUNK ? "" : SabreSharedServices.GetBaggageDiscription(validpqs[index].FreeBaggageAllowance)
                 };
 

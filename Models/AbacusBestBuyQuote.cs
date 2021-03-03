@@ -211,6 +211,12 @@ namespace SabreWebtopTicketingService.Models
                                         Select(s=> s.Trim()).
                                         ToList();
 
+                string platingcarrier = items[i + 1].
+                                            SplitOn("\n").
+                                            First(f => f.StartsWith("ATTN* VALIDATING CARRIER SPECIFIED")).
+                                            Trim().
+                                            Last(2);
+
                 IEnumerable<string> changesecs = string.IsNullOrEmpty(pricehintline)?
                                                     null:
                                                     pricehintline.
@@ -281,7 +287,8 @@ namespace SabreWebtopTicketingService.Models
                                     }).
                                     ToList(),
                         BaseFare = decimal.Parse(basefare),
-                        BaseFareCurrency = basefarecurrency
+                        BaseFareCurrency = basefarecurrency,
+                        PlatingCarrier = platingcarrier
                     });
             }
 

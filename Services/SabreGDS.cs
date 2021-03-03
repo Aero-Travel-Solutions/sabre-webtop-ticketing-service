@@ -1080,7 +1080,7 @@ namespace SabreWebtopTicketingService.Services
                                                 Baggageallowance = fbdata == null ? "" : fbdata.Baggage
                                             }).
                                          ToList(),
-                          PlatingCarrier = platingcarrier,
+                          PlatingCarrier = string.IsNullOrEmpty(platingcarrier) ? s.PlatingCarrier : platingcarrier,
                           SectorCount = request.SelectedSectors.Count,
                           Route = GetRoute(pnr.Sectors.Where(w=> request.SelectedSectors.Select(s=> s.SectorNo).Contains(w.SectorNo)).ToList()),
                           PriceType = Models.PriceType.Manual,
@@ -4363,7 +4363,7 @@ namespace SabreWebtopTicketingService.Services
                     return;
                 }
 
-                var calculateCommissionRequest = new CalculateCommissionRequest()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        var calculateCommissionRequest = new CalculateCommissionRequest()
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",

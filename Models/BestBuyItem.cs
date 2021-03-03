@@ -20,6 +20,7 @@ namespace SabreWebtopTicketingService.Models
         public string CCFeeData { get; set; }
         public List<string> Endorsements { get; set; }
         public List<SectorFBData> Farebasis { get; set; }
+        public string PlatingCarrier { get; set; }
     }
 
     public class SectorFBData

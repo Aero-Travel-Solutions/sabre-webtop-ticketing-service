@@ -238,6 +238,11 @@ namespace SabreWebtopTicketingService.Models
                                                     Where(w => !string.IsNullOrEmpty(w)).
                                                     Distinct() :
                                                     null;
+                string platingcarrier = items[i + 1].
+                                            SplitOn("\n").
+                                            First(f => f.StartsWith("VALIDATING CARRIER")).
+                                            Trim().
+                                            Last(2);
 
                 List<string> ccfeedataarray = fullgdsresponse.
                                         SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").
@@ -261,8 +266,9 @@ namespace SabreWebtopTicketingService.Models
                     string changesec = changesecs.IsNullOrEmpty() ? "" : changesecs.FirstOrDefault(f => f.LastMatch(@"(\d+)[A-Z]") == sectorno.ToString());
                     string selectedfarebasis = string.IsNullOrEmpty(changesec) ?
                                                     usedfbs.IsNullOrEmpty() ?
-                                                        farebasis.
-                                                            FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
+                                                        string.IsNullOrEmpty(farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1))) ?
+                                                            farebasis .First():
+                                                            farebasis.First(f => pnrsec.Class == f.Substring(0, 1)):
                                                         string.IsNullOrEmpty(farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1))) ?
                                                             farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
                                                             farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
@@ -306,7 +312,8 @@ namespace SabreWebtopTicketingService.Models
                                     }).
                                     ToList(),
                         BaseFare = decimal.Parse(basefare),
-                        BaseFareCurrency = basefarecurrency
+                        BaseFareCurrency = basefarecurrency,
+                        PlatingCarrier = platingcarrier
                     });
             }
 
