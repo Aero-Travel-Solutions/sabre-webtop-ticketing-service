@@ -1141,7 +1141,8 @@ namespace SabreWebtopTicketingService.Services
 
         private string GetBestbuyCommand(GetQuoteRQ request, string platingcarrier)
         {
-            string command = $"WPNC¥A{platingcarrier}¥S{string.Join("/", request.SelectedSectors.Select(s=> s.SectorNo))}";
+            string platingcarrierstring = string.IsNullOrEmpty(platingcarrier) ? "" : $"¥A{platingcarrier}";
+            string command = $"WPNC{platingcarrierstring}¥S{string.Join("/", request.SelectedSectors.Select(s => s.SectorNo))}";
             string fopstring = request.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CA ?
                         string.IsNullOrEmpty(request.SelectedPassengers.First().FormOfPayment.BCode) ?
                             "¥FCASH" :
