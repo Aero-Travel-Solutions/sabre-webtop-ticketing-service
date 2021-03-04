@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
@@ -61,19 +62,33 @@ namespace SabreWebtopTicketingService.Services
 
                 if (result == null || result.EnhancedEndTransactionRS.ApplicationResults.status != CompletionCodes.Complete)
                 {
-                    var messages = result.
+                    List<MessageCondition> errormessages = new List<MessageCondition>();
+                    errormessages.
+                        AddRange(result.
                                     EnhancedEndTransactionRS.
                                     ApplicationResults.
                                     Error.
                                     SelectMany(s => s.SystemSpecificResults).
-                                    SelectMany(s => s.Message);
+                                    SelectMany(s => s.Message).
+                                    ToList());
+
+                    errormessages.
+                        AddRange(result.
+                                    EnhancedEndTransactionRS.
+                                    ApplicationResults.
+                                    Warning.
+                                    SelectMany(s => s.SystemSpecificResults).
+                                    SelectMany(s => s.Message).
+                                    ToList());
 
                     throw new GDSException(
                                 "END_TRANSACT_ERROR",
                                 string.Join(",",
-                                            messages.
+                                            errormessages.
                                             Select(s => s.Value).
-                                            Where(w => !w.Contains("Unable to recover from EndTransactionLLSRQ")).
+                                            Where(w => !w.Contains("Unable to recover from EndTransactionLLSRQ") ||
+                                                       !w.Contains("Please see below messages for details") ||
+                                                       !w.Contains("EndTransactionLLSRQ: CQT RCRD")).
                                             Distinct()));
 
                 }
