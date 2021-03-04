@@ -3376,7 +3376,20 @@ namespace SabreWebtopTicketingService.Services
 
                 if(!farecalc.Contains("END"))
                 {
-                    farecalc += " END";
+                    if (farecalc.Contains("XF"))
+                    {
+                        string[] items = farecalc.SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d*)\s*");
+                        farecalc = items[0].Trim() + " END " + items[1].Trim();
+                    }
+                    else if (farecalc.Contains("ZP"))
+                    {
+                        string[] items = farecalc.SplitOnRegex(@"(ZP[A-Z]{3})\s*");
+                        farecalc = items[0].Trim() + " END " + items[1].Trim();
+                    }
+                    else
+                    {
+                        farecalc += " END";
+                    }
                 }
 
                 if (!farecalc.Contains("ROE"))
@@ -3392,6 +3405,10 @@ namespace SabreWebtopTicketingService.Services
                         {
                             farecalc = fcitems.First() + "END" + $" ROE {quote.ROE}" + fcitems.Last();
                         }
+                    }
+                    else
+                    {
+                        farecalc += $" ROE {quote.ROE}";
                     }
                 }
 
