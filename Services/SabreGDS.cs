@@ -3212,8 +3212,7 @@ namespace SabreWebtopTicketingService.Services
             var quotegroups = manualquotes.
                                 GroupBy(grp => new { 
                                     grp.QuotePassenger.PaxType, 
-                                    grp.BaseFare, 
-                                    grp.Commission, 
+                                    grp.BaseFare,
                                     grp.Fee, 
                                     grp.AgentCommissionRate, 
                                     grp.TotalTax, 
@@ -3221,7 +3220,12 @@ namespace SabreWebtopTicketingService.Services
                                     grp.QuotePassenger.FormOfPayment.CardNumber,
                                     grp.QuotePassenger.FormOfPayment.CreditAmount,
                                     Endorsements = string.Join("", grp.Endorsements),
-                                    grp.TourCode
+                                    grp.FareCalculation,
+                                    grp.CreditCardFee,
+                                    TaxString = string.Join(",",grp.Taxes.OrderBy(t => t.Code).Select(s=> s.Code + s.Amount)),
+                                    BagageAllawance = string.Join(",", grp.QuoteSectors.Select(s=> s.Baggageallowance)),
+                                    Farebasis = string.Join(",", grp.QuoteSectors.Select(s => s.FareBasis)),
+                                    NVANVB = string.Join(",", grp.QuoteSectors.Select(s => s.NVA + s.NVB))
                                 });
 
             foreach (var quotegrp in quotegroups)
