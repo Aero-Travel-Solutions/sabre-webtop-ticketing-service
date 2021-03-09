@@ -122,6 +122,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> GetPublishQuote(GetQuoteRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****GetPublishQuote invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -201,6 +214,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> PriceOverride(GetQuoteRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****PriceOveride invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -280,6 +306,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> BestBuy(GetQuoteRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****BestBuy invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -359,6 +398,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> ForceFarebasis(ForceFBQuoteRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****ForceFarebasis invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -438,6 +490,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> GetHistoricalQuote(GetQuoteRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****GetPastDateQuote invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -517,6 +582,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> ManualBuildAndIssue(IssueExpressTicketRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****ManualBuildIssue invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -596,6 +674,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> GetPNRText(SearchPNRRequest rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****GetPNRText invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -711,6 +802,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> GetQuoteText(GetQuoteTextRequest rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****GetQuoteText invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -826,6 +930,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> ValidateCommission(ValidateCommissionRQ rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****ValidateCommission invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 
@@ -978,6 +1095,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> CurrencyConvert(ConvertCurrencyRequest rq)
         {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
             logger.LogInformation("*****CurrencyConvert invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 

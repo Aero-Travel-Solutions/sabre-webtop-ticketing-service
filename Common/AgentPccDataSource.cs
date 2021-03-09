@@ -20,10 +20,10 @@ namespace SabreWebtopTicketingService.Common
             PFX_ADB = $"agent-database-{System.Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}";
         }
 
-        public async Task<AgentPccList> RetrieveAgentPccs(string agent_id, string sessionID)
+        public async Task<AgentPccList> RetrieveAgentPccs(User user, string sessionID)
         {
-            var consolidator_id = (await session.GetSessionUser(sessionID))?.ConsolidatorId;
-            var result = await lambda.Invoke<AgentPcc[]>($"{PFX_ADB}-agent-pcc-list", new { consolidator_id, agent_id }, sessionID);
+            var consolidator_id = user.ConsolidatorId;
+            var result = await lambda.Invoke<AgentPcc[]>($"{PFX_ADB}-agent-pcc-list", new { consolidator_id, user.AgentId }, sessionID);
             return new AgentPccList { PccList = result };
         }
 

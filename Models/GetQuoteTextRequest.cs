@@ -5,6 +5,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class GetQuoteTextRequest
     {
+        public string warmer { get; set; }
         public string SessionID { get; set; }
         [DefaultValue("1W")]
         public string GDSCode { get; set; }

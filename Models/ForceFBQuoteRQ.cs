@@ -11,6 +11,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class ForceFBQuoteRQ
     {
+        public string warmer { get; set; }
         public string SessionID { get; set; }
         public string AgentID { get; set; }
         public string GDSCode { get; set; }
