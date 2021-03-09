@@ -169,7 +169,7 @@ namespace SabreWebtopTicketingService.Services
             List<SabreSearchPNRResponse> res = new List<SabreSearchPNRResponse>();
             SabreSession sabreSession = null;
             user = await session.GetSessionUser(request.SessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, "", user);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID, user);
             agent = null;
             List<GST> gst = GetGST(user?.Consolidator?.CountryCode??"AU"); 
             if (!string.IsNullOrEmpty(request.AgentID))
@@ -697,7 +697,7 @@ namespace SabreWebtopTicketingService.Services
             PNR pnr = null;
             string sessionID = request.SessionID;
             user = await session.GetSessionUser(sessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, "", user);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID, user);
             agent = await getAgentData(
                                     request.SessionID,
                                     user,
@@ -1647,7 +1647,7 @@ namespace SabreWebtopTicketingService.Services
             PNR pnr = null;
             string sessionID = request.SessionID;
             User user = await session.GetSessionUser(sessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, "", user);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID, user);
             Agent agent = await getAgentData(
                         request.SessionID,
                         user,
