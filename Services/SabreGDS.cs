@@ -258,7 +258,7 @@ namespace SabreWebtopTicketingService.Services
         {
             List<ValidateCommissionWarning> validateCommissionWarnings = new List<ValidateCommissionWarning>();
             user = user == null ? await session.GetSessionUser(rq.SessionID): user;
-            pcc = pcc == null ? await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, "", user): pcc;
+            pcc = pcc == null ? await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID, user): pcc;
             agent = agent == null ? await getAgentData(
                                         rq.SessionID,
                                         user,
@@ -566,7 +566,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 string sessionID = request.SessionID;
                 user = await session.GetSessionUser(sessionID);
-                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
                 agent = await getAgentData(
                                         request.SessionID,
                                         user,
@@ -883,7 +883,7 @@ namespace SabreWebtopTicketingService.Services
             PNR pnr = null;
             string sessionID = request.SessionID;
             user = await session.GetSessionUser(sessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
             agent = await getAgentData(
                                     request.SessionID,
                                     user,
@@ -1282,7 +1282,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 string sessionID = request.SessionID;
                 user = await session.GetSessionUser(sessionID);
-                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
 
                 //Obtain session (if found from cache, else directly from sabre)
                 SabreSession sabresession = await _sessionCreateService.CreateStatefulSessionToken(pcc);
@@ -4432,7 +4432,8 @@ namespace SabreWebtopTicketingService.Services
                         return;
                     }
                 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       var calculateCommissionRequest = new CalculateCommissionRequest()
+                
+                var calculateCommissionRequest = new CalculateCommissionRequest()
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",

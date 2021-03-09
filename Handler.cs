@@ -32,7 +32,6 @@ namespace SabreWebtopTicketingService
         {
             if(!string.IsNullOrEmpty(rq.warmer))
             {
-                logger.LogInformation("#*#*#*# Inside warmer. #*#*#*#");
                 return new LambdaResponse()
                 {
                     statusCode = 200,
