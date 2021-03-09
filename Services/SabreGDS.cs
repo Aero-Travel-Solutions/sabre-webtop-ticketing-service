@@ -4340,7 +4340,7 @@ namespace SabreWebtopTicketingService.Services
 
         private void CalculateCommission(List<Quote> quotes, PNR pnr, string ticketingpcc, string sessionID, Agent agent, string contextID)
         {
-            if(quotes.All(a=> a.FareCalculation == quotes.First().FareCalculation))
+            if(quotes.All(a=> a.Route == quotes.First().Route))
             {
                 logger.LogInformation("Single turnround point detected.");
                 var secs = quotes.
