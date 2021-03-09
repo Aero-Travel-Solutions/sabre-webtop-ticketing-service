@@ -156,7 +156,7 @@ namespace SabreWebtopTicketingService.Services
             }
             catch (Exception ex)
             {
-                logger.LogError("An error occured closing the sabre session/removing from cache. {Errormessage} {Exception", ex.Message, ex);
+                logger.LogError($"An error occured closing the sabre session/removing from cache. {ex.Message}");
             };
         }
 
@@ -173,7 +173,7 @@ namespace SabreWebtopTicketingService.Services
             string url = Constants.GetRestUrl();
             var client = _httpClientFactory.CreateClient();
 
-            //URL
+            //URL               
             var uri = new Uri(url.Trim() + "/v2/auth/token");
 
             //Authorization Header

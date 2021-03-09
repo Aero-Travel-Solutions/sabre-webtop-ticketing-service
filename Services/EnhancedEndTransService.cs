@@ -102,7 +102,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     client.Abort();
                 }
-                throw new GDSException("30000025", "Sabre system timeout. Please try again!");
+                throw new GDSException("SABRE_TIMEOUT", "Sabre system timeout. Please try again!");
             }
             catch (FaultException unknownFault)
             {
@@ -111,7 +111,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     client.Abort();
                 }
-                throw new GDSException("30000026", $"Sabre System Exception: {unknownFault.Message + (unknownFault.InnerException == null ? "" : Environment.NewLine + unknownFault.InnerException.Message)}");
+                throw new GDSException("SABRE_SYSTEM_EXCEPTION", $"Sabre System Exception: {unknownFault.Message + (unknownFault.InnerException == null ? "" : Environment.NewLine + unknownFault.InnerException.Message)}");
             }
             catch (CommunicationException commProblem)
             {
@@ -120,7 +120,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     client.Abort();
                 }
-                throw new GDSException("30000027", "There is a communication issue with Sabre. Please try again later!");
+                throw new GDSException("SABRE_COMMUNICATION_EXCEPTION", "There is a communication issue with Sabre. Please try again later!");
             }
             catch (Exception ex)
             {
