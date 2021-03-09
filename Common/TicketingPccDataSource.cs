@@ -20,9 +20,9 @@ namespace SabreWebtopTicketingService.Common
         }
 
 
-        public async Task<TicketingPcc> GetDefaultTicketingPccByGdsCode(string gdsCode, string sessionID)
+        public async Task<TicketingPcc> GetDefaultTicketingPccByGdsCode(string gdsCode, string sessionID, User user)
         {
-            var list = await RetrieveTicketingPccs(sessionID);
+            var list = await RetrieveTicketingPccs(sessionID, user);
             if (list == null || list.PccList == null)
             {
                 return null;
@@ -32,9 +32,9 @@ namespace SabreWebtopTicketingService.Common
                 ?? list.PccList.FirstOrDefault(p => p.GdsCode == gdsCode);
         }
 
-        public async Task<TicketingPccList> RetrieveTicketingPccs(string sessionID)
+        public async Task<TicketingPccList> RetrieveTicketingPccs(string sessionID, User user)
         {
-            var consolidator_id = (await session.GetSessionUser(sessionID))?.ConsolidatorId;
+            var consolidator_id = user.ConsolidatorId;
             var result = await lambda.Invoke<TicketingPcc[]>($"{PFX_ADB}-ticketing-pcc-list", new { consolidator_id }, sessionID);
             return new TicketingPccList { PccList = result };
         }

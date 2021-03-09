@@ -152,7 +152,7 @@ namespace SabreWebtopTicketingService.Services
                 Name = agentDetails?.Name,
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
-                TicketingPcc = await GetTicketingPCC(sessionid),
+                TicketingPcc = await GetTicketingPCC(sessionid, user),
                 Logo = agentDetails.Logo
             };
 
@@ -225,10 +225,10 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task<string> GetTicketingPCC(string sessionID)
+        private async Task<string> GetTicketingPCC(string sessionid, User user)
         {
             var res = await _ticketingPccDataSource.
-                            GetDefaultTicketingPccByGdsCode("1W", sessionID);
+                            GetDefaultTicketingPccByGdsCode("1W", sessionid, user);
 
             return res?.PccCode;
         }
@@ -4340,8 +4340,9 @@ namespace SabreWebtopTicketingService.Services
 
         private void CalculateCommission(List<Quote> quotes, PNR pnr, string ticketingpcc, string sessionID, Agent agent, string contextID)
         {
-            if(quotes.All(a=> a.Route == quotes.First().Route && a.FareCalculation == quotes.First().FareCalculation))
+            if(quotes.All(a=> a.FareCalculation == quotes.First().FareCalculation))
             {
+                logger.LogInformation("Single turnround point detected.");
                 var secs = quotes.
                             First().
                             QuoteSectors.
@@ -4369,6 +4370,20 @@ namespace SabreWebtopTicketingService.Services
                                                     GetAwaiter().
                                                     GetResult();
 
+                if (turnaroundpoint == "err")
+                {
+                    quotes.
+                        ForEach(f => f.Errors = new List<WebtopError>()
+                        {
+                            new WebtopError()
+                            {
+                                code = "INVALID_TURNAROUND_POINT",
+                                message = "Turnaround point invalid."
+                            }
+                        });
+                    return;
+                }
+                
                 quotes.ForEach(f => f.TurnaroundPoint = turnaroundpoint);
             }
             var calculateCommissionTasks = new List<Task>();
@@ -4403,22 +4418,21 @@ namespace SabreWebtopTicketingService.Services
                                                             FareCalculation = quote.FareCalculation,
                                                             Sectors = secs
                                                         }).GetAwaiter().GetResult();
-                }
 
-                if (quote.TurnaroundPoint == "err")
-                {
-                    quote.Errors = new List<WebtopError>()
+                    if (quote.TurnaroundPoint == "err")
                     {
-                        new WebtopError()
+                        quote.Errors = new List<WebtopError>()
                         {
-                            code = "INVALID_TURNAROUND_POINT",
-                            message = "Turnaround point invalid."
-                        }
-                    };
-                    return;
+                            new WebtopError()
+                            {
+                                code = "INVALID_TURNAROUND_POINT",
+                                message = "Turnaround point invalid."
+                            }
+                        };
+                        return;
+                    }
                 }
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        var calculateCommissionRequest = new CalculateCommissionRequest()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       var calculateCommissionRequest = new CalculateCommissionRequest()
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
