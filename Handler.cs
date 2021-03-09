@@ -30,6 +30,19 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> SearchPNR(SearchPNRRequest rq)
         {
+            if(!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""                    
+                };
+            }
+
             logger.LogInformation("*****SearchPNR invoked *****");
             logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
 

@@ -19,9 +19,9 @@ namespace SabreWebtopTicketingService.Common
             PFX_ADB = $"agent-database-{Environment.GetEnvironmentVariable("ENVIRONMENT")??"dev"}";
         }
 
-        public async Task<Pcc> GetWebServicePccByGdsCode(string gdsCode, string contextID, string sessionid)
+        public async Task<Pcc> GetWebServicePccByGdsCode(string gdsCode, string contextID, string sessionid = "", User user = null)
         {
-            ConsolidatorPccList list = await RetrieveWebServicePccs(contextID, sessionid);
+            ConsolidatorPccList list = await RetrieveWebServicePccs(contextID, sessionid, user);
             if (list==null || list.PccList.Count() == 0)
             {
                 //Connecxes
@@ -67,9 +67,24 @@ namespace SabreWebtopTicketingService.Common
             return list.PccList.FirstOrDefault(p => p.GdsCode == gdsCode);
         }
 
-        private async Task<ConsolidatorPccList> RetrieveWebServicePccs(string contextID, string sessionid)
+        private async Task<ConsolidatorPccList> RetrieveWebServicePccs(string contextID, string sessionid, User user)
         {
-            var consolidator_id = (await session.GetSessionUser(sessionid))?.ConsolidatorId;
+            if(user == null && string.IsNullOrEmpty(sessionid))
+            {
+                throw new Exception("ConsolidatorID not found!");
+            }
+
+            string consolidator_id = "";
+            if (user != null)
+            {
+                consolidator_id = user.ConsolidatorId;
+            }
+
+            if (string.IsNullOrEmpty(consolidator_id) && !string.IsNullOrEmpty(sessionid))
+            {
+                consolidator_id = (await session.GetSessionUser(sessionid))?.ConsolidatorId;
+            }
+
             if (string.IsNullOrEmpty(consolidator_id)) 
             {
                 throw new Exception("ConsolidatorID not found!"); 

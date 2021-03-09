@@ -169,7 +169,7 @@ namespace SabreWebtopTicketingService.Services
             List<SabreSearchPNRResponse> res = new List<SabreSearchPNRResponse>();
             SabreSession sabreSession = null;
             user = await session.GetSessionUser(request.SessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, "", user);
             agent = null;
             List<GST> gst = GetGST(user?.Consolidator?.CountryCode??"AU"); 
             if (!string.IsNullOrEmpty(request.AgentID))
@@ -257,7 +257,7 @@ namespace SabreWebtopTicketingService.Services
         {
             List<ValidateCommissionWarning> validateCommissionWarnings = new List<ValidateCommissionWarning>();
             user = user == null ? await session.GetSessionUser(rq.SessionID): user;
-            pcc = pcc == null ? await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, rq.SessionID): pcc;
+            pcc = pcc == null ? await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextid, "", user): pcc;
             agent = agent == null ? await getAgentData(
                                         rq.SessionID,
                                         user,
@@ -697,7 +697,7 @@ namespace SabreWebtopTicketingService.Services
             PNR pnr = null;
             string sessionID = request.SessionID;
             user = await session.GetSessionUser(sessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, "", user);
             agent = await getAgentData(
                                     request.SessionID,
                                     user,
@@ -1647,7 +1647,7 @@ namespace SabreWebtopTicketingService.Services
             PNR pnr = null;
             string sessionID = request.SessionID;
             User user = await session.GetSessionUser(sessionID);
-            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, "", user);
             Agent agent = await getAgentData(
                         request.SessionID,
                         user,
