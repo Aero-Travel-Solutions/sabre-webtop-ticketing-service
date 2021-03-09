@@ -397,7 +397,7 @@ namespace SabreWebtopTicketingService.Services
                         //Part cash part credit
                         decimal cashamount = pricetype == PriceType.Manual && fops.Sum(s => s.CreditAmount) == 0.00M ? 
                                                 0.01M : 
-                                                (total - fops.First().CreditAmount);
+                                                ((total - fops.Sum(s => s.CreditAmount)) / fops.Count);
                         return new AirTicketRQTicketingFOP_Qualifiers()
                         {
                             BSP_Ticketing = new AirTicketRQTicketingFOP_QualifiersBSP_Ticketing()
