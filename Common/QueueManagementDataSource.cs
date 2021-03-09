@@ -3,6 +3,7 @@ using Amazon.Lambda.Model;
 using SabreWebtopTicketingService.Interface;
 using SabreWebtopTicketingService.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,14 +11,14 @@ using System.Threading.Tasks;
 
 namespace SabreWebtopTicketingService.Common
 {
-    public class QueueManagementDataSource : IMerchantDataSource
+    public class QueueManagementDataSource : IQueueManagementDataSource
     {
         private readonly ILogger logger;
         private readonly AmazonLambdaClient client;
         private readonly string env;
         public string ContextID { get; set; }
 
-        public MerchantDataSource(
+        public QueueManagementDataSource(
             AmazonLambdaClient _client,
             ILogger _logger)
         {
@@ -26,44 +27,7 @@ namespace SabreWebtopTicketingService.Common
             env = System.Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "dev";
         }
 
-        public async Task<MerchantLambdaResponse> CapturePayment(string sessionId, string consolidatorid, string paymentsessionId, string orderid, decimal amount, string desc = "")
-        {
-            CapturePaymentRequest rq = new CapturePaymentRequest()
-            {
-                session_id = sessionId,
-                payment_session_id = paymentsessionId,
-                order_id = orderid,
-                amount = Math.Round(amount, 2),
-                description = desc
-            };
-
-            var response = await InvokeLambdaCShap<string>(
-                                    $"{consolidatorid}-merchant-payment-{env}-capture",
-                                    rq);
-
-            return response;
-        }
-
-        public async Task<MerchantLambdaResponse> CancelHold(string sessionId, string consolidatorid, string paymentsessionId, string orderid)
-        {
-            CancelHoldRequest rq = new CancelHoldRequest()
-            {
-                session_id = sessionId,
-                payment_session_id = paymentsessionId,
-                order_id = orderid
-            };
-
-            var response = await InvokeLambdaCShap<string>(
-                        $"{consolidatorid}-merchant-payment-{env}-void",
-                        rq);
-
-            return new MerchantLambdaResponse()
-            {
-                Success = response.Success
-            };
-        }
-
-        public async Task<MerchantLambdaResponse> InvokeLambdaCShap<R>(string functionName, object input)
+        public async Task<List<PNRStoredCards>> InvokeLambdaCShap<R>(string functionName, object input)
         {
             var lambdaPayload = string.Empty;
             string jsoninput = JsonSerializer.Serialize(input, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
@@ -93,10 +57,7 @@ namespace SabreWebtopTicketingService.Common
                         {
                             logger.LogError($"(Context ID - {payload.context_id}) {payload.error.Message}.");
                         }
-                        return new MerchantLambdaResponse()
-                        {
-                            Success = false
-                        };
+                        return new List<PNRStoredCards>();
                     }
 
                     return new MerchantLambdaResponse()
@@ -115,57 +76,85 @@ namespace SabreWebtopTicketingService.Common
                 throw;
             }
         }
+
+        public async Task<List<PNRStoredCards>> RetrieveCardData(string sessionId, string queueID, User user)
+        {
+            GetQueueModel rq = new GetQueueModel()
+            {
+                SessionId = sessionId,
+                GDSSource = "1W",
+                QueueID = queueID
+            };
+
+            var response = await InvokeLambdaCShap<string>(
+                                    $"queue-pnr-control-{env}-retrieveDetailQueueRecord",
+                                    rq);
+
+            return response;
+        }
     }
 
-    public class CapturePaymentRequest
+    public class GetQueueModel
     {
-        public string session_id { get; set; }
-        public string payment_session_id { get; set; }
-        public string order_reference { get; set; }
-        public string order_id { get; set; }
-        public string description { get; set; }
-        public decimal amount { get; set; }
-    }
+        [JsonPropertyName("session_id")]
+        public string SessionId { get; set; }
 
-    public class CancelHoldRequest
-    {
-        public string session_id { get; set; }
-        public string payment_session_id { get; set; }
-        public string order_id { get; set; }
-    }
+        [JsonPropertyName("hash_key")]
+        public string HashKey { get; set; }
 
+        [JsonPropertyName("sort_key")]
+        public string SortKey { get; set; }
 
-    public class Data
-    {
-        public string code { get; set; }
-        public string recommendation { get; set; }
-        public string result { get; set; }
-        public string approval_code { get; set; }
-        public string card_number { get; set; }
-        public string card_type { get; set; }
-        public string card_expiry { get; set; }
-    }
+        [JsonPropertyName("queue_id")]
+        public string QueueID { get; set; }
 
-    public class MerchantError
-    {
-        public string code { get; set; }
-        public string message { get; set; }
-        public object stack { get; set; }
-    }
+        [JsonPropertyName("plating_carrier")]
+        public string PlatingCarrier { get; set; }
 
-    public class Body
-    {
-        public string session_id { get; set; }
-        public string context_id { get; set; }
-        public Data data { get; set; }
-        public Error error { get; set; }
-    }
+        [JsonPropertyName("gds_source")]
+        public string GDSSource { get; set; }
 
-    public class MerchantLambdaPayload
-    {
-        public int statusCode { get; set; }
-        //public Headers headers { get; set; }
-        public string body { get; set; }
-        public bool isBase64Encoded { get; set; }
+        [JsonPropertyName("record_locator")]
+        public string RecordLocator { get; set; }
+
+        [JsonPropertyName("queue_date_from")]
+        public string QueueDateFrom { get; set; }
+
+        [JsonPropertyName("queue_date_to")]
+        public string QueueDateTo { get; set; }
+
+        [JsonPropertyName("departure_date_from")]
+        public string DepartureDateFrom { get; set; }
+
+        [JsonPropertyName("departure_date_to")]
+        public string DepartureDateTo { get; set; }
+
+        [JsonPropertyName("queue_statuses")]
+        public List<string> QueueStatuses { get; set; }
+
+        [JsonPropertyName("agency_name")]
+        public string AgencyName { get; set; }
+
+        [JsonPropertyName("flight_type")]
+        public string FlightType { get; set; }
+
+        [JsonPropertyName("origin")]
+        public string Origin { get; set; }
+
+        [JsonPropertyName("destination")]
+        public string Destination { get; set; }
+
+        [JsonPropertyName("queue_type")]
+        public string QueueType { get; set; }
+
+        [JsonPropertyName("agent_id")]
+        public string AgentId { get; set; }
+
+        [JsonPropertyName("is_my_worklist")]
+        public bool IsMyWorklist { get; set; }
+
+        [JsonPropertyName("is_my_queues")]
+        public bool IsMyQueues { get; set; }
+        public string warmer { get; set; }
     }
 }
