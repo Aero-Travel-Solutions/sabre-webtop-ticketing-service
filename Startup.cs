@@ -116,6 +116,7 @@ namespace SabreWebtopTicketingService
             services.AddScoped<IBCodeDataSource, BCodeDataSource>();
             services.AddScoped<IDbCache, DbCache>();
             services.AddScoped<IStoredCardDataSource, StoredCardDataSource>();
+            services.AddScoped<IQueueManagementDataSource, QueueManagementDataSource>();
 
             services.AddSingleton<ISessionManagementBackgroundTaskQueue, SessionManagementBackgroundTaskQueue>();
             services.AddSingleton<ICacheDataSource, RedisClient>();

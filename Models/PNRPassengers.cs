@@ -28,6 +28,7 @@ namespace SabreWebtopTicketingService.Models
         public string ApprovalCode { get; set; }
         public decimal CreditAmount { get; set; }
         public string CardType { get; set; }
+        public string MaskedCardNumber { get; set; }
     }
 
     public class PNRPassengersValidator : AbstractValidator<PNRPassengers>

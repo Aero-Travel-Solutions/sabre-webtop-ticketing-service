@@ -57,6 +57,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly ICacheDataSource _cacheDataSource;
         private readonly S3Helper _s3Helper;
         private readonly IStoredCardDataSource _storedCardDataSource;
+        private readonly IQueueManagementDataSource _queueManagementDataSource;
 
         public User user { get; set; }
         public Pcc pcc { get; set; }
@@ -94,7 +95,8 @@ namespace SabreWebtopTicketingService.Services
             GetOrderSquenceRetryPolicy getOrderSquenceRetryPolicy,
             ICacheDataSource cacheDataSource,
             S3Helper s3Helper,
-            IStoredCardDataSource storedCardDataSource)
+            IStoredCardDataSource storedCardDataSource,
+            IQueueManagementDataSource queueManagementDataSource)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -129,6 +131,7 @@ namespace SabreWebtopTicketingService.Services
             _s3Helper = s3Helper;
             this.session = session;
             _storedCardDataSource = storedCardDataSource;
+            _queueManagementDataSource = queueManagementDataSource;
         }
 
         private async Task<Agent> getAgentData(string sessionid, User user, string agentid, string webservicepcc)
@@ -200,7 +203,7 @@ namespace SabreWebtopTicketingService.Services
                 //Retrieve PNR if only one match found
                 try
                 {
-                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, contextID, true, true, true, false));
+                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, contextID, request.QueueID, true, true, true, false));
 
                     logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
 
@@ -350,7 +353,7 @@ namespace SabreWebtopTicketingService.Services
             return validateCommissionWarnings;
         }
 
-        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
+        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, string queueid, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
         {
             var pnrAccessKey = $"{locator}-pnr".EncodeBase64();
             var cardAccessKey = $"{locator}-card".EncodeBase64();
@@ -422,7 +425,43 @@ namespace SabreWebtopTicketingService.Services
                 //Save stored credit cards
                 if (getStoredCards)
                 {
-                    var storedCreditCard = GetStoredCards(response);
+                    //read card data from pnr
+                    List<StoredCreditCard> storedCreditCard = GetStoredCards(response);
+
+                    //read from queue record
+                    if(!string.IsNullOrEmpty(queueid))
+                    {
+                        QueueModel queueModel = await _queueManagementDataSource.RetrieveQueueRecord(sessionid, queueid);
+
+                        if (queueModel != null && !queueModel.Passengers.IsNullOrEmpty())
+                        {
+                            List<FOP> formofpayments = queueModel.
+                                                            Passengers.
+                                                            Select(m => m.FormOfPayment).
+                                                            Where(a => !string.IsNullOrEmpty(a.CardNumber)).
+                                                            DistinctBy(d => d.CardNumber).
+                                                            ToList();
+
+                            if (!formofpayments.IsNullOrEmpty())
+                            {
+                                foreach (var fop in formofpayments)
+                                {
+                                    if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.MaskedCardNumber.Trim()).IsNullOrEmpty())
+                                    {
+                                        continue;
+                                    }
+
+                                    storedCreditCard.
+                                        Add(new StoredCreditCard()
+                                        {
+                                            MaskedCardNumber = fop.MaskedCardNumber.Trim(),
+                                            Expiry = fop.ExpiryDate,
+                                            CreditCard = dataProtector.Unprotect(fop.CardNumber)
+                                        });
+                                }
+                            }
+                        }
+                    }
 
                     //Encrypt card number
                     await _storedCardDataSource.Save(cardAccessKey, storedCreditCard);
@@ -1179,6 +1218,9 @@ namespace SabreWebtopTicketingService.Services
                 item.FormOfPayment.CardNumber = value.CreditCard;
                 item.FormOfPayment.ExpiryDate = item.FormOfPayment.ExpiryDate;
             }
+
+            //3. Extract card data from queue record
+
         }
 
         private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)

@@ -6,6 +6,6 @@ namespace SabreWebtopTicketingService.Interface
 {
     public interface IQueueManagementDataSource
     {
-        Task<List<PNRStoredCards>> RetrieveCardData(string sessionId, string consolidatorid, string paymentsessionId, string orderid, decimal amount, string desc);
+        Task<QueueModel> RetrieveQueueRecord(string sessionId, string queueID);
     }
 }

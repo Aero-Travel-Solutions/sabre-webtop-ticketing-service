@@ -5,6 +5,7 @@ using SabreWebtopTicketingService.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace SabreWebtopTicketingService.Common
             env = System.Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "dev";
         }
 
-        public async Task<List<PNRStoredCards>> InvokeLambdaCShap<R>(string functionName, object input)
+        public async Task<QueueModel> InvokeLambdaCShap<R>(string functionName, object input)
         {
             var lambdaPayload = string.Empty;
             string jsoninput = JsonSerializer.Serialize(input, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
@@ -46,38 +47,47 @@ namespace SabreWebtopTicketingService.Common
                 using (var sr = new StreamReader(lambdaResponse.Payload))
                 {
                     lambdaPayload = await sr.ReadToEndAsync();
-                    var merchantpayload = JsonSerializer.Deserialize<MerchantLambdaPayload>(lambdaPayload);
-                    var payload = JsonSerializer.Deserialize<Body>(merchantpayload.body);
-                    ContextID = payload.context_id;
-                    logger.LogMaskInformation($"Lambda function {functionName} response {lambdaPayload}");
-                    
-                    if(merchantpayload.statusCode != 200)
-                    {
-                        if (payload.error != null)
-                        {
-                            logger.LogError($"(Context ID - {payload.context_id}) {payload.error.Message}.");
-                        }
-                        return new List<PNRStoredCards>();
-                    }
+                    var queueitem = JsonSerializer.Deserialize<QueueModel>(lambdaPayload);
 
-                    return new MerchantLambdaResponse()
-                    {
-                        Success = payload.data.result == "SUCCESS",
-                        ApprovalCode = payload.data.result == "SUCCESS" ? payload.data.approval_code : "",
-                        CardNumber = payload.data.result == "SUCCESS" ? payload.data.card_number : "",
-                        CardType = payload.data.result == "SUCCESS" ? payload.data.card_type : "",
-                        CardExpiry = payload.data.result == "SUCCESS" ? payload.data.card_expiry: ""
-                    };
+                    logger.LogMaskInformation($"Lambda function {functionName} response {lambdaPayload}");
+
+                    return queueitem;
+
+                    //if (queueitem == null || queueitem.Passengers.IsNullOrEmpty()) 
+                    //{ 
+                    //    return new List<PNRStoredCards>(); 
+                    //}
+
+                    //List<FOP> formofpayments = queueitem.
+                    //                                Passengers.
+                    //                                Select(m => m.FormOfPayment).
+                    //                                Where(a => !string.IsNullOrEmpty(a.CardNumber)).
+                    //                                DistinctBy(d => d.CardNumber).
+                    //                                ToList();
+
+                    //if (formofpayments.IsNullOrEmpty())
+                    //{
+                    //    return new List<PNRStoredCards>();
+                    //}
+
+                    //return formofpayments.
+                    //            Select
+                    //            (s => new PNRStoredCards()
+                    //            {
+                    //                MaskedCardNumber = s.MaskedCardNumber,
+                    //                Expiry = s.ExpiryDate
+                    //            }).
+                    //            ToList();
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError($"Lambda request - {jsoninput.MaskLog()}. Lambda method - {functionName}. Lambda response {lambdaPayload} and {ex.Message}.");
+                logger.LogError($"Lambda request - {jsoninput.MaskLog()}. Lambda method - {functionName}. Lambda response {lambdaPayload.MaskLog()} and {ex.Message}.");
                 throw;
             }
         }
 
-        public async Task<List<PNRStoredCards>> RetrieveCardData(string sessionId, string queueID, User user)
+        public async Task<QueueModel> RetrieveQueueRecord(string sessionId, string queueID)
         {
             GetQueueModel rq = new GetQueueModel()
             {
