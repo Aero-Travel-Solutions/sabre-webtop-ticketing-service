@@ -106,7 +106,7 @@ namespace SabreWebtopTicketingService.Services
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
 
-                logger.LogInformation($"{nameof(ExecuteCommand)} invoke \"SabreCommandLLSRQAsync\"");
+                logger.LogInformation($"{nameof(ExecuteCommand)} invoke SabreCommandLLSRQAsync-{command}");
                 var sw = Stopwatch.StartNew();
 
                 var result = await client.
@@ -115,7 +115,7 @@ namespace SabreWebtopTicketingService.Services
                                         getSecurityHedder(token),
                                         getSabreCommandLLSRQ(command));
 
-                logger.LogInformation($"{nameof(ExecuteCommand)} \"SabreCommandLLSRQAsync\" completed is {sw.ElapsedMilliseconds} ms");
+                logger.LogInformation($"{nameof(ExecuteCommand)} SabreCommandLLSRQAsync completed is {sw.ElapsedMilliseconds} ms");
                 sw.Stop();
 
                 if (result.SabreCommandLLSRS.ErrorRS?.Errors?.Error?.ErrorMessage != null)

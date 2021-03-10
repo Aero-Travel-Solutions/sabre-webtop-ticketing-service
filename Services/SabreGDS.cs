@@ -835,34 +835,15 @@ namespace SabreWebtopTicketingService.Services
                                                         f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
 
                 //Generate the IssueTicketQuoteKey
+                string platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
                 quotes.
                     ForEach(quote =>
                     {
-                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
+                        quote.TicketingPCC = platingpcc;
                         quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote);
                         quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
                     });
             }
-            //catch (GDSException gdsex)
-            //{
-            //    logger.LogInformation($"EnhancedAirBookService return {gdsex}");
-
-            //    //ignore session
-            //    await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "IR");
-
-            //    //workout plating carrier
-            //    string platingcarrier = GetManualPlatingCarrier(pnr, request);
-            //    logger.LogInformation($"Plating carrier {platingcarrier}.");
-
-            //    //Generate bestbuy command
-            //    string command = GetBestbuyCommand(request, platingcarrier);
-            //    logger.LogInformation($"Sabre bestbuy command: {command}.");
-
-            //    //sabre best buy
-            //    string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
-
-            //    quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
-            //}
             finally
             {
                 if (token.IsLimitReached)
@@ -1011,10 +992,11 @@ namespace SabreWebtopTicketingService.Services
                                                         f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
 
                 //Generate the IssueTicketQuoteKey
+                string platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
                 quotes.
                     ForEach(quote =>
                     {
-                        quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
+                        quote.TicketingPCC = platingpcc;
                         quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote);
                         quote.QuotePassenger.FormOfPayment.CardNumber = quote.QuotePassenger.FormOfPayment.CardNumber?.MaskNumber();
                     });
@@ -4531,14 +4513,12 @@ namespace SabreWebtopTicketingService.Services
 
         private void ValidateCommission(ValidateCommissionRQ rq, string ticketingpcc, string sessionID, Agent agent, Pcc pcc)
         {
-            var calculateCommissionTasks = new List<Task>();
-            CancellationToken ct = new CancellationToken();
-
-            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
-
-            Parallel.ForEach(rq.Quotes, options, (quote) =>
+            if (rq.Quotes.All(a => a.Route == rq.Quotes.First().Route))
             {
-                var secs = quote.
+                logger.LogInformation("Single turnround point detected.");
+                var secs = rq.
+                            Quotes.
+                            First().
                             QuoteSectors.
                             Where(w => w.DepartureCityCode != "ARUNK").
                             Select(s => rq.
@@ -4553,18 +4533,70 @@ namespace SabreWebtopTicketingService.Services
                             }).
                             ToList();
 
-                quote.TurnaroundPoint = _getTurnaroundPointDataSource.
+                var turnaroundpoint = _getTurnaroundPointDataSource.
                                                 GetTurnaroundPoint(
                                                     new GetTurnaroundPointRequest()
                                                     {
-                                                        FareCalculation = quote.FareCalculation,
+                                                        FareCalculation = rq.Quotes.First().FareCalculation,
                                                         Sectors = secs
-                                                    }).GetAwaiter().GetResult();
+                                                    }).
+                                                    GetAwaiter().
+                                                    GetResult();
 
-
-                if (quote.TurnaroundPoint == "err")
+                if (turnaroundpoint == "err")
                 {
-                    throw new AeronologyException("INVALID_TURNAROUND_POINT", "Turnaround point invalid");
+                    rq.Quotes.
+                        ForEach(f => f.Errors = new List<WebtopError>()
+                        {
+                            new WebtopError()
+                            {
+                                code = "INVALID_TURNAROUND_POINT",
+                                message = "Turnaround point invalid."
+                            }
+                        });
+                    return;
+                }
+
+                rq.Quotes.ForEach(f => f.TurnaroundPoint = turnaroundpoint);
+            }
+
+            var calculateCommissionTasks = new List<Task>();
+            CancellationToken ct = new CancellationToken();
+
+            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            Parallel.ForEach(rq.Quotes, options, (quote) =>
+            {
+                if (string.IsNullOrEmpty(quote.TurnaroundPoint))
+                {
+                    var secs = quote.
+                                QuoteSectors.
+                                Where(w => w.DepartureCityCode != "ARUNK").
+                                Select(s => rq.
+                                                Sectors.
+                                                First(f => f.From == s.DepartureCityCode &&
+                                                            f.To == s.ArrivalCityCode &&
+                                                            f.DepartureDate == s.DepartureDate)).
+                                Select(s => new TPSector()
+                                {
+                                    From = s.From,
+                                    To = s.To
+                                }).
+                                ToList();
+
+                    quote.TurnaroundPoint = _getTurnaroundPointDataSource.
+                                                    GetTurnaroundPoint(
+                                                        new GetTurnaroundPointRequest()
+                                                        {
+                                                            FareCalculation = quote.FareCalculation,
+                                                            Sectors = secs
+                                                        }).GetAwaiter().GetResult();
+
+
+                    if (quote.TurnaroundPoint == "err")
+                    {
+                        throw new AeronologyException("INVALID_TURNAROUND_POINT", "Turnaround point invalid");
+                    }
                 }
 
                 var calculateCommissionRequest = new CalculateCommissionRequest()
