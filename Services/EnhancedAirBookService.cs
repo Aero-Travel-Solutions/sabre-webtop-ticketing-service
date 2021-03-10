@@ -887,7 +887,7 @@ namespace SabreWebtopTicketingService.Services
                                       NonRefundable = pqs.ItinTotalFare.NonRefundableInd,
                                       FareCalculation = pqs.FareCalculation.Text,
                                       ROE = pqs.FareCalculation.Text.LastMatch(@"ROE\s*([\d\.]+)", "1"),
-                                      Endorsements = pqs.ItinTotalFare.Endorsements?.ToList(),
+                                      Endorsements = pqs.ItinTotalFare.Endorsements?.Distinct().ToList(),
                                       SpecificPenalties = pqs.
                                                             SpecificPenalty?.
                                                             Where(s => !string.IsNullOrEmpty(s.PenaltyInformation.Amount)).
