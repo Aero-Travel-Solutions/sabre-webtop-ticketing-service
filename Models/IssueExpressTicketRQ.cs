@@ -4,6 +4,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class IssueExpressTicketRQ
     {
+        public string warmer { get; set; }
         public bool CheckCommission { get; set; }
         public string SessionID { get; set; }
         public string AgentID { get; set; }

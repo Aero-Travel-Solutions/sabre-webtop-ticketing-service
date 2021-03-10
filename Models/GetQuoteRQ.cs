@@ -11,6 +11,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class GetQuoteRQ
     {
+        public string warmer { get; set; }
         private List<QuotePassenger> paxs =null;
         public string SessionID { get; set; }
         public string AgentID { get; set; }

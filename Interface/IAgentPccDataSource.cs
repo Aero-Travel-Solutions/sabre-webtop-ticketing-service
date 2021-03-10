@@ -7,7 +7,7 @@ namespace SabreWebtopTicketingService.Interface
 {
   public interface IAgentPccDataSource
   {
-        Task<AgentPccList> RetrieveAgentPccs(string agentId, string sessionID);
+        Task<AgentPccList> RetrieveAgentPccs(User user, string sessionID);
         Task<ADBAgent> RetrieveAgentDetails(string consolidator_id, string agent_id, string sessionID);
         Task<List<DataAgent>> RetrieveAgents(string consolidator_id, string sessionID);
   }

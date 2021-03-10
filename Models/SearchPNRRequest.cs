@@ -12,6 +12,7 @@ namespace SabreWebtopTicketingService.Models
         public string SearchText { get; set; }
         public string AgentID { get; set; }
         public string QueueID { get; set; }
+        public string warmer { get; set; }
     }
 
 
