@@ -9,7 +9,7 @@ namespace SabreWebtopTicketingService.Models
         public string Content { get; set; }
 
         [JsonPropertyName("timestamp")]
-        public DateTime Timestamp { get; set; }
+        public string Timestamp { get; set; }
 
         [JsonPropertyName("created_by")]
         public string CreatedBy { get; set; }
