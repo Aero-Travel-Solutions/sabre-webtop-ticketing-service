@@ -4514,7 +4514,7 @@ namespace SabreWebtopTicketingService.Services
                                         agent.Consolidator.CountryCode :
                                         "AU",
                     AgentIata = user?.Agent?.FinanceDetails?.IataNumber??"",
-                    BspCommission = quote.CAT35 ? quote.BspCommissionRate: default,
+                    BspCommission = default,
                     FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                         "CREDIT_CARD" :
                                         "CASH",
@@ -4698,7 +4698,7 @@ namespace SabreWebtopTicketingService.Services
                                         agent.Consolidator.CountryCode :
                                         "AU",
                     AgentIata = user?.Agent?.FinanceDetails?.IataNumber ?? "",
-                    BspCommission = quote.CAT35 ? quote.BspCommissionRate : default,
+                    BspCommission = default,
                     FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                         "CREDIT_CARD" :
                                         "CASH",

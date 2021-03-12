@@ -67,7 +67,7 @@ namespace SabreWebtopTicketingService.Models
         public string PricingCommand { get; set; }
         public string PriceCode { get; set; }
         public string TourCode { get; set; }
-        public bool CAT35 => !string.IsNullOrEmpty(TourCode);
+        public bool CAT35 => FiledFare && !string.IsNullOrEmpty(TourCode);
         [JsonIgnore]
         public List<string> DifferentPaxType { get; set; }
         public string TicketingPCC { get; set; }
