@@ -458,6 +458,14 @@ namespace SabreWebtopTicketingService.Services
                                             Expiry = fop.ExpiryDate,
                                             CreditCard = dataProtector.Unprotect(fop.CardNumber)
                                         });
+
+                                    pnr.
+                                        StoredCards.
+                                        Add(new PNRStoredCards()
+                                        {
+                                            MaskedCardNumber = fop.MaskedCardNumber.Trim(),
+                                            Expiry = fop.ExpiryDate
+                                        });
                                 }
                             }
                         }
