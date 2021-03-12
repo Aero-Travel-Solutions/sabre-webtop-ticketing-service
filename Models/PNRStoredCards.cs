@@ -4,6 +4,7 @@ namespace SabreWebtopTicketingService.Models
 {
     public class PNRStoredCards
     {
+        public string NameNumber { get; set; }
         public string MaskedCardNumber { get; set; }
         public string Expiry { get; set; }
     }

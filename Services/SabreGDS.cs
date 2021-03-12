@@ -203,7 +203,7 @@ namespace SabreWebtopTicketingService.Services
                 //Retrieve PNR if only one match found
                 try
                 {
-                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, contextID, request.QueueID, true, true, true, false));
+                    pnr = await retryPolicy.ExecuteAsync(() => GetPNR(token, request.SessionID, request.SearchText, contextID, request.QueueID, true, true, true, false,"", !string.IsNullOrEmpty(request.QueueID)));
 
                     logger.LogInformation($"Response parsing and validation @SearchPNR elapsed {sw.ElapsedMilliseconds} ms.");
 
@@ -353,7 +353,7 @@ namespace SabreWebtopTicketingService.Services
             return validateCommissionWarnings;
         }
 
-        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, string queueid, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "")
+        public async Task<PNR> GetPNR(string sabresessionid, string sessionid, string locator, string contextID, string queueid, bool withpnrvalidation = false, bool getStoredCards = false, bool includeQuotes = false, bool includeexpiredquote = false, string ticketingpcc = "", bool nostoredcards= false)
         {
             var pnrAccessKey = $"{locator}-pnr".EncodeBase64();
             var cardAccessKey = $"{locator}-card".EncodeBase64();
@@ -395,7 +395,7 @@ namespace SabreWebtopTicketingService.Services
 
             if (agent != null && !string.IsNullOrEmpty(agent.AgentId))
             {
-                pnr = ParseSabrePNR(response, sabresessionid, sessionid, agent, contextID, includeQuotes, includeexpiredquote);
+                pnr = ParseSabrePNR(response, sabresessionid, sessionid, agent, contextID, includeQuotes, includeexpiredquote, nostoredcards);
 
                 if (withpnrvalidation)
                 {
@@ -435,18 +435,18 @@ namespace SabreWebtopTicketingService.Services
 
                         if (queueModel != null && !queueModel.Passengers.IsNullOrEmpty())
                         {
-                            List<QueuePassengersFOP> formofpayments = queueModel.
+                            var formofpayments = queueModel.
                                                             Passengers.
-                                                            Select(m => m.FormOfPayment).
-                                                            Where(a => !string.IsNullOrEmpty(a.CardNumber)).
-                                                            DistinctBy(d => d.CardNumber).
+                                                            Select(m => new { m.NameNumber, m.FormOfPayment }).
+                                                            Where(a => !string.IsNullOrEmpty(a.FormOfPayment.CardNumber)).
+                                                            DistinctBy(d => d.FormOfPayment.CardNumber).
                                                             ToList();
 
                             if (!formofpayments.IsNullOrEmpty())
                             {
                                 foreach (var fop in formofpayments)
                                 {
-                                    if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.MaskedCardNumber.Trim()).IsNullOrEmpty())
+                                    if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.FormOfPayment.MaskedCardNumber.Trim()).IsNullOrEmpty())
                                     {
                                         continue;
                                     }
@@ -454,17 +454,18 @@ namespace SabreWebtopTicketingService.Services
                                     storedCreditCard.
                                         Add(new StoredCreditCard()
                                         {
-                                            MaskedCardNumber = fop.MaskedCardNumber.Trim(),
-                                            Expiry = fop.ExpiryDate,
-                                            CreditCard = dataProtector.Unprotect(fop.CardNumber)
+                                            MaskedCardNumber = fop.FormOfPayment.MaskedCardNumber.Trim(),
+                                            Expiry = fop.FormOfPayment.ExpiryDate,
+                                            CreditCard = dataProtector.Unprotect(fop.FormOfPayment.CardNumber)
                                         });
 
                                     pnr.
                                         StoredCards.
                                         Add(new PNRStoredCards()
                                         {
-                                            MaskedCardNumber = fop.MaskedCardNumber.Trim(),
-                                            Expiry = fop.ExpiryDate
+                                            NameNumber = fop.NameNumber,
+                                            MaskedCardNumber = fop.FormOfPayment.MaskedCardNumber.Trim(),
+                                            Expiry = fop.FormOfPayment.ExpiryDate
                                         });
                                 }
                             }
@@ -1365,7 +1366,7 @@ namespace SabreWebtopTicketingService.Services
             return agentlist;
         }
 
-        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, Agent agent, string contextID, bool includeQuotes = false, bool includeexpiredquote = false)
+        private PNR ParseSabrePNR(GetReservationRS result, string token, string sessionid, Agent agent, string contextID, bool includeQuotes = false, bool includeexpiredquote = false, bool nostoredcards = false)
         {
             DateTime? pcclocaldatetime = null;
             SabrePNR sabrepnr = new SabrePNR(result);
@@ -1385,7 +1386,7 @@ namespace SabreWebtopTicketingService.Services
                                             System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid, agent, contextID);
+            PNR pnr = GeneratePNR(token, sabrepnr, pcclocaldatetime, includeQuotes, includeexpiredquote, sessionid, agent, contextID, nostoredcards);
 
             pnr.LastQuoteNumber = pnr.Quotes.IsNullOrEmpty() ? 0 : pnr.Quotes.OrderBy(l => l.QuoteNo).Last().QuoteNo;
             return pnr;
@@ -1460,7 +1461,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid, Agent agent, string contextID)
+        private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid, Agent agent, string contextID, bool nostoredcards)
         {
             List<PNRSector> secs = GetSectors(sabrepnr.AirSectors, sabrepnr.ArunkSectors);
             List<PNRPassengers> paxs = GetPassengers(sabrepnr.Passengers);
@@ -1481,14 +1482,16 @@ namespace SabreWebtopTicketingService.Services
                 SSRs = GetSSRs(sabrepnr.SSRs, secs, paxs),
                 Ancillaries = GetAncillaries(sabrepnr),
                 Sectors = secs,
-                StoredCards = sabrepnr.
-                                StoredCreditCard.
-                                Select(s => new PNRStoredCards()
-                                {
-                                    MaskedCardNumber = s.MaskedCardNumber,
-                                    Expiry = s.Expiry,
-                                }).
-                                ToList(),
+                StoredCards = nostoredcards ?
+                                sabrepnr.
+                                    StoredCreditCard.
+                                    Select(s => new PNRStoredCards()
+                                    {
+                                        MaskedCardNumber = s.MaskedCardNumber,
+                                        Expiry = s.Expiry,
+                                    }).
+                                    ToList():
+                                new List<PNRStoredCards>(),
                 Tickets = sabrepnr.
                             Tickets.
                             Select(s => new PNRTicket()
