@@ -435,7 +435,7 @@ namespace SabreWebtopTicketingService.Services
 
                         if (queueModel != null && !queueModel.Passengers.IsNullOrEmpty())
                         {
-                            List<FOP> formofpayments = queueModel.
+                            List<QueuePassengersFOP> formofpayments = queueModel.
                                                             Passengers.
                                                             Select(m => m.FormOfPayment).
                                                             Where(a => !string.IsNullOrEmpty(a.CardNumber)).
