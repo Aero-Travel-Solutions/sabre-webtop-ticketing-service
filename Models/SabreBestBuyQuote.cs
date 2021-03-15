@@ -202,7 +202,7 @@ namespace SabreWebtopTicketingService.Models
 
                 string[] farecalcitems = string.Join(" ", items[i + 1].
                                                     SplitOn("\n").
-                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED"))).
+                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER"))).
                                                     SplitOnRegex(@"(ROE\d+\.\d+)\s*");
 
                 string farecalc = GetFareCalc(farecalcitems);
@@ -212,13 +212,13 @@ namespace SabreWebtopTicketingService.Models
                                             SplitOn("\n").
                                             SkipWhile(s => !s.Contains("ROE")).
                                             Skip(1).
-                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")).
                                             ToList() :
                                         items[i + 1].
                                             SplitOn("\n").
                                             SkipWhile(s => !s.Contains("END")).
                                             Skip(1).
-                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER SPECIFIED")).
+                                            TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")).
                                             ToList();
 
                 //remove XF and ZP from endorsements
