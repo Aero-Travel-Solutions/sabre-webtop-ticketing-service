@@ -11,6 +11,8 @@ namespace SabreWebtopTicketingService.Models
 
         [JsonPropertyName("document_type")]
         public string DocumnentType { get; set; }
+        [JsonPropertyName("channel")]
+        public Channel Channel { get; set; }
 
         [JsonPropertyName("issue_date")]
         public DateTime IssueDate { get; set; }
@@ -64,5 +66,11 @@ namespace SabreWebtopTicketingService.Models
         [JsonPropertyName("quotes")]
         public CalculateCommissionQuoteRequest[] Quotes { get; set; }
 
+    }
+
+    public enum Channel
+    {
+        ONLINE,
+        WEBTOP
     }
 }

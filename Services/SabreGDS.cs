@@ -1907,13 +1907,13 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 List<issueticketresponse> response = new List<issueticketresponse>();
-                //var firstquote = request.Quotes.First();
+                var firstquote = request.Quotes.First();
 
-                //if (firstquote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC &&
-                //    firstquote.PriceType == Models.PriceType.Manual)
-                //{
-                //    response = await IssueDocumentUsingCryptic(statefultoken, request, pcc, token, ticketingpcc, issueticketresponses, ticketingprinter, printerbypass, bcode, enableextendedendo, decimalformatstring);
-                //}
+                if (firstquote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC &&
+                    firstquote.PriceType == Models.PriceType.Manual)
+                {
+                    response = await IssueDocumentUsingCryptic(statefultoken, request, pcc, token, ticketingpcc, ticketingprinter, printerbypass, bcode, enableextendedendo, decimalformatstring);
+                }
 
                 //issue ticket
                 response = await enhancedAirTicketService.
@@ -2049,7 +2049,7 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private async Task<List<issueticketresponse>> IssueDocumentUsingCryptic(string statefultoken, IssueExpressTicketRQ request, Pcc pcc, Token token, string ticketingpcc, object issueticketresponses, string ticketingprinter, string printerbypass, string bcode, bool enableextendedendo, string decimalformatstring)
+        private async Task<List<issueticketresponse>> IssueDocumentUsingCryptic(string statefultoken, IssueExpressTicketRQ request, Pcc pcc, Token token, string ticketingpcc, string ticketingprinter, string printerbypass, string bcode, bool enableextendedendo, string decimalformatstring)
         {
             List<issueticketresponse> issuetktresp = new List<issueticketresponse>();
 
@@ -4472,6 +4472,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
+                    Channel = Channel.WEBTOP,
                     PlatingCarrier = quote.PlatingCarrier.ToUpper(),
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
@@ -4656,6 +4657,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
+                    Channel = Channel.WEBTOP,
                     PlatingCarrier = quote.PlatingCarrier.ToUpper(),
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
