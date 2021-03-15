@@ -439,14 +439,13 @@ namespace SabreWebtopTicketingService.Services
                                                             Passengers.
                                                             Select(m => new { m.NameNumber, m.FormOfPayment }).
                                                             Where(a => !string.IsNullOrEmpty(a.FormOfPayment.CardNumber)).
-                                                            DistinctBy(d => d.FormOfPayment.CardNumber).
                                                             ToList();
 
                             if (!formofpayments.IsNullOrEmpty())
                             {
-                                foreach (var fop in formofpayments)
+                                foreach (var fop in formofpayments.GroupBy(grp=> grp.FormOfPayment.MaskedCardNumber.Trim()))
                                 {
-                                    if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.FormOfPayment.MaskedCardNumber.Trim()).IsNullOrEmpty())
+                                    if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.Key).IsNullOrEmpty())
                                     {
                                         continue;
                                     }
@@ -454,18 +453,18 @@ namespace SabreWebtopTicketingService.Services
                                     storedCreditCard.
                                         Add(new StoredCreditCard()
                                         {
-                                            MaskedCardNumber = fop.FormOfPayment.MaskedCardNumber.Trim(),
-                                            Expiry = fop.FormOfPayment.ExpiryDate,
-                                            CreditCard = dataProtector.Unprotect(fop.FormOfPayment.CardNumber)
+                                            MaskedCardNumber = fop.Key,
+                                            Expiry = fop.First().FormOfPayment.ExpiryDate,
+                                            CreditCard = dataProtector.Unprotect(fop.First().FormOfPayment.CardNumber.Trim())
                                         });
 
                                     pnr.
                                         StoredCards.
                                         Add(new PNRStoredCards()
                                         {
-                                            NameNumber = fop.NameNumber,
-                                            MaskedCardNumber = fop.FormOfPayment.MaskedCardNumber.Trim(),
-                                            Expiry = fop.FormOfPayment.ExpiryDate
+                                            NameNumber = fop.Select(s=> s.NameNumber.Trim()).Distinct().ToList(),
+                                            MaskedCardNumber = fop.Key,
+                                            Expiry = fop.First().FormOfPayment.ExpiryDate
                                         });
                                 }
                             }
@@ -4472,7 +4471,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
-                    Channel = Channel.WEBTOP,
+                    Channel = "WEBTOP",
                     PlatingCarrier = quote.PlatingCarrier.ToUpper(),
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
@@ -4657,7 +4656,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     SessionId = sessionID,
                     GdsCode = "1W",
-                    Channel = Channel.WEBTOP,
+                    Channel = "WEBTOP",
                     PlatingCarrier = quote.PlatingCarrier.ToUpper(),
                     IssueDate = DateTime.Now,
                     Origin = quote.QuoteSectors.First().DepartureCityCode,
