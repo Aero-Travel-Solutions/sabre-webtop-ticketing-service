@@ -359,10 +359,23 @@ namespace SabreWebtopTicketingService.Services
             var cardAccessKey = $"{locator}-card".EncodeBase64();
 
             //get reservation
-            GetReservationRS response = await _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc);
+            GetReservationRS gdsresponse = null;
+            string lagendresponse = "";
+
+            CancellationToken ct = new CancellationToken();
+
+            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            Parallel.
+                Invoke(
+                    //get reservation
+                    () => gdsresponse = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc).GetAwaiter().GetResult(),
+                    //Retrieve agencies
+                    () => lagendresponse = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*").GetAwaiter().GetResult()
+                );
 
             //booking pcc
-            string bookingpcc = ((ReservationPNRB)response.Item).POS.Source.PseudoCityCode;
+            string bookingpcc = ((ReservationPNRB)gdsresponse.Item).POS.Source.PseudoCityCode;
 
             PNR pnr = new PNR();
             List<PNRAgent> agents = new List<PNRAgent>();
@@ -395,7 +408,13 @@ namespace SabreWebtopTicketingService.Services
 
             if (agent != null && !string.IsNullOrEmpty(agent.AgentId))
             {
-                pnr = ParseSabrePNR(response, sabresessionid, sessionid, agent, contextID, includeQuotes, includeexpiredquote, nostoredcards);
+                pnr = ParseSabrePNR(gdsresponse, sabresessionid, sessionid, agent, contextID, includeQuotes, includeexpiredquote, nostoredcards);
+
+                pnr.MaxCharacters = new MaxCharacters()
+                {
+                    FareCalculation = 246,
+                    Endorsements = lagendresponse.Contains("EXPANDED ENDORSEMENT - ON") ? 999: 58
+                };
 
                 if (withpnrvalidation)
                 {
@@ -426,7 +445,7 @@ namespace SabreWebtopTicketingService.Services
                 if (getStoredCards)
                 {
                     //read card data from pnr
-                    List<StoredCreditCard> storedCreditCard = GetStoredCards(response);
+                    List<StoredCreditCard> storedCreditCard = GetStoredCards(gdsresponse);
 
                     //read from queue record
                     if(!string.IsNullOrEmpty(queueid))

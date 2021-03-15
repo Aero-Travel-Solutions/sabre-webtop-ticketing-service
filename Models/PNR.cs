@@ -27,7 +27,10 @@ namespace SabreWebtopTicketingService.Models
         public int LastQuoteNumber { get; set; }
         public string DKNumber { get; set; }       
         public string HostUserId { get; set; }
+        public MaxCharacters MaxCharacters { get; set; }
         public List<PNRAgent> Agents { get; set; }
+
+
      
         public void Dispose()
         {
@@ -35,7 +38,13 @@ namespace SabreWebtopTicketingService.Models
         }
     }
 
-    public class PNRAgent
+    public class MaxCharacters
+    {
+      public int FareCalculation { get; set; } // 250,
+      public int Endorsements { get; set; }// 250
+    }
+
+public class PNRAgent
     {
         public string AgentId { get; set; }
         public string Name { get; set; }
