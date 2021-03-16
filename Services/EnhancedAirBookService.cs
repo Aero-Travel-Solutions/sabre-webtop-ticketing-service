@@ -876,6 +876,8 @@ namespace SabreWebtopTicketingService.Services
                                       BaseFareCurrency = pqs.ItinTotalFare.EquivFare == null ?
                                                         pqs.ItinTotalFare.BaseFare.CurrencyCode :
                                                         pqs.ItinTotalFare.EquivFare.CurrencyCode,
+                                      EquivFare = pqs.ItinTotalFare.EquivFare == null ? default : decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
+                                      EquivFareCurrencyCode = pqs.ItinTotalFare.EquivFare == null ? "" : pqs.ItinTotalFare.EquivFare.CurrencyCode,
                                       Taxes = pqs.
                                                  ItinTotalFare.Taxes?.Tax?.Select(t => new Tax()
                                                  {
@@ -902,12 +904,6 @@ namespace SabreWebtopTicketingService.Services
                                                                 SourcedFromCAT16 = p.PenaltyInformation.Cat16Specified && p.PenaltyInformation.Cat16
                                                             }).
                                                             ToList(),
-                                      EquivFare = pqs.ItinTotalFare.EquivFare == null ?
-                                                    0.00M :
-                                                    decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
-                                      EquivFareCurrencyCode = pqs.ItinTotalFare.EquivFare == null ?
-                                                        "" :
-                                                        pqs.ItinTotalFare.EquivFare.CurrencyCode,
                                       QuoteSectors = sectors,
                                       CreditCardFee = string.IsNullOrEmpty(obfee) ? 0.00M : decimal.Parse(obfee),
                                       CreditCardFeeRate = string.IsNullOrEmpty(obfeerate) ?
@@ -992,6 +988,7 @@ namespace SabreWebtopTicketingService.Services
                         BaseFareCurrency = item.Quote.BaseFareCurrency,
                         Endorsements = item.Quote.Endorsements,
                         EquivFare = item.Quote.EquivFare,
+                        EquivFareCurrencyCode = item.Quote.EquivFareCurrencyCode,
                         FareCalculation = item.Quote.FareCalculation,
                         ROE = item.Quote.ROE,
                         QuoteSectors = item.Quote.QuoteSectors,
