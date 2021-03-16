@@ -181,19 +181,24 @@ namespace SabreWebtopTicketingService.Models
                     taxitems.Add(new TaxInfo(string.Join("###", taxlines[paxtypeindex + 1].SplitOn("\n").Where(w => !w.Contains("TTL")))));
                 }
 
-                //single currency
-                string basefare = items[0].Contains("EQUIV AMT") ?
-                                    taxlines[paxtypeindex].
-                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+[A-Z]{3}(\d+\.{0,1}\d*)\s+")[1] :
-                                    taxlines[paxtypeindex].
+                //base fare
+                string basefare = taxlines[paxtypeindex].
                                         SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}(\d+\.{0,1}\d*)")[1];
 
-                string basefarecurrency = items[0].Contains("EQUIV AMT") ?
-                                    taxlines[paxtypeindex].
-                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+([A-Z]{3})\d+\.{0,1}\d*\s+")[1] :
-                                    taxlines[paxtypeindex].
+                string basefarecurrency = taxlines[paxtypeindex].
                                         SplitOnRegex(@"\d+\s*-\s+([A-Z]{3})\d+\.{0,1}\d*")[1];
 
+
+                //equiv fare
+                string equivfare = items[0].Contains("EQUIV AMT") ?
+                    taxlines[paxtypeindex].
+                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+[A-Z]{3}(\d+\.{0,1}\d*)\s+")[1] :
+                    "";
+
+                string equivfarecurrency = items[0].Contains("EQUIV AMT") ?
+                                    taxlines[paxtypeindex].
+                                        SplitOnRegex(@"\d+\s*-\s+[A-Z]{3}\d+\.{0,1}\d*\s+([A-Z]{3})\d+\.{0,1}\d*\s+")[1] :
+                                    "";
 
                 string[] farebasis = items[i].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
                 string pricehint = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
@@ -312,6 +317,8 @@ namespace SabreWebtopTicketingService.Models
                                     ToList(),
                         BaseFare = decimal.Parse(basefare),
                         BaseFareCurrency = basefarecurrency,
+                        EquivFare = string.IsNullOrEmpty(equivfare) ? default : decimal.Parse(equivfare),
+                        EquivFareCurrency = equivfarecurrency,
                         PlatingCarrier = platingcarrier
                     });
             }
