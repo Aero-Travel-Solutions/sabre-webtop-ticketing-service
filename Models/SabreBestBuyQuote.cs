@@ -204,11 +204,26 @@ namespace SabreWebtopTicketingService.Models
                                         items[i + 1].SplitOn("\n").First(f => f.StartsWith("CHANGE BOOKING CLASS")) :
                                         "";
 
-                string pattern = items[i + 1].Contains("ROE") ? @"(ROE\d+\.\d+)\s*" : "END?";
-                string[] farecalcitems = string.Join(" ", items[i + 1].
+                List<string> farecalcitems = new List<string>();
+                if (items[i + 1].Contains("ROE"))
+                {
+                    farecalcitems = string.Join(" ", items[i + 1].
                                                     SplitOn("\n").
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER"))).
-                                                    SplitOnRegex(pattern);
+                                                    SplitOnRegex(@"(ROE\d+\.\d+)\s*").
+                                                    ToList();
+                }
+
+                string farecalclines = string.Join(" ", items[i + 1].
+                                                    SplitOn("\n").
+                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")));
+                int splitindex = farecalclines.IndexOf("END");
+                if (splitindex > 0)
+                {
+                    farecalcitems.Add(farecalclines.Substring(0, splitindex).Trim());
+                    farecalcitems.Add("END");
+                    farecalcitems.Add(farecalclines.Substring(splitindex + 3));
+                }
 
                 List<string> endos = items[i + 1].Contains("ROE") ?
                                         items[i + 1].
@@ -340,7 +355,7 @@ namespace SabreWebtopTicketingService.Models
             return baggage;
         }
 
-        private string GetFareCalc(string[] farecalcitems)
+        private string GetFareCalc(List<string> farecalcitems)
         {
             if(farecalcitems.Count() == 1)
             {
