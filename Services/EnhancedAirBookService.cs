@@ -988,7 +988,7 @@ namespace SabreWebtopTicketingService.Services
                         BaseFareCurrency = item.Quote.BaseFareCurrency,
                         Endorsements = item.Quote.Endorsements,
                         EquivFare = item.Quote.EquivFare,
-                        EquivFareCurrencyCode = item.Quote.EquivFareCurrencyCode
+                        EquivFareCurrencyCode = item.Quote.EquivFareCurrencyCode,
                         FareCalculation = item.Quote.FareCalculation,
                         ROE = item.Quote.ROE,
                         QuoteSectors = item.Quote.QuoteSectors,
