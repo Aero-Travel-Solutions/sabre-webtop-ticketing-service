@@ -343,10 +343,14 @@ namespace SabreWebtopTicketingService.Models
 
             string farecalc = farecalcitems.First();
 
+            if(farecalcitems.Count() > 2)
+            {
+                farecalc += farecalcitems[1];
+            }
+
             //SYD QF TYO AA LAX AA HNL QF SYD2860.27NUC2860.27END ROE1.293231 XFHNL4.5
             //MEL LH X/HKG LH X/FRA LH LON193.31/-ROM LH X/MUC LH NYC//LAX QF MEL386.62NUC579.93END ROE1.293231 XFLAX4.5
             //LAX AA HNL134.96USD134.96END ZPLAX XFLAX4.5
-            //EWR UA LAX217.67USD217.67END ZPEWR XFEWR4.5
 
             if (farecalcitems.Last().Contains("ZP"))
             {
