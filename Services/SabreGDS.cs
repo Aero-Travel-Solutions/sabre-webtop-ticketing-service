@@ -1137,6 +1137,8 @@ namespace SabreWebtopTicketingService.Services
                           FareCalculation = s.FareCalculation,
                           BaseFare = s.BaseFare,
                           BaseFareCurrency = s.BaseFareCurrency,
+                          EquivFare = s.EquivFare,
+                          EquivFareCurrencyCode = s.EquivFareCurrency,
                           LastPurchaseDate = s.LastPurchaseDate,
                           Endorsements = s.Endorsements,
                           Warnings = new List<WebtopWarning>()
