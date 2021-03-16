@@ -870,12 +870,8 @@ namespace SabreWebtopTicketingService.Services
                                   {
                                       QuoteNo = GetQuoteNumber(pqnos, paxsdata, sectors, pqs),
                                       PlatingCarrier = validatingcarrier,
-                                      BaseFare = pqs.ItinTotalFare.EquivFare == null ?
-                                                decimal.Parse(pqs.ItinTotalFare.BaseFare.Amount) :
-                                                decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
-                                      BaseFareCurrency = pqs.ItinTotalFare.EquivFare == null ?
-                                                        pqs.ItinTotalFare.BaseFare.CurrencyCode :
-                                                        pqs.ItinTotalFare.EquivFare.CurrencyCode,
+                                      BaseFare = decimal.Parse(pqs.ItinTotalFare.BaseFare.Amount),
+                                      BaseFareCurrency = pqs.ItinTotalFare.BaseFare.CurrencyCode,
                                       EquivFare = pqs.ItinTotalFare.EquivFare == null ? default : decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
                                       EquivFareCurrencyCode = pqs.ItinTotalFare.EquivFare == null ? "" : pqs.ItinTotalFare.EquivFare.CurrencyCode,
                                       Taxes = pqs.
@@ -935,6 +931,7 @@ namespace SabreWebtopTicketingService.Services
                                       BaseFareCurrency = s.Quote.BaseFareCurrency,
                                       Endorsements = s.Quote.Endorsements,
                                       EquivFare = s.Quote.EquivFare,
+                                      EquivFareCurrencyCode = s.Quote.EquivFareCurrencyCode,
                                       FareCalculation = s.Quote.FareCalculation,
                                       ROE = s.Quote.ROE,
                                       NonRefundable = s.Quote.NonRefundable,
