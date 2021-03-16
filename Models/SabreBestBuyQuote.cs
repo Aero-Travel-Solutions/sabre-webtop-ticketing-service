@@ -320,7 +320,7 @@ namespace SabreWebtopTicketingService.Models
                                                 Trim(),
                         Endorsements = endos.Where(w=> !string.IsNullOrEmpty(w)).ToList(),
                         FareCalculation = GetFareCalc(farecalcitems),
-                        ROE = farecalcitems.Count() == 1? "1.0000": farecalcitems[1].Substring(3).Trim(),
+                        ROE = farecalclines.LastMatch(@"(ROE\d+\.\d+)\s*", "1.0000"),
                         Taxes = taxitems.
                                     SelectMany(s => s.Taxes).
                                     Select(s => new Tax()
