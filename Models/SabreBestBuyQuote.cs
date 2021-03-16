@@ -161,7 +161,6 @@ namespace SabreWebtopTicketingService.Models
             List<BestBuyItem> bestBuyItems = new List<BestBuyItem>();
             var items = gdsresponse.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)");
             List<string> usedfbs = new List<string>();
-            //List<FBData> fBData = new List<FBData>();
             List<SectorFBData> sectors = null;
             List<BaggageInfo> baggageinfo = GetBestBuyBaggageAllowance(wpbag);
 
