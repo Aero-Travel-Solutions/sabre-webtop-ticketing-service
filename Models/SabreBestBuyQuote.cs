@@ -200,7 +200,7 @@ namespace SabreWebtopTicketingService.Models
                                         items[i + 1].SplitOn("\n").First(f => f.StartsWith("CHANGE BOOKING CLASS")) :
                                         "";
 
-                string pattern = items[i + 1].Contains("END") ? "END" : @"(ROE\d+\.\d+)\s*";
+                string pattern = items[i + 1].Contains("ROE") ? @"(ROE\d+\.\d+)\s*" : "END?";
                 string[] farecalcitems = string.Join(" ", items[i + 1].
                                                     SplitOn("\n").
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER"))).
