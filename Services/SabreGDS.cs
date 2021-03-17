@@ -3433,7 +3433,7 @@ namespace SabreWebtopTicketingService.Services
                 command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
 
                 //equiv fare and currency
-                if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency))
+                if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency) && quote.EquivFareCurrency != quote.BaseFareCurrency)
                 {
                     string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare.Value, 0).ToString() : quote.EquivFare.Value.ToString(decimalformatstring);
                     command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{equivfare}";

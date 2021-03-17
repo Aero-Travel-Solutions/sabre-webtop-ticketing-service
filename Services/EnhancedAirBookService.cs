@@ -873,7 +873,7 @@ namespace SabreWebtopTicketingService.Services
                                       BaseFare = decimal.Parse(pqs.ItinTotalFare.BaseFare.Amount),
                                       BaseFareCurrency = pqs.ItinTotalFare.BaseFare.CurrencyCode,
                                       EquivFare = pqs.ItinTotalFare.EquivFare == null ? default : decimal.Parse(pqs.ItinTotalFare.EquivFare.Amount),
-                                      EquivFareCurrencyCode = pqs.ItinTotalFare.EquivFare == null ? "" : pqs.ItinTotalFare.EquivFare.CurrencyCode,
+                                      EquivFareCurrencyCode = pqs.ItinTotalFare.EquivFare == null ? pqs.ItinTotalFare.BaseFare.CurrencyCode : pqs.ItinTotalFare.EquivFare.CurrencyCode,
                                       Taxes = pqs.
                                                  ItinTotalFare.Taxes?.Tax?.Select(t => new Tax()
                                                  {

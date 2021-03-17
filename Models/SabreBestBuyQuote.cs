@@ -332,7 +332,7 @@ namespace SabreWebtopTicketingService.Models
                         BaseFare = decimal.Parse(basefare),
                         BaseFareCurrency = basefarecurrency,
                         EquivFare = string.IsNullOrEmpty(equivfare) ? default : decimal.Parse(equivfare),
-                        EquivFareCurrency = equivfarecurrency,
+                        EquivFareCurrency = string.IsNullOrEmpty(equivfarecurrency) ? basefarecurrency : equivfarecurrency,
                         PlatingCarrier = platingcarrier
                     });
             }
