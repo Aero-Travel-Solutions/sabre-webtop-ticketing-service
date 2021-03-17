@@ -357,14 +357,14 @@ namespace SabreWebtopTicketingService.Models
 
         private string GetFareCalc(List<string> farecalcitems)
         {
-            if(farecalcitems.Count() == 1)
+            if (farecalcitems.Count() == 1)
             {
                 return string.Join("", farecalcitems).SplitOn("END").First() + "END";
             }
 
             string farecalc = farecalcitems.First();
 
-            if(farecalcitems.Count() > 2)
+            if (farecalcitems.Count() > 2)
             {
                 farecalc += farecalcitems[1];
             }
