@@ -1764,18 +1764,64 @@ namespace SabreWebtopTicketingService.Services
                 if (user?.Agent != null) { user.Agent.CustomerNo = agent.CustomerNo; }
 
                 //Obtain SOAP session
-                sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
-                statefultoken = sabreSession.SessionID;
+                List<StoredCreditCard> storedCreditCards = null;
+                var pnrAccessKey = $"{request.Locator}-pnr".EncodeBase64();
 
-                if (sabreSession.Stored) { await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "I"); }
+                //Obtain session (if found from cache, else directly from sabre)
+                var sessiontoken = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
+                statefultoken = sessiontoken.SessionID;
+                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
 
-                //Context Change
-                await _changeContextService.ContextChange(sabreSession, pcc, ticketingpcc);
+                //Check to see if the session is from cache and usable
+                bool storedcardspresent = !request.Quotes.IsNullOrEmpty() &&
+                        request.Quotes.Any(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CardNumber.Contains("XXX")) ||
+                        !request.EMDs.IsNullOrEmpty() &&
+                        request.EMDs.Any(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX"));
+                if (sessiontoken.Stored && !sessiontoken.Expired)
+                {
+                    //Try get PNR in cache               
+                    pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
-                //Retrieve PNR
-                GetReservationRS getReservationRS = null;
-                getReservationRS = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
-                pnr = ParseSabrePNR(getReservationRS, statefultoken, request.SessionID, agent, contextID, true, true);
+                    if (storedcardspresent)
+                    {
+                        //Try get stored cards
+                        storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                        if (!storedCreditCards.IsNullOrEmpty())
+                        {
+                            GetStoredCardDetails(request, null, storedCreditCards);
+                        }
+                    }
+                }
+
+                if (pnr == null)
+                {
+                    if ((ticketingpcc != pcc.PccCode) ||
+                        (sessiontoken.Stored &&
+                         !sessiontoken.Expired &&
+                         (string.IsNullOrEmpty(sessiontoken.CurrentPCC) ? sessiontoken.ConsolidatorPCC : sessiontoken.CurrentPCC) != ticketingpcc))
+                    {
+                        //ignore session
+                        await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "I");
+
+                        //Context Change
+                        await _changeContextService.ContextChange(sessiontoken, pcc, ticketingpcc);
+                    }
+
+                    //Retrieve PNR
+                    GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
+
+                    //Parse PNR++
+                    pnr = ParseSabrePNR(result, statefultoken, sessionID, agent, contextID);
+
+                    //Get stored card data
+                    if (storedcardspresent &&
+                        (storedCreditCards.IsNullOrEmpty()))
+                    {
+                        //Try get stored cards
+                        storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                        GetStoredCardDetails(request, result);
+                    }
+                }
 
                 //check commission
                 IssueExpressTicketRS issueExpressTicketRS = await CheckCommission(
@@ -1806,7 +1852,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //Stored cards
-                GetStoredCards(request, getReservationRS);
+                GetStoredCardDetails(request, null, storedCreditCards);
 
                 var pendingquotes = request.Quotes.Where(w => !w.FiledFare && w.PriceType != Models.PriceType.Manual);
                 var manualquotes = request.Quotes.Where(w => w.PriceType == Models.PriceType.Manual);
@@ -3466,7 +3512,10 @@ namespace SabreWebtopTicketingService.Services
                     }
                     else
                     {
-                        farecalc += $" ROE {quote.ROE}";
+                        if(!farecalc.Contains("END"))
+                        {
+                            farecalc += "END";
+                        }
                     }
                 }
 
