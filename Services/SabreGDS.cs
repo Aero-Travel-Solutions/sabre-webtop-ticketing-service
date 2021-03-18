@@ -1627,13 +1627,16 @@ namespace SabreWebtopTicketingService.Services
             try
             {
                 //populate INF DOB
-                var paxwithinfdata = paxs.FirstOrDefault(w => w.PaxType == "ADT" && w.AssociatedINF != null);
-                if (paxwithinfdata != null)
+                var paxwithinfdata = paxs.Where(w => w.PaxType == "ADT" && w.AssociatedINF != null);
+                if (!paxwithinfdata.IsNullOrEmpty())
                 {
-                    var infdob = passengers.FirstOrDefault(f => f.Passengername == paxwithinfdata.AssociatedINF.INFName);
-                    if (infdob != null)
+                    foreach (var paxwithinf in paxwithinfdata)
                     {
-                        infdob.DOB = DateTime.Parse(paxwithinfdata.AssociatedINF.INFDOB).GetISODateString();
+                        var infdob = passengers.FirstOrDefault(f => f.Passengername == paxwithinf.AssociatedINF.INFName);
+                        if (infdob != null)
+                        {
+                            infdob.DOB = DateTime.Parse(paxwithinf.AssociatedINF.INFDOB).GetISODateString();
+                        }
                     }
                 }
             }
