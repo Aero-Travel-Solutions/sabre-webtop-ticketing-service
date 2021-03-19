@@ -27,6 +27,6 @@ namespace SabreWebtopTicketingService.Services
 
         public string CurrencyCode => Lines.First(f => f.Contains("ROUNDED UP TO NEXT   1")).Substring(0, 3);
 
-        public int Amount => int.Parse(Lines.First(f => f.Contains("ROUNDED UP TO NEXT   1")).SplitOn("   ").Skip(1).First().Trim());
+        public int Amount => int.Parse(Lines.First(f => f.Contains("FARES")).SplitOnRegex(@"\s+").Skip(1).First().SplitOn(".").First());
     }
 }
