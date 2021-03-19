@@ -1796,21 +1796,19 @@ namespace SabreWebtopTicketingService.Services
                             GetStoredCardDetails(request, null, storedCreditCards);
                         }
                     }
+
+                    if(pnr != null && request.Quotes.Any(a=> a.PriceType == Models.PriceType.Manual))
+                    {
+                        await IgnoreAndContextChange(statefultoken, ticketingpcc, sessiontoken, pcc);
+
+                        //retrieve pnr in the session
+                        await _sabreCommandService.ExecuteCommand(statefultoken, pcc, $"*{request.Locator}");
+                    }
                 }
 
                 if (pnr == null)
                 {
-                    if ((ticketingpcc != pcc.PccCode) ||
-                        (sessiontoken.Stored &&
-                         !sessiontoken.Expired &&
-                         (string.IsNullOrEmpty(sessiontoken.CurrentPCC) ? sessiontoken.ConsolidatorPCC : sessiontoken.CurrentPCC) != ticketingpcc))
-                    {
-                        //ignore session
-                        await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "I");
-
-                        //Context Change
-                        await _changeContextService.ContextChange(sessiontoken, pcc, ticketingpcc);
-                    }
+                    await IgnoreAndContextChange(statefultoken, ticketingpcc, sessiontoken, pcc);
 
                     //Retrieve PNR
                     GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, statefultoken, pcc);
@@ -2115,6 +2113,21 @@ namespace SabreWebtopTicketingService.Services
                 {
                     await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
                 }
+            }
+        }
+
+        private async Task IgnoreAndContextChange(string statefultoken, string ticketingpcc, SabreSession sessiontoken, Pcc pcc)
+        {
+            //ignore session
+            await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "I");
+
+            if ((ticketingpcc != pcc.PccCode) ||
+                (sessiontoken.Stored &&
+                 !sessiontoken.Expired &&
+                 (string.IsNullOrEmpty(sessiontoken.CurrentPCC) ? sessiontoken.ConsolidatorPCC : sessiontoken.CurrentPCC) != ticketingpcc))
+            {
+                //Context Change
+                await _changeContextService.ContextChange(sessiontoken, pcc, ticketingpcc);
             }
         }
 
