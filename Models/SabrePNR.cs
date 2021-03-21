@@ -132,8 +132,9 @@ namespace SabreWebtopTicketingService.Models
                 return ssrs;
             }
         }
-        public List<StoredCreditCard> StoredCreditCard => 
-            new SabreStoredFOP((ReservationPNRB)getReservationRS.Item).storedCreditCards;
+        public List<StoredCreditCard> StoredCreditCard => getReservationRS == null ? 
+                                                                new List<StoredCreditCard>():
+                                                                new SabreStoredFOP((ReservationPNRB)getReservationRS.Item).storedCreditCards;
 
         public List<SabreTicket> Tickets => GetTickets(((ReservationPNRB)getReservationRS.Item).
                                                 PassengerReservation.
