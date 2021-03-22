@@ -290,9 +290,8 @@ namespace SabreWebtopTicketingService.Services
 
             if (quotes.Any(a=> a.PartialIssue) || 
                 quotes.
-                    Any(a=> 
-                           a.QuotePassenger.FormOfPayment.CreditAmount != 
-                           quotes.First().QuotePassenger.FormOfPayment.CreditAmount))
+                    Any(a=> a.QuotePassenger.FormOfPayment.CreditAmount != quotes.First().QuotePassenger.FormOfPayment.CreditAmount ||
+                            a.QuotePassenger.FormOfPayment.CardNumber != quotes.First().QuotePassenger.FormOfPayment.CardNumber))
             {
                 //specify passengers
                 pricinginstructions.NameSelect = quotes.
