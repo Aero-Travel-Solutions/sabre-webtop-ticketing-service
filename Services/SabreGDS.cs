@@ -1772,7 +1772,10 @@ namespace SabreWebtopTicketingService.Services
                         user,
                         request.AgentID,
                         pcc.PccCode);
-            string decimalformatstring = await GetCurrencyFormatString(agent);
+            //get currecy data from S3
+            var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
+            //get agent default currecy format string
+            string decimalformatstring = await GetCurrencyFormatString(agent, currencydata);
 
             if (agent != null)
             {
@@ -1934,7 +1937,7 @@ namespace SabreWebtopTicketingService.Services
                                 ticketingprinter,
                                 printerbypass,
                                 sessionID,
-                                decimalformatstring);
+                                currencydata);
 
                     //Remove the client added quotes
                     request.Quotes = new List<IssueExpressTicketQuote>();
@@ -2224,14 +2227,31 @@ namespace SabreWebtopTicketingService.Services
             return issuetktresp;
         }
 
-        private async Task<string> GetCurrencyFormatString(Agent agent)
+        private async Task<string> GetCurrencyFormatString(Agent agent, List<CurrencyData> currencydata)
         {
-            var currencydata = await _s3Helper.Read<List<CurrencyData>>("country-currency", "country_currency_v1.json");
             var countrydata = await _s3Helper.Read<List<Country>>("aerotickets-resources", "countries.json");
             logger.LogInformation($"Agent country code in use : {agent?.Consolidator?.CountryCode ?? "AU"}");
-            string countryname = countrydata.First(f => f.code.ToUpper().Trim() == (agent?.Consolidator?.CountryCode??"AU").ToUpper()).name;
+            string countryname = countrydata.First(f => f.code.ToUpper().Trim() == (agent?.Consolidator?.CountryCode ?? "AU").ToUpper()).name;
             logger.LogInformation($"Country Name: {countryname}");
-            int noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim().Contains(countryname.ToUpper().Trim()))?.decimal_places ?? 2;
+            return GetDecimalFormatString(currencydata, countryname);
+        }
+
+        private string GetDecimalFormatString(List<CurrencyData> currencydata, string countryname = "", string currencycode = "")
+        { 
+            if(string.IsNullOrEmpty(countryname) && string.IsNullOrEmpty(currencycode))
+            {
+                return "0.00";
+            }
+
+            int noofdecimals = 2;
+            if (!string.IsNullOrEmpty(countryname))
+            {
+                noofdecimals = currencydata.FirstOrDefault(f => f.country.ToUpper().Trim().Contains(countryname.ToUpper().Trim()))?.decimal_places ?? 2;
+            }
+            else if(!string.IsNullOrEmpty(currencycode))
+            {
+                noofdecimals = currencydata.FirstOrDefault(f => f.currency_code.Trim().ToUpper() == currencycode.Trim().ToUpper())?.decimal_places ?? 2;
+            }
             string decimalformatstring = noofdecimals == 0 ? "0" : "0.".PadRight(noofdecimals + 2, '0');
             logger.LogInformation($"Decimal formating string {decimalformatstring}");
             return decimalformatstring;
@@ -3370,8 +3390,10 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
-        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, string decimalformatstring)
+        private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, 
+            PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, List<CurrencyData> currencydata)
         {
+            string decimalformatstring = "";
             //Assign printer
             await _sabreCommandService.
                         ExecuteCommand(
@@ -3505,12 +3527,14 @@ namespace SabreWebtopTicketingService.Services
                     index++;
                 }
                 //base fare and currency
+                decimalformatstring = GetDecimalFormatString(currencydata, "", quote.BaseFareCurrency);
                 string basefare = decimalformatstring == "0" ? Math.Round(quote.BaseFare, 0).ToString() : quote.BaseFare.ToString(decimalformatstring);
                 command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
 
                 //equiv fare and currency
                 if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency) && quote.EquivFareCurrency != quote.BaseFareCurrency)
                 {
+                    decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrency);
                     string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare.Value, 0).ToString() : quote.EquivFare.Value.ToString(decimalformatstring);
                     command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{equivfare}";
                 }
@@ -5336,6 +5360,14 @@ namespace SabreWebtopTicketingService.Services
 
             return !excludedrfiscs.Contains(rfisc);
         }
+    }
+
+    internal class DecimalFormating
+    {
+        string AgentFormatingString { get; set; }
+        string BaseFareFormatingString { get; set; }
+        string EquviFareFormatingString { get; set; }
+
     }
 
     internal class CurrencyData
