@@ -1481,6 +1481,66 @@ namespace SabreWebtopTicketingService.Services
             }
         }
 
+        internal async Task<GetROEResponse> GetROE(GetROERequest request, string contextID)
+        {
+            GetROEResponse getROEResponse = new GetROEResponse();
+            try
+            {
+                string sessionID = request.SessionID;
+                user = await session.GetSessionUser(sessionID);
+                pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
+
+                //Obtain session (if found from cache, else directly from sabre)
+                SabreSession sabresession = await _sessionCreateService.CreateStatefulSessionToken(pcc);
+
+                string command = $"FC*{request.CurrencyCode.Trim().ToUpper()}{request.Date:ddMMMyy}";// FC*AUD01JUL20
+
+                string res = await _sabreCommandService.ExecuteCommand(sabresession.SessionID, pcc, command);
+
+                //NUC - NEUTRAL UNIT OF CONSTRUCTION RATES LISTED -
+                //ENTER FCHELP FOR ADDITIONAL FC NUC FORMATS
+
+                //CURRENCY NUC RATE EFF SALE LAST SALE - TKT
+                //AUD                 1.438385   01JUL2020     31JUL2020
+                //AUD                 1.437349   01AUG2020     31AUG2020
+                //AUD                 1.395949   01SEP2020     30SEP2020
+                //AUD                 1.375477   01OCT2020     31OCT2020
+                //AUD                 1.397572   01NOV2020     30NOV2020
+                //AUD                 1.388254   01DEC2020     31DEC2020
+                //AUD                 1.346491   01JAN2021     31JAN2021
+                //AUD                 1.293231   01FEB2021     28FEB2021
+                //AUD                 1.305037   01MAR2021     31MAR2021
+                //AUD                 1.294714   01APR2021
+
+                if (!res.Contains("NUC - NEUTRAL UNIT OF CONSTRUCTION"))
+                {
+                    getROEResponse.Error = new WebtopError()
+                    {
+                        code = "ROE_NOT_FOUND",
+                        message = res
+                    };
+                }
+
+                getROEResponse.ROE = decimal.
+                                        Parse(res.
+                                                SplitOn("\n").
+                                                Where(w => w.IsMatch(@"[A-Z]{3}\s+\d+\.\d")).
+                                                First().
+                                                SplitOnRegex(@"\s+")[1]);
+            }
+            catch (GDSException gdsex)
+            {
+                logger.LogError(gdsex.Message);
+                getROEResponse.Error = new WebtopError()
+                {
+                    code = gdsex.ErrorCode,
+                    message = gdsex.Message
+                };
+            }
+
+            return getROEResponse;
+        }
+
         private PNR GeneratePNR(string token, SabrePNR sabrepnr, DateTime? pcclocaldatetime, bool includeQuotes, bool includeexpiredquotes, string sessionid, Agent agent, string contextID, bool nostoredcards)
         {
             List<PNRSector> secs = GetSectors(sabrepnr.AirSectors, sabrepnr.ArunkSectors);

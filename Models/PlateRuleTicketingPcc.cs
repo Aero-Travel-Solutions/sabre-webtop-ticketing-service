@@ -46,5 +46,13 @@ namespace SabreWebtopTicketingService.Models
 
         [JsonPropertyName("ticketing_pcc_code")]
         public string TicketingPccCode { get; set; }
+        [JsonPropertyName("ticket_printer_address")]
+        public string TicketinPrinterAddress { get; set; }
+        [JsonPropertyName("printer_country_code")]
+        public string PrinterCountryCode { get; set; }
+        [JsonPropertyName("target_branch")]
+        public string TargetBranch { get; set; }
+        [JsonPropertyName("iata_number")]
+        public string IataNumber { get; set; }
     }
 }
