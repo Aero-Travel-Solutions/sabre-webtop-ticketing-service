@@ -1974,17 +1974,17 @@ namespace SabreWebtopTicketingService.Services
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
                                         TicketingPCC = ticketingpcc,
-                                        Commission = q.AgentCommissionRate.HasValue ? Math.Round(q.BaseFare * (q.AgentCommissionRate.Value / 100), 2, MidpointRounding.AwayFromZero) : 0.00M,
+                                        Commission = q.AgentCommissionRate.HasValue ? Math.Round((q.BaseFare == q.EquivFare ? q.BaseFare : q.EquivFare) * (q.AgentCommissionRate.Value / 100), 2, MidpointRounding.AwayFromZero) : 0.00M,
                                         AgentPrice = q.QuotePassenger.FormOfPayment == null ?
-                                                            q.TotalFare - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
+                                                            q.TotalFare - (q.AgentCommissionRate.HasValue ? (q.BaseFare == q.EquivFare ? q.BaseFare : q.EquivFare) * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                             //Cash Only
                                                             q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                                                q.TotalFare - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
+                                                                q.TotalFare - (q.AgentCommissionRate.HasValue ? (q.BaseFare == q.EquivFare ? q.BaseFare : q.EquivFare) * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                                 //Part Cash part credit
                                                                 q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CreditAmount < q.TotalFare ?
                                                                     q.TotalFare - q.QuotePassenger.FormOfPayment.CreditAmount + q.Fee + (q.FeeGST ?? 0.00M) - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M) :
                                                                     //Credit only
-                                                                    q.Fee + (q.FeeGST ?? 0.00M) - (q.AgentCommissionRate.HasValue ? q.BaseFare * (q.AgentCommissionRate.Value / 100) : 0.00M)
+                                                                    q.Fee + (q.FeeGST ?? 0.00M) - (q.AgentCommissionRate.HasValue ? (q.BaseFare == q.EquivFare ? q.BaseFare : q.EquivFare) * (q.AgentCommissionRate.Value / 100) : 0.00M)
                                     }).
                                     ToList();
                 }
@@ -3661,11 +3661,12 @@ namespace SabreWebtopTicketingService.Services
                     ToList().
                     ForEach(f =>
                     {
+                        decimal fare = f.BaseFare == f.EquivFare ? f.BaseFare : f.EquivFare;
                         f.QuoteNo = groupindex;
                         f.Commission = f.AgentCommissionRate.HasValue ?
-                                            f.BaseFare * f.AgentCommissionRate.Value:
+                                            fare * f.AgentCommissionRate.Value:
                                             0.00M;
-                        f.TotalFare = f.BaseFare + f.TotalTax;
+                        f.TotalFare = fare + f.TotalTax;
                         f.FeeGST = (f.Taxes.Select(s => s.Code).Contains("UO") || f.Taxes.Select(s => s.Code).Contains("NZ")) ? 
                                                 ((f.Fee * GetGSTPercentage(f.Taxes, agent?.Consolidator?.CountryCode ?? "AU")) / 100): 
                                                 default;
@@ -4520,7 +4521,7 @@ namespace SabreWebtopTicketingService.Services
                                             0.00M :
                                             Math.Round((f.CreditCardFee / f.TotalFare) * 100, 2);
 
-                    decimal totalfare = (f.EquivFare == f.BaseFare ? f.EquivFare : f.BaseFare) + f.TotalTax;
+                    decimal totalfare = (f.EquivFare == f.BaseFare ? f.BaseFare : f.EquivFare) + f.TotalTax;
                     f.AgentPrice = f.QuotePassenger.FormOfPayment == null ?
                                                     totalfare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                     //Cash Only
