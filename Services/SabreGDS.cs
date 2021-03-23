@@ -4697,7 +4697,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                             new CalculateCommissionQuoteRequest()
                             {
-                                BaseFareAmount = quote.BaseFare,
+                                BaseFareAmount = quote.BaseFare == quote.EquivFare ? quote.BaseFare: quote.EquivFare,
                                 FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
                                 QuoteNumber = quote.QuoteNo.ToString(),
                                 PassengerNumber = quote.QuotePassenger.NameNumber,
@@ -4882,7 +4882,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                             new CalculateCommissionQuoteRequest()
                             {
-                                BaseFareAmount = quote.BaseFare,
+                                BaseFareAmount = quote.BaseFare == quote.EquivFare ? quote.BaseFare : quote.EquivFare,
                                 FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
                                 QuoteNumber = quote.QuoteNo.ToString(),
                                 PassengerNumber = quote.QuotePassenger.NameNumber,
