@@ -1255,6 +1255,8 @@ namespace SabreWebtopTicketingService.Services
         private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
         {
             string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
+            logger.LogInformation("QuoteRedisplayTest");
+            logger.LogMaskInformation(pqtext);
             List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
             if (applicabledpqres.Any(w => w.PQNo != -1))
             {
@@ -1300,7 +1302,7 @@ namespace SabreWebtopTicketingService.Services
         private List<PQTextResp> ParsePQText(string pqtext)
         {
             List<PQTextResp> result = new List<PQTextResp>();
-            List<string> diffquotes = pqtext.SplitOnRegex(@"(PQ\s\d+)").Skip(1).ToList();
+            List<string> diffquotes = pqtext.SplitOnRegex(@"(PQ\s*\d+)").Skip(1).ToList();
             for (int i = 0; i < diffquotes.Count(); i += 2)
             {
                 var bsprate = diffquotes[i + 1].
@@ -1316,7 +1318,7 @@ namespace SabreWebtopTicketingService.Services
                 result.
                 Add(new PQTextResp()
                 {
-                    PQNo = int.Parse(diffquotes[i].LastMatch(@"PQ\s(\d+)", "-1")),
+                    PQNo = int.Parse(diffquotes[i].LastMatch(@"PQ\s*(\d+)", "-1")),
                     PassengerType = paxtype,
                     TourCode = diffquotes[i + 1].
                                 LastMatch(@"TOUR\sCODE-(\w*)") ?? "",

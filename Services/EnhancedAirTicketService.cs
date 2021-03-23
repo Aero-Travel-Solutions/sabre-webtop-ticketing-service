@@ -590,7 +590,7 @@ namespace SabreWebtopTicketingService.Services
                                     FeeGST = s.FeeGST,
                                     FormOfPayment = s.QuotePassenger.FormOfPayment,
                                     AgentPrice = s.QuotePassenger.FormOfPayment == null || s.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                                        s.TotalFare + s.Fee + +(s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
+                                                        s.TotalFare + s.Fee + +(s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round((((s.EquivFare == s.BaseFare ?  s.BaseFare: s.EquivFare) * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
                                                         s.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && s.QuotePassenger.FormOfPayment.CreditAmount < (s.BaseFare + s.TotalTax) ?
                                                             s.TotalFare - s.QuotePassenger.FormOfPayment.CreditAmount + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero) :
                                                             s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) - Math.Round(((s.BaseFare * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero)
