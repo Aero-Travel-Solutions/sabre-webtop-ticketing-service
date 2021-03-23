@@ -1900,6 +1900,7 @@ namespace SabreWebtopTicketingService.Services
                                                                         pcc,
                                                                         agent,
                                                                         ticketingpcc);
+
                 if (!issueExpressTicketRS.ValidateCommissionWarnings.IsNullOrEmpty())
                 {
                     return issueExpressTicketRS;
@@ -2292,7 +2293,7 @@ namespace SabreWebtopTicketingService.Services
                                                                             QuotePassenger = q.QuotePassenger,
                                                                             QuoteSectors = q.QuoteSectors,
                                                                             Taxes = q.Taxes,
-                                                                            BaseFare = q.BaseFare,
+                                                                            BaseFare = (q.BaseFare == q.EquivFare ? q.BaseFare: q.EquivFare),
                                                                             BaseFareCurrency = q.BaseFareCurrency,
                                                                             AgentCommissionRate = q.AgentCommissionRate,
                                                                             BspCommissionRate = q.BSPCommissionRate,
