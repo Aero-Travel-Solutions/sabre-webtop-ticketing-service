@@ -20,7 +20,7 @@ namespace SabreWebtopTicketingService.Models
         public QuotePassenger QuotePassenger { get; set; }
         public List<QuoteSector> QuoteSectors { get; set; }
         public decimal BaseFare { get; set; }
-        public decimal? EquivFare { get; set; }
+        public decimal EquivFare { get; set; }
         public string EquivFareCurrencyCode { get; internal set; }
         public decimal CreditCardFee { get; set; } = 0.00M;
         public decimal CreditCardFeeRate { get; set; }
@@ -42,7 +42,7 @@ namespace SabreWebtopTicketingService.Models
         
         public bool IsGST => GST.HasValue;
         public decimal? FeeGST => IsGST && GSTRate.HasValue ? (Fee * GSTRate.Value) / 100 : default(decimal?);
-        public decimal TotalFare => BaseFare + TotalTax;
+        public decimal TotalFare =>  BaseFare + TotalTax;
         public decimal AgentPrice { get; set; }
         public string BaseFareCurrency { get; set; }
         public decimal TotalGrossPrice => BaseFare + TotalTax + Commission + Fee + (FeeGST.HasValue ? FeeGST.Value : 0.00M);

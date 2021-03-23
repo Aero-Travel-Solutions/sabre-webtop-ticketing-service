@@ -52,17 +52,22 @@ namespace SabreWebtopTicketingService.Models
                                         Select(na => new PQSector(na)).
                                         ToList();
 
-        public decimal BaseFare => pq.GetFirstElement("FareInfo").GetFirstElement("EquivalentFare") == null ?
+        public decimal BaseFare => decimal.Parse(pq.
+                                        GetFirstElement("FareInfo").
+                                        GetFirstElement("BaseFare").
+                                        Value);
+
+        public decimal EquviFare => pq.GetFirstElement("FareInfo").GetFirstElement("EquivalentFare") == null ?
                                     decimal.Parse(pq.
                                         GetFirstElement("FareInfo").
                                         GetFirstElement("BaseFare").
-                                        Value):
+                                        Value) :
                                    decimal.Parse(pq.
                                         GetFirstElement("FareInfo").
                                         GetFirstElement("EquivalentFare").
                                         Value);
 
-        public string CurrencyCode => pq.GetFirstElement("FareInfo").GetFirstElement("EquivalentFare") == null ?
+        public string EquviFareCurrencyCode => pq.GetFirstElement("FareInfo").GetFirstElement("EquivalentFare") == null ?
                                 pq.
                                 GetFirstElement("FareInfo").
                                 GetFirstElement("BaseFare").
@@ -71,6 +76,13 @@ namespace SabreWebtopTicketingService.Models
                                 pq.
                                 GetFirstElement("FareInfo").
                                 GetFirstElement("EquivalentFare").
+                                GetAttribute("currencyCode").
+                                Value;
+
+
+        public string CurrencyCode => pq.
+                                GetFirstElement("FareInfo").
+                                GetFirstElement("BaseFare").
                                 GetAttribute("currencyCode").
                                 Value;
 

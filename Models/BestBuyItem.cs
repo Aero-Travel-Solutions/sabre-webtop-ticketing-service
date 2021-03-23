@@ -13,7 +13,7 @@ namespace SabreWebtopTicketingService.Models
         public string PaxType { get; set; }
         public decimal BaseFare { get; set; }
         public string BaseFareCurrency { get; set; }
-        public decimal? EquivFare { get; set; }
+        public decimal EquivFare { get; set; }
         public string EquivFareCurrency { get; set; }
         public List<Tax> Taxes { get; set; }
         public string PriceHint { get; set; }

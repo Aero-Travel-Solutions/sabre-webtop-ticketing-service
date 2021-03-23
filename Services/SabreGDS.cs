@@ -4433,7 +4433,8 @@ namespace SabreWebtopTicketingService.Services
                             BaseFare = q.PQ.BaseFare,
                             BaseFareCurrency = q.PQ.CurrencyCode,
                             Endorsements = q.PQ.Endosements,
-                            EquivFare = q.PQ.BaseFare,
+                            EquivFare = q.PQ.EquviFare,
+                            EquivFareCurrencyCode = q.PQ.EquviFareCurrencyCode,
                             FareCalculation = q.PQ.FareCalculation,
                             ROE = string.IsNullOrEmpty(q.PQ.FareCalculation) ? "1" : q.PQ.FareCalculation.LastMatch(@"ROE\s*([\d\.]+)", "1"),
                             QuotePassenger = new QuotePassenger()
@@ -4516,15 +4517,15 @@ namespace SabreWebtopTicketingService.Services
                                             0.00M :
                                             Math.Round((f.CreditCardFee / f.TotalFare) * 100, 2);
                     f.AgentPrice = f.QuotePassenger.FormOfPayment == null ?
-                                                    f.TotalFare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
+                                                    f.EquivFare + f.TotalTax + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                     //Cash Only
                                                     f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                                        f.TotalFare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
+                                                        f.EquivFare + f.TotalTax + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                         //Part Cash part credit
                                                         f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && f.QuotePassenger.FormOfPayment.CreditAmount < f.TotalFare ?
-                                                            f.TotalFare - f.QuotePassenger.FormOfPayment.CreditAmount + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
+                                                            f.EquivFare + f.TotalTax - f.QuotePassenger.FormOfPayment.CreditAmount + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                             //Credit only
-                                                            f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission;
+                                                            f.EquivFare + f.TotalTax + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission;
                 });
 
             //Generate the IssueTicketQuoteKey
