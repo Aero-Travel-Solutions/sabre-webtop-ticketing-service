@@ -42,7 +42,7 @@ namespace SabreWebtopTicketingService.Models
         
         public bool IsGST => GST.HasValue;
         public decimal? FeeGST => IsGST && GSTRate.HasValue ? (Fee * GSTRate.Value) / 100 : default(decimal?);
-        public decimal TotalFare =>  BaseFare + TotalTax;
+        public decimal TotalFare => (BaseFare == EquivFare ?  BaseFare : EquivFare) + TotalTax;
         public decimal AgentPrice { get; set; }
         public string BaseFareCurrency { get; set; }
         public decimal TotalGrossPrice => BaseFare + TotalTax + Commission + Fee + (FeeGST.HasValue ? FeeGST.Value : 0.00M);
