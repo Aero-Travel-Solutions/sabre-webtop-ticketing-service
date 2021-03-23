@@ -38,16 +38,18 @@ namespace SabreWebtopTicketingService.Models
         {
             DateTime? dob = null;
 
+            string paxname = $"{paxs.LastName}/{paxs.FirstName}";
 
             dob = paxs.SpecialRequests != null &&
                   paxs.SpecialRequests.APISRequest != null &&
-                  paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true) != null ?
+                  paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true) != null &&
+                  paxname == $"{paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Surname}/{paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Forename}" ?
                   paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.DateOfBirth :
                   default(DateTime?);
 
             if (!dob.HasValue && PaxType == "CHD")
             {
-                dob =   paxs.SpecialRequests != null &&
+                dob = paxs.SpecialRequests != null &&
                         paxs.SpecialRequests.ChildRequest != null ?
                         paxs.SpecialRequests.ChildRequest.First().DateOfBirth != null ?
                             DateTime.Parse(paxs.SpecialRequests.ChildRequest.First().DateOfBirth) :
@@ -58,13 +60,24 @@ namespace SabreWebtopTicketingService.Models
             return dob;
         }
 
-        public string Gender => string.IsNullOrEmpty(pax.Gender) ?
-                                    pax.SpecialRequests != null &&
-                                    pax.SpecialRequests.APISRequest != null &&
-                                    pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.GenderSpecified) != null ?
-                                        GetGender(pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.GenderSpecified).DOCSEntry.Gender) :
-                                        "":
-                                    pax.Gender;
+        public string Gender
+        {
+            get
+            {
+                string gender = "";
+                string paxname = $"{pax.LastName}/{pax.FirstName}";
+                gender = string.IsNullOrEmpty(pax.Gender) ?
+                                        pax.SpecialRequests != null &&
+                                        pax.SpecialRequests.APISRequest != null &&
+                                        pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.GenderSpecified) != null &&
+                                        paxname == $"{pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Surname}/{pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Forename}" ?
+                                            GetGender(pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.GenderSpecified).DOCSEntry.Gender) :
+                                            "" :
+                                        pax.Gender;
+                return gender;
+            }
+            private set { }
+        }
 
         private string GetGender(GenderDOCS_EntryPNRB gender)
         {
