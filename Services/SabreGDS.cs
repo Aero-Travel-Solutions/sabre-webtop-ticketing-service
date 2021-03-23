@@ -4516,16 +4516,18 @@ namespace SabreWebtopTicketingService.Services
                     f.CreditCardFeeRate = f.CreditCardFee == 0.00M || f.TotalFare == 0.00M ?
                                             0.00M :
                                             Math.Round((f.CreditCardFee / f.TotalFare) * 100, 2);
+
+                    decimal totalfare = (f.EquivFare == f.BaseFare ? f.EquivFare : f.BaseFare) + f.TotalTax;
                     f.AgentPrice = f.QuotePassenger.FormOfPayment == null ?
-                                                    f.EquivFare + f.TotalTax + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
+                                                    totalfare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                     //Cash Only
                                                     f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CA ?
-                                                        f.EquivFare + f.TotalTax + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
+                                                        totalfare + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                         //Part Cash part credit
                                                         f.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && f.QuotePassenger.FormOfPayment.CreditAmount < f.TotalFare ?
-                                                            f.EquivFare + f.TotalTax - f.QuotePassenger.FormOfPayment.CreditAmount + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
+                                                            totalfare - f.QuotePassenger.FormOfPayment.CreditAmount + f.Fee + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission :
                                                             //Credit only
-                                                            f.EquivFare + f.TotalTax + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission;
+                                                            totalfare + (f.FeeGST.HasValue ? f.FeeGST.Value : 0.00M) - f.Commission;
                 });
 
             //Generate the IssueTicketQuoteKey
