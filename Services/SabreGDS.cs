@@ -3532,10 +3532,10 @@ namespace SabreWebtopTicketingService.Services
                 command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
 
                 //equiv fare and currency
-                if (quote.EquivFare.HasValue && quote.EquivFare.Value > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency) && quote.EquivFareCurrency != quote.BaseFareCurrency)
+                if (quote.EquivFare > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency) && quote.EquivFareCurrency != quote.BaseFareCurrency)
                 {
                     decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrency);
-                    string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare.Value, 0).ToString() : quote.EquivFare.Value.ToString(decimalformatstring);
+                    string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare, 0).ToString() : quote.EquivFare.ToString(decimalformatstring);
                     command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{equivfare}";
                 }
 

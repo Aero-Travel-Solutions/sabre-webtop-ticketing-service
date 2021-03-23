@@ -14,7 +14,7 @@ namespace SabreWebtopTicketingService.Models
         public decimal CreditCardFee { get; set; } = 0.00M;
         public decimal BaseFare { get; set; }
         public string BaseFareCurrency { get; set; }
-        public decimal? EquivFare { get; set; }
+        public decimal EquivFare { get; set; }
         public string EquivFareCurrency { get; set; }
         public string ROE { get; set; }
         public List<Tax> Taxes { get; set; }
