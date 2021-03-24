@@ -1821,7 +1821,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //credit amount check
-                var novalquotes = request.Quotes.IsNullOrEmpty() ? null: request.Quotes.Where(w => (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare) + w.TotalTax == 0.00M);
+                var novalquotes = request.Quotes.IsNullOrEmpty() ? null: request.Quotes.Where(w => (w.BaseFare == w.EquivFare ? w.BaseFare : w.EquivFare) + w.TotalTax == 0.00M);
                 var novalemd = request.EMDs.IsNullOrEmpty() ? null : request.EMDs.Where(w => w.Total == 0.00M);
 
                 if((!novalquotes.IsNullOrEmpty() && novalquotes.Any(a=> a.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && a.QuotePassenger.FormOfPayment.CreditAmount > 0.00M))||
