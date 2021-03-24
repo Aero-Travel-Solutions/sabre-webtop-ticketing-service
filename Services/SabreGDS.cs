@@ -457,12 +457,12 @@ namespace SabreWebtopTicketingService.Services
                             var formofpayments = queueModel.
                                                             Passengers.
                                                             Select(m => new { m.NameNumber, m.FormOfPayment }).
-                                                            Where(a => !string.IsNullOrEmpty(a.FormOfPayment.CardNumber)).
+                                                            Where(a => !string.IsNullOrEmpty(a.FormOfPayment.MaskedCardNumber)).
                                                             ToList();
 
                             if (!formofpayments.IsNullOrEmpty())
                             {
-                                foreach (var fop in formofpayments.GroupBy(grp=> grp.FormOfPayment.MaskedCardNumber.Trim()))
+                                foreach (var fop in formofpayments.GroupBy(grp=> grp.FormOfPayment.CardNumber.Trim()))
                                 {
                                     if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.Key).IsNullOrEmpty())
                                     {
