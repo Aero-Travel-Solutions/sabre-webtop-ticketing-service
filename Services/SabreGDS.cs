@@ -1821,7 +1821,7 @@ namespace SabreWebtopTicketingService.Services
                 }
 
                 //credit amount check
-                var novalquotes = request.Quotes.IsNullOrEmpty() ? null: request.Quotes.Where(w => w.BaseFare + w.TotalTax == 0.00M);
+                var novalquotes = request.Quotes.IsNullOrEmpty() ? null: request.Quotes.Where(w => (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare) + w.TotalTax == 0.00M);
                 var novalemd = request.EMDs.IsNullOrEmpty() ? null : request.EMDs.Where(w => w.Total == 0.00M);
 
                 if((!novalquotes.IsNullOrEmpty() && novalquotes.Any(a=> a.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && a.QuotePassenger.FormOfPayment.CreditAmount > 0.00M))||
@@ -3229,15 +3229,15 @@ namespace SabreWebtopTicketingService.Services
             var user = await session.GetSessionUser(statefultoken);
 
             //Price check
-            if (Math.Abs((pendingquotes.Sum(s => s.BaseFare) + pendingquotes.Sum(s => s.TotalTax)) - (quotes.Sum(s => s.BaseFare) + quotes.Sum(s => s.TotalTax))) > (user == null || user.Consolidator == null ? 20 : user.Consolidator.ticketpricedeviationtolerance))
+            if (Math.Abs((pendingquotes.Sum(s => (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare)) + pendingquotes.Sum(s => s.TotalTax)) - (quotes.Sum(s => (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare)) + quotes.Sum(s => s.TotalTax))) > (user == null || user.Consolidator == null ? 20 : user.Consolidator.ticketpricedeviationtolerance))
             {
                 //ignore session
                 await _sabreCommandService.ExecuteCommand(statefultoken, pcc, "I");
 
                 throw new AeronologyException("PRICE_MISSMATCH", string.Format(
                     "Price missmatch found between quoted price({0}) and ticketed price({1}). Please re-quote and try again.",
-                    (pendingquotes.Sum(s => s.BaseFare) + pendingquotes.Sum(s => s.TotalTax)).ToString(),
-                    (quotes.Sum(s => s.BaseFare) + quotes.Sum(s => s.TotalTax)).ToString()));
+                    (pendingquotes.Sum(s => (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare)) + pendingquotes.Sum(s => s.TotalTax)).ToString(),
+                    (quotes.Sum(s => (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare)) + quotes.Sum(s => s.TotalTax)).ToString()));
             }
 
             //redislpay price quotes
