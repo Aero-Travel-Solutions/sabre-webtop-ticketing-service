@@ -1438,7 +1438,6 @@ namespace SabreWebtopTicketingService.Services
         private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, IEnumerable<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
-
             //1. Extract stored cards from PNR
             var storedcards = storedCreditCards ?? GetStoredCards(res);
 
