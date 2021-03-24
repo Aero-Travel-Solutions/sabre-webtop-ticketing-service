@@ -76,7 +76,7 @@ namespace SabreWebtopTicketingService.Common
 
         public static string MaskNumber(this string text)
         {
-            return text.Substring(0, 4) + text.Last(4).PadLeft(text.Length - 4, 'X');
+            return text.Last(4).PadLeft(text.Length, 'X');
         }
 
         public static string FirstMatch(this string text, string pattern, string defaultValue = null)
