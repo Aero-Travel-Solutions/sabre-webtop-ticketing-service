@@ -464,7 +464,7 @@ namespace SabreWebtopTicketingService.Services
                             {
                                 foreach (var fop in formofpayments.GroupBy(grp=> grp.FormOfPayment.MaskedCardNumber.Trim()))
                                 {
-                                    if(!storedCreditCard.Where(w=> w.MaskedCardNumber.Trim() == fop.Key).IsNullOrEmpty())
+                                    if(!pnr.StoredCards.Where(w=> w.MaskedCardNumber.Trim() == fop.Key).IsNullOrEmpty())
                                     {
                                         continue;
                                     }
