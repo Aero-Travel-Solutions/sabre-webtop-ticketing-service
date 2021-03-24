@@ -3562,6 +3562,11 @@ namespace SabreWebtopTicketingService.Services
 
                     command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code}"));
                 }
+                else
+                {
+                    //Tax excempt
+                    command2 += "/TE";
+                }
 
                 //commission
                 //int commission = quote.BSPCommissionRate.HasValue ? (int)quote.BSPCommissionRate.Value : 0;
