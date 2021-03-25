@@ -3279,6 +3279,9 @@ namespace SabreWebtopTicketingService.Services
                         {
                             QuoteNo = q.QuoteNo,
                             BaseFare = q.BaseFare,
+                            EquivFare = q.EquivFare,
+                            BaseFareCurrency = q.BaseFareCurrency,
+                            EquivFareCurrency = q.EquivFareCurrencyCode,
                             TotalFare = q.TotalFare,
                             AgentCommissionRate = q.AgentCommissionRate,
                             BSPCommissionRate = q.BspCommissionRate,
