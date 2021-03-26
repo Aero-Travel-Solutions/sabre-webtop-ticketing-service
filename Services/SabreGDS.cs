@@ -2293,7 +2293,7 @@ namespace SabreWebtopTicketingService.Services
                                                                             QuoteSectors = q.QuoteSectors,
                                                                             Taxes = q.Taxes,
                                                                             BaseFare = (q.BaseFare == q.EquivFare ? q.BaseFare: q.EquivFare),
-                                                                            BaseFareCurrency = q.BaseFareCurrency,
+                                                                            BaseFareCurrency = q.BaseFareCurrency == q.EquivFareCurrency ? q.BaseFareCurrency : q.EquivFareCurrency,
                                                                             AgentCommissionRate = q.AgentCommissionRate,
                                                                             BspCommissionRate = q.BSPCommissionRate,
                                                                             Fee = q.Fee
@@ -4710,7 +4710,7 @@ namespace SabreWebtopTicketingService.Services
                                 FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
                                 QuoteNumber = quote.QuoteNo.ToString(),
                                 PassengerNumber = quote.QuotePassenger.NameNumber,
-                                Currency = quote.BaseFareCurrency,
+                                Currency = quote.BaseFareCurrency == quote.EquivFareCurrencyCode ? quote.BaseFareCurrency : quote.EquivFareCurrencyCode,
                                 QuotedSectors = quote.QuoteSectors.Select(qsec => qsec.PQSectorNo.ToString()).ToArray()
                             }
                     }
@@ -4895,7 +4895,7 @@ namespace SabreWebtopTicketingService.Services
                                 FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
                                 QuoteNumber = quote.QuoteNo.ToString(),
                                 PassengerNumber = quote.QuotePassenger.NameNumber,
-                                Currency = quote.BaseFareCurrency,
+                                Currency = quote.BaseFareCurrency == quote.EquivFareCurrencyCode ? quote.BaseFareCurrency : quote.EquivFareCurrencyCode,
                                 QuotedSectors = quote.QuoteSectors.Select(qsec => qsec.PQSectorNo.ToString()).ToArray()
                             }
                     }

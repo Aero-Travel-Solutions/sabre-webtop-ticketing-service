@@ -88,7 +88,7 @@ namespace SabreWebtopTicketingService.Services
                     throw new Exception(response.SessionCreateRS.Errors.Error.ErrorInfo.Message);
                 }
 
-                string token = response.Security.BinarySecurityToken;
+                string token = response.Security.BinarySecurityToken.Value;
 
                 await client.CloseAsync();
 
@@ -229,7 +229,7 @@ namespace SabreWebtopTicketingService.Services
         {
             return new MessageHeader()
             {
-                version = "1.0.0",
+                version = Constants.SessionCreateVersion,
                 From = new From()
                 {
                     PartyId = new PartyId[]
@@ -274,7 +274,9 @@ namespace SabreWebtopTicketingService.Services
                     Username = username,
                     Password = password,
                     Organization = pcc,
-                    Domain = "DEFAULT"
+                    Domain = "DEFAULT",
+                    ClientId = "G2FK-Aerotickets",
+                    ClientSecret = "gN3W5pzH"
                 }
             };
         }        

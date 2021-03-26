@@ -13,7 +13,7 @@ namespace SabreWebtopTicketingService.Services
         public const char END_ITEM_CHAR = (char)0xA7;
 
         //SOAP web service versions
-        public const string SessionCreateVersion = "1.0.0";
+        public const string SessionCreateVersion = "2.0.0";
         public const string SessionCloseVersion = "1.0.1";
         public const string GetReservationVersion = "1.19.0";
         public const string IgnoreTransactionVersion = "2.0.0";
