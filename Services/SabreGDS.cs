@@ -778,11 +778,11 @@ namespace SabreWebtopTicketingService.Services
             //Obtain session (if found from cache, else directly from sabre)
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
+            var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
+
             //Check to see if the session is from cache and usable
             if (token.Stored && !token.Expired)
             {
-                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
-
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
@@ -831,7 +831,8 @@ namespace SabreWebtopTicketingService.Services
                 if (maskedcards.Count() > 0 &&
                     (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                 {
-                    GetStoredCardDetails(request.SelectedPassengers, result);
+                    storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                    GetStoredCardDetails(request.SelectedPassengers, result, storedCreditCards);
                 }
             }
 
