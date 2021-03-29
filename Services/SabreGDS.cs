@@ -1446,6 +1446,8 @@ namespace SabreWebtopTicketingService.Services
             {
                 foreach (var item in request.Quotes.Where(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CardNumber.Contains("XXX")))
                 {
+                    logger.LogMaskInformation($"{string.Join(", ", storedcards.Select(s => s.MaskedCardNumber))}");
+
                     //2. Match masked cards and extract card details
                     var value = storedcards.
                                     FirstOrDefault(f =>
@@ -1856,6 +1858,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         //Try get stored cards
                         storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                        logger.LogMaskInformation($"StoredCards:{string.Join(", ", storedCreditCards.Select(s => s.CreditCard))}");
                         if (!storedCreditCards.IsNullOrEmpty())
                         {
                             GetStoredCardDetails(request, null, storedCreditCards);
