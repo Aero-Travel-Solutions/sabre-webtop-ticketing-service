@@ -2293,8 +2293,10 @@ namespace SabreWebtopTicketingService.Services
                                                                             QuotePassenger = q.QuotePassenger,
                                                                             QuoteSectors = q.QuoteSectors,
                                                                             Taxes = q.Taxes,
-                                                                            BaseFare = (q.BaseFare == q.EquivFare ? q.BaseFare: q.EquivFare),
-                                                                            BaseFareCurrency = q.BaseFareCurrency == q.EquivFareCurrency ? q.BaseFareCurrency : q.EquivFareCurrency,
+                                                                            BaseFare = q.BaseFare,
+                                                                            BaseFareCurrency = q.BaseFareCurrency,
+                                                                            EquivFare = q.EquivFare,
+                                                                            EquivFareCurrencyCode = q.EquivFareCurrency,
                                                                             AgentCommissionRate = q.AgentCommissionRate,
                                                                             BspCommissionRate = q.BSPCommissionRate,
                                                                             Fee = q.Fee
