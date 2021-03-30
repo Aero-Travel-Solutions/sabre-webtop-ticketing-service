@@ -168,6 +168,8 @@ namespace SabreWebtopTicketingService.Services
 
         public async Task<SearchPNRResponse> SearchPNR(SearchPNRRequest request, string contextID)
         {
+            var sw = Stopwatch.StartNew();
+
             string token = "";
             PNR pnr = new PNR();
             List<SabreSearchPNRResponse> res = new List<SabreSearchPNRResponse>();
@@ -188,8 +190,6 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
-                var sw = Stopwatch.StartNew();
-
                 //Obtain session
                 sabreSession = await _sessionCreateService.
                                                     CreateStatefulSessionToken(
@@ -5078,7 +5078,7 @@ namespace SabreWebtopTicketingService.Services
 
         private FOP GetFOP(string pricingcommand, decimal TotalFare)
         {
-            List<StoredCreditCard> cards = CreditCardOperations.GetStoredCards(pricingcommand);
+            List<StoredCreditCard> cards = CreditCardOperations.GetStoredCards(pricingcommand, true);
 
             if (!cards.IsNullOrEmpty())
             {

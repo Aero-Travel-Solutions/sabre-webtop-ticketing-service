@@ -31,7 +31,7 @@ namespace SabreWebtopTicketingService.Common
 
 		public void LogMaskInformation(string messageTemplate, params object[] arguments)
         {
-			_logger.Information(messageTemplate.MaskNumber(), arguments);
+			_logger.Information(messageTemplate.Mask(), arguments);
 		}
 
 		public void LogError(string messageTemplate, params object[] arguments)
