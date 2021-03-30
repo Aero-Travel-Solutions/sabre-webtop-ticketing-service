@@ -359,20 +359,25 @@ namespace SabreWebtopTicketingService.Services
             var cardAccessKey = $"{locator}-card".EncodeBase64();
 
             //get reservation
-            GetReservationRS gdsresponse = null;
-            string lagendresponse = "";
+            Task<GetReservationRS> t1 = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc);
+            Task<string> t2 = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*");
 
-            CancellationToken ct = new CancellationToken();
+            await Task.WhenAll(t1, t2);
 
-            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+            GetReservationRS gdsresponse = t1.Result;
+            string lagendresponse = t2.Result;
 
-            Parallel.
-                Invoke(
-                    //get reservation
-                    () => gdsresponse = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc).GetAwaiter().GetResult(),
-                    //Retrieve agencies
-                    () => lagendresponse = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*").GetAwaiter().GetResult()
-                );
+            //CancellationToken ct = new CancellationToken();
+
+            //ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            //Parallel.
+            //    Invoke(
+            //        //get reservation
+            //        () => gdsresponse = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc).GetAwaiter().GetResult(),
+            //        //Retrieve agencies
+            //        () => lagendresponse = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*").GetAwaiter().GetResult()
+            //    );
 
             //booking pcc
             string bookingpcc = ((ReservationPNRB)gdsresponse.Item).POS.Source.PseudoCityCode;
@@ -837,9 +842,9 @@ namespace SabreWebtopTicketingService.Services
                 }
             }
 
-            if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+            if (pnr == null) { throw new AeronologyException("PNR_NOT_FOUND", "PNR data not found"); }
 
-            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("NO_FLIGHTS", "No flights found in the PNR"); }
 
             //published quote
             List<Quote> quotes = new List<Quote>();
@@ -1945,7 +1950,8 @@ namespace SabreWebtopTicketingService.Services
                                 ticketingprinter,
                                 printerbypass,
                                 sessionID,
-                                currencydata);
+                                currencydata,
+                                pccdecimalformatstring);
 
                     //Remove the client added quotes
                     request.Quotes = new List<IssueExpressTicketQuote>();
@@ -3404,7 +3410,8 @@ namespace SabreWebtopTicketingService.Services
         }
 
         private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, 
-            PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, List<CurrencyData> currencydata)
+            PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, 
+            List<CurrencyData> currencydata, string pccdecimalformatstring)
         {
             string decimalformatstring = "";
             //Assign printer
@@ -3570,7 +3577,7 @@ namespace SabreWebtopTicketingService.Services
                     //    taxes = GroupTax(taxes);
                     //}
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(pccdecimalformatstring)}{tax.Code}"));
                 }
                 else
                 {
@@ -3591,11 +3598,6 @@ namespace SabreWebtopTicketingService.Services
 
                 //farecalc  
                 //max char limit = 246
-                if(quote.FareCalculation.Trim().Count() > 246)
-                {
-                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
-                }
-
                 string farecalc = quote.FareCalculation.Trim().ToUpper();
 
                 if(!farecalc.Contains("END"))
@@ -3639,17 +3641,18 @@ namespace SabreWebtopTicketingService.Services
                     }
                 }
 
-                command2 += $"¥C{farecalc.ToUpper().Trim()}";
+                farecalc = farecalc.ToUpper().Trim();
+                if (farecalc.Length > 246)
+                {
+                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long. Maximum characters permitted including ROE is 246. Please review before proceed to ticketing again.");
+                }
+
+                command2 += $"¥C{farecalc}";
 
 
                 //endorsements
                 //max char limit = 58
                 string endos = string.Join("/", quote.Endorsements).Trim().ToUpper();
-                if (endos.Trim().Count() > 58)
-                {
-                    throw new AeronologyException("ENDORSEMENT_TOO_LONG", "Endorsements are too long.(max characters permited: 58)");
-                }
-
                 command2 += $"¥ED/{endos.Trim().ToUpper()}";
 
                 string response2 = await _sabreCommandService.
