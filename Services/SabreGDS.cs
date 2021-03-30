@@ -1951,7 +1951,7 @@ namespace SabreWebtopTicketingService.Services
                                 printerbypass,
                                 sessionID,
                                 currencydata,
-                                pccdecimalformatstring);
+                                decimalformatstring);
 
                     //Remove the client added quotes
                     request.Quotes = new List<IssueExpressTicketQuote>();
