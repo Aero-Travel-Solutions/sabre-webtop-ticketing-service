@@ -647,10 +647,9 @@ namespace SabreWebtopTicketingService.Services
                 token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
                 //Check to see if the session is from cache and usable
+                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
                 if (token.Stored && !token.Expired)
                 {
-                    var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
-
                     //Try get PNR in cache               
                     pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
@@ -703,6 +702,8 @@ namespace SabreWebtopTicketingService.Services
                     if (maskedcards.Count() > 0 &&
                         (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                     {
+                        //Try get stored cards
+                        storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
                         GetStoredCardDetails(request.SelectedPassengers, result);
                     }
                 }
@@ -946,10 +947,9 @@ namespace SabreWebtopTicketingService.Services
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
             //Check to see if the session is from cache and usable
+            var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
             if (token.Stored && !token.Expired)
             {
-                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
-
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
@@ -993,6 +993,8 @@ namespace SabreWebtopTicketingService.Services
                 if (maskedcards.Count() > 0 &&
                     (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                 {
+                    //Try get stored cards
+                    storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
                     GetStoredCardDetails(request.SelectedPassengers, result);
                 }
             }
