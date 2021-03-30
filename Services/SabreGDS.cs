@@ -1969,7 +1969,7 @@ namespace SabreWebtopTicketingService.Services
                                         CreditCardFee = q.CreditCardFee,
                                         Endorsements = q.Endorsements,
                                         EquivFare = q.EquivFare,
-                                        EquivFareCurrencyCode = q.EquivFareCurrency,
+                                        EquivFareCurrencyCode = q.EquivFareCurrencyCode,
                                         FareCalculation = q.FareCalculation,
                                         FareType = q.FareType,
                                         Fee = q.Fee,
@@ -2307,7 +2307,7 @@ namespace SabreWebtopTicketingService.Services
                                                                             BaseFare = q.BaseFare,
                                                                             BaseFareCurrency = q.BaseFareCurrency,
                                                                             EquivFare = q.EquivFare,
-                                                                            EquivFareCurrencyCode = q.EquivFareCurrency,
+                                                                            EquivFareCurrencyCode = q.EquivFareCurrencyCode,
                                                                             AgentCommissionRate = q.AgentCommissionRate,
                                                                             BspCommissionRate = q.BSPCommissionRate,
                                                                             Fee = q.Fee
@@ -3295,7 +3295,7 @@ namespace SabreWebtopTicketingService.Services
                             BaseFare = q.BaseFare,
                             EquivFare = q.EquivFare,
                             BaseFareCurrency = q.BaseFareCurrency,
-                            EquivFareCurrency = q.EquivFareCurrencyCode,
+                            EquivFareCurrencyCode = q.EquivFareCurrencyCode,
                             TotalFare = q.TotalFare,
                             AgentCommissionRate = q.AgentCommissionRate,
                             BSPCommissionRate = q.BspCommissionRate,
@@ -3552,11 +3552,11 @@ namespace SabreWebtopTicketingService.Services
                 command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
 
                 //equiv fare and currency
-                if (quote.EquivFare > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency) && quote.EquivFareCurrency != quote.BaseFareCurrency)
+                if (quote.EquivFare > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency)
                 {
-                    decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrency);
+                    decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrencyCode);
                     string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare, 0).ToString() : quote.EquivFare.ToString(decimalformatstring);
-                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{equivfare}";
+                    command2 += $"¥E{quote.EquivFareCurrencyCode.Trim().ToUpper()}{equivfare}";
                 }
 
                 //taxes
@@ -3811,7 +3811,7 @@ namespace SabreWebtopTicketingService.Services
                                      BaseFare = rqquo.BaseFare,
                                      BaseFareCurrency = rqquo.BaseFareCurrency,
                                      EquivFare = rqquo.EquivFare,
-                                     EquivFareCurrency = rqquo.EquivFareCurrency,
+                                     EquivFareCurrencyCode = rqquo.EquivFareCurrencyCode,
                                      FiledFare = rqquo.FiledFare,
                                      PendingSfData = rqquo.PendingSfData,
                                      PlatingCarrier = rqquo.PlatingCarrier,
@@ -5132,7 +5132,7 @@ namespace SabreWebtopTicketingService.Services
                                 BaseFare = quote.BaseFare,
                                 BaseFareCurrency = string.IsNullOrEmpty(quote.BaseFareCurrency) ? "AUD" : quote.BaseFareCurrency,
                                 EquivFare = quote.EquivFare,
-                                EquivFareCurrency = quote.EquivFareCurrencyCode,
+                                EquivFareCurrencyCode = quote.EquivFareCurrencyCode,
                                 AgentCommissions = quote.AgentCommissions,
                                 AgentCommissionRate = quote.AgentCommissionRate,
                                 BSPCommissionRate = quote.BspCommissionRate,
