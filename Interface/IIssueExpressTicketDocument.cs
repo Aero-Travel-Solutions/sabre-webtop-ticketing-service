@@ -11,9 +11,5 @@ namespace SabreWebtopTicketingService.Interface
         public string PlatingCarrier { get; set; }
         public string Route { get; set; }
         public decimal PriceIt { get; set; }
-        public decimal BaseFare { get; set; }
-        public string BaseFareCurrency { get; set; }
-        public decimal EquivFare { get; set; }
-        public string EquivFareCurrencyCode { get; set; }
     }
 }
