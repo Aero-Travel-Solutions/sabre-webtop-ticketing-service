@@ -3492,6 +3492,9 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
 
+                //read sector data
+                List<QuoteSector> secs = getSectorData(response1, quote.QuoteSectors);
+
                 //loop per sector to get farebasis NVA, NVB, Baggage
                 int index = 1;
                 foreach (var quoteSector in quote.QuoteSectors)
@@ -3684,6 +3687,12 @@ namespace SabreWebtopTicketingService.Services
 
             //receieve and end transact
             await enhancedEndTransService.EndTransaction(statefultoken, contextID, sessionID, agent?.FullName ?? "Aeronology", true, pcc);
+        }
+
+        private List<QuoteSector> getSectorData(string response, List<QuoteSector> quoteSectors)
+        {
+            List<PQShellSector> pqshellsectors = new List<PQShellSector>();
+            throw new NotImplementedException();
         }
 
         private static string GetNVANVB(QuoteSector quoteSector)
@@ -5374,6 +5383,10 @@ namespace SabreWebtopTicketingService.Services
 
             return !excludedrfiscs.Contains(rfisc);
         }
+    }
+
+    internal class PQShellSector
+    {
     }
 
     internal class DecimalFormating
