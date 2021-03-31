@@ -10,6 +10,6 @@ namespace SabreWebtopTicketingService.Models
         public string SessionID { get; set; }
         public string FromCurrency { get; set; }
         public string ToCurrency  { get;set;}
-        public int Amount { get; set; }
+        public decimal Amount { get; set; }
     }
 }
