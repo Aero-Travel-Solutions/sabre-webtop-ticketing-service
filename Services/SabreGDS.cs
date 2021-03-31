@@ -1443,17 +1443,31 @@ namespace SabreWebtopTicketingService.Services
                         ToList();
         }
 
-        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, IEnumerable<StoredCreditCard> storedCreditCards = null)
+        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, List<StoredCreditCard> storedCreditCards)
         {
             //if stored card been used extract card info
             //1. Extract stored cards from PNR
-            var storedcards = storedCreditCards ?? GetStoredCards(res);
+            List<StoredCreditCard> storedcards = new List<StoredCreditCard>();
+            if (!storedCreditCards.IsNullOrEmpty()) 
+            { 
+                //card data coming from dynamo db from queue record
+                storedcards.AddRange(storedCreditCards); 
+            }
+
+            if(res != null)
+            {
+                //card data coming from pnr
+                storedcards.AddRange(GetStoredCards(res));
+            }
+
+            //remove duplicates
+            storedcards = storedcards.DistinctBy(d => d.MaskedCardNumber).ToList();
 
             if (!request.Quotes.IsNullOrEmpty())
             {
                 foreach (var item in request.Quotes.Where(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CardNumber.Contains("XXX")))
                 {
-                    logger.LogMaskInformation($"{string.Join(", ", storedcards.Select(s => s.MaskedCardNumber))}");
+                    logger.LogMaskInformation($"Cache data: {string.Join(", ", storedcards.Select(s => s.MaskedCardNumber))}");
 
                     //2. Match masked cards and extract card details
                     var value = storedcards.
