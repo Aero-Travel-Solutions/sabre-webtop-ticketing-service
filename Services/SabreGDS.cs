@@ -1235,9 +1235,22 @@ namespace SabreWebtopTicketingService.Services
         private void GetStoredCardDetails(List<QuotePassenger> quotePassengers, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
-
             //1. Extract stored cards from PNR
-            var storedcards = storedCreditCards ?? GetStoredCards(res);
+            List<StoredCreditCard> storedcards = new List<StoredCreditCard>();
+            if (!storedCreditCards.IsNullOrEmpty())
+            {
+                //card data coming from dynamo db from queue record
+                storedcards.AddRange(storedCreditCards);
+            }
+
+            if (res != null)
+            {
+                //card data coming from pnr
+                storedcards.AddRange(GetStoredCards(res));
+            }
+
+            //remove duplicates
+            storedcards = storedcards.DistinctBy(d => d.MaskedCardNumber).ToList();
 
             foreach (var item in quotePassengers.Where(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
             {
