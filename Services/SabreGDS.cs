@@ -1443,7 +1443,7 @@ namespace SabreWebtopTicketingService.Services
                         ToList();
         }
 
-        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, List<StoredCreditCard> storedCreditCards)
+        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
             //1. Extract stored cards from PNR
