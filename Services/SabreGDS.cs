@@ -155,7 +155,7 @@ namespace SabreWebtopTicketingService.Services
                 Name = agentDetails?.Name,
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
-                TicketingPcc = await GetTicketingPCC(sessionid, user),
+                TicketingPcc = await GetDefaultTicketingPCC(sessionid, user.ConsolidatorId),
                 Logo = agentDetails.Logo
             };
 
@@ -228,10 +228,10 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task<string> GetTicketingPCC(string sessionid, User user)
+        private async Task<string> GetDefaultTicketingPCC(string sessionid,string consolidatorid)
         {
             var res = await _ticketingPccDataSource.
-                            GetDefaultTicketingPccByGdsCode("1W", sessionid, user);
+                            GetDefaultTicketingPccByGdsCode("1W", sessionid, consolidatorid);
 
             return res?.PccCode;
         }
