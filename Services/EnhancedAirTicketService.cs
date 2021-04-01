@@ -210,8 +210,8 @@ namespace SabreWebtopTicketingService.Services
                 {
                     PercentSpecified = true,
                     Percent = quotes.First().BSPCommissionRate.HasValue ? 
-                                        Convert.ToInt32(quotes.First().BSPCommissionRate.Value):
-                                        0
+                                        quotes.First().BSPCommissionRate.Value:
+                                        0.00M
                 };
 
                 if(quotes.First().FareType == FareType.BT)
