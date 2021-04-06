@@ -504,9 +504,10 @@ namespace SabreWebtopTicketingService.Services
                                                     {
                                                         SegmentSelect = quoteRequest.
                                                                             SelectedSectors.
-                                                                            Where(w => !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                            Where(w => pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From != "SURFACE").
                                                                             Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
                                                                             {
+                                                                                RPH = string.IsNullOrEmpty(s.FareBasis) ? null : s.SectorNo.ToString(),
                                                                                 Number = s.SectorNo.ToString()
                                                                             }).
                                                                             ToArray()
