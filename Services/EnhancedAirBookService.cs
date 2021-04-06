@@ -148,7 +148,7 @@ namespace SabreWebtopTicketingService.Services
                 },
                 OTA_AirPriceRQ = quoteRequest.
                                     SelectedPassengers.
-                                    GroupBy(pax => new { pax.PaxType, pax.FormOfPayment.CardNumber, pax.FormOfPayment.CreditAmount }).
+                                    GroupBy(pax => new { PaxType = GetPaxType(pax, pnr), pax.FormOfPayment.CardNumber, pax.FormOfPayment.CreditAmount }).
                                     Select(s => new EnhancedAirBookRQOTA_AirPriceRQ()
                                     {
                                         PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
@@ -161,7 +161,14 @@ namespace SabreWebtopTicketingService.Services
                                                 {
                                                     RoundTheWorldSpecified = quoteRequest.IsRTW,
                                                     RoundTheWorld = quoteRequest.SelectedSectors.Count() >= 3 ? quoteRequest.IsRTW : false,
-                                                    PassengerType = GetPaxTypeData(s.Select(m => m).ToList(), pnr),
+                                                    PassengerType = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[]
+                                                    {
+                                                        new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType()
+                                                        {
+                                                            Code = s.Key.PaxType,
+                                                            Quantity = s.Count().ToString()
+                                                        }
+                                                    },
                                                     NameSelect = s.Select(p => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
                                                     {
                                                         NameNumber = p.NameNumber
@@ -347,6 +354,19 @@ namespace SabreWebtopTicketingService.Services
             return passengerTypes;
         }
 
+        private static string GetPaxType(QuotePassenger selpax, PNR pnr)
+        {
+            DateTime FirstDepartureDate = GetFirstDepartureDate(pnr);
+
+            return selpax.PaxType.StartsWith("C") ?
+                                 selpax.PaxType.IsMatch(@"C\d+") ?
+                                     selpax.PaxType :
+                                     selpax.DOB.HasValue && selpax.DOB.Value != DateTime.MinValue && FirstDepartureDate != DateTime.MinValue ?
+                                         "C" + GetAge(FirstDepartureDate, selpax.DOB.Value).ToString().PadLeft(2, '0') :
+                                         "CNN" :
+                                 selpax.PaxType;
+        }
+
         private static int GetAge(DateTime firstDepartureDate, DateTime dob)
         {
             int age = 0;
@@ -483,7 +503,7 @@ namespace SabreWebtopTicketingService.Services
                 },
                 OTA_AirPriceRQ = quoteRequest.
                                     SelectedPassengers.
-                                    GroupBy(pax => new { pax.PaxType, pax.FormOfPayment.CardNumber, pax.FormOfPayment.CreditAmount }).
+                                    GroupBy(pax => new { PaxType = GetPaxType(pax, pnr), pax.FormOfPayment.CardNumber, pax.FormOfPayment.CreditAmount }).
                                     Select(s => new EnhancedAirBookRQOTA_AirPriceRQ()
                                     {
                                         PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
@@ -494,7 +514,14 @@ namespace SabreWebtopTicketingService.Services
                                             {
                                                 PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
                                                 {
-                                                    PassengerType = GetPaxTypeData(s.Select(m => m).ToList(), pnr),
+                                                    PassengerType = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[]
+                                                    {
+                                                        new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType()
+                                                        {
+                                                            Code = s.Key.PaxType,
+                                                            Quantity = s.Count().ToString()
+                                                        }
+                                                    },
                                                     NameSelect = s.Select(p => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
                                                     {
                                                         NameNumber = p.NameNumber
