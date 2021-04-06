@@ -150,3 +150,8 @@ functions:
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip 
+  DisplayGDSTicketImage:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::DisplayGDSTicketImage
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip 

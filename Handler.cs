@@ -1315,7 +1315,7 @@ namespace SabreWebtopTicketingService
                     lambdaResponse.body = JsonConvert.
                                                 SerializeObject
                                                 (
-                                                    new CurrencyConvertLambdaResponseBody()
+                                                    new GetROELambdaResponseBody()
                                                     {
                                                         context_id = contextid,
                                                         session_id = rq.SessionID,
@@ -1348,5 +1348,134 @@ namespace SabreWebtopTicketingService
 
             return lambdaResponse;
         }
+    
+
+    public async Task<LambdaResponse> DisplayGDSTicketImage(DisplayGDSTicketImageRequest rq)
+    {
+        if (!string.IsNullOrEmpty(rq.warmer))
+        {
+            return new LambdaResponse()
+            {
+                statusCode = 200,
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                },
+                body = ""
+            };
+        }
+
+        logger.LogInformation("*****GetROE invoked *****");
+        logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+        LambdaResponse lambdaResponse = new LambdaResponse()
+        {
+            headers = new Headers()
+            {
+                contentType = "application/json"
+            }
+        };
+
+        string contextid = "";
+
+        if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.DocumentNumber) || string.IsNullOrEmpty(rq.DocumentType) || string.IsNullOrEmpty(rq.TicketingPcc))
+        {
+            lambdaResponse.statusCode = 400;
+            lambdaResponse.body = JsonConvert.
+                                        SerializeObject
+                                        (
+                                            new DisplayTicketLambdaResponseBody()
+                                            {
+                                                context_id = contextid,
+                                                session_id = rq.SessionID,
+                                                error = new List<WebtopError>()
+                                                {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                }
+                                            },
+                                            new JsonSerializerSettings()
+                                            {
+                                                ContractResolver = new DefaultContractResolver()
+                                                {
+                                                    NamingStrategy = new SnakeCaseNamingStrategy()
+                                                    {
+                                                        OverrideSpecifiedNames = false
+                                                    }
+                                                }
+                                            }
+                                        );
+        }
+        else
+        {
+            contextid = $"1W-GetROE-{rq.SessionID}-{Guid.NewGuid()}";
+            try
+            {
+                string result = await sabreGDS.DisplayTicketImage(rq, contextid);
+                lambdaResponse.statusCode = 200;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new DisplayTicketLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>(),
+                                                    data = result
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            catch (Exception ex)
+            {
+                lambdaResponse.statusCode = 500;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new DisplayTicketLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                            new WebtopError()
+                                                            {
+                                                                message = ex.Message,
+                                                                code = "UNKNOWN_ERROR",
+                                                                stack = ex.StackTrace.ToString()
+                                                            }
+                                                    },
+                                                    data = null
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+        }
+
+        logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+        return lambdaResponse;
     }
+}
 }
