@@ -759,7 +759,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         //Try get stored cards
                         storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
-                        GetStoredCardDetails(request.SelectedPassengers, result);
+                        GetStoredCardDetails(request.SelectedPassengers, result, storedCreditCards);
                     }
                 }
 
@@ -1050,7 +1050,7 @@ namespace SabreWebtopTicketingService.Services
                 {
                     //Try get stored cards
                     storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
-                    GetStoredCardDetails(request.SelectedPassengers, result);
+                    GetStoredCardDetails(request.SelectedPassengers, result, storedCreditCards);
                 }
             }
 
