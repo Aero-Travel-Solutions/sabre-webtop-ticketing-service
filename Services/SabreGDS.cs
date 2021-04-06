@@ -166,6 +166,56 @@ namespace SabreWebtopTicketingService.Services
             return agent;
         }
 
+        public async Task<string> DisplayTicketImage(DisplayGDSTicketImageRequest rq, string contextID)
+        {
+            string sessionID = rq.SessionID;
+            user = await session.GetSessionUser(sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
+            SabreSession sabreSession = null;
+            string gdstktimage = "";
+
+            try
+            {
+                //Obtain session
+                sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator);
+
+                string ticketingpcc = rq.TicketingPcc;
+
+                if ((ticketingpcc != pcc.PccCode) ||
+                    (sabreSession.Stored &&
+                     !sabreSession.Expired &&
+                     (string.IsNullOrEmpty(sabreSession.CurrentPCC) ? sabreSession.ConsolidatorPCC : sabreSession.CurrentPCC) != ticketingpcc))
+                {
+                    //ignore session
+                    await _sabreCommandService.ExecuteCommand(sabreSession.SessionID, pcc, "I");
+
+                    //Context Change
+                    await _changeContextService.ContextChange(sabreSession, pcc, ticketingpcc);
+                }
+
+
+                //Display eticket record
+                string command = rq.DocumentType == "EMD" ? $"WEMD*T{rq.DocumentNumber.SplitOn("-").First()}" : $"WETR*T{rq.DocumentNumber.SplitOn("-").First()}";
+
+                gdstktimage = await _sabreCommandService.ExecuteCommand(sabreSession.SessionID, pcc, command, ticketingpcc);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.Message);
+                throw (ex);
+            }
+            finally
+            {
+                if (sabreSession != null && sabreSession.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
+                }
+            }
+
+            return gdstktimage.MaskLog();
+        }
+
+
         public async Task<SearchPNRResponse> SearchPNR(SearchPNRRequest request, string contextID)
         {
             var sw = Stopwatch.StartNew();
