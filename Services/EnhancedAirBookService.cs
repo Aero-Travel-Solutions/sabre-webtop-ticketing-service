@@ -123,15 +123,7 @@ namespace SabreWebtopTicketingService.Services
 
         private EnhancedAirBookRQ CreatePriceByPaxRequest(GetQuoteRQ quoteRequest, PNR pnr, bool IsPriceOveride = false, bool inquoting = false)
         {
-            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
-            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
-                            quoteRequest.
-                                SelectedPassengers.
-                                Select(pax => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
-                                {
-                                    NameNumber = pax.NameNumber
-                                }).
-                                ToArray();
+            //EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
 
             EnhancedAirBookRQ enhancedAirBookRQ = new EnhancedAirBookRQ()
             {
@@ -154,112 +146,116 @@ namespace SabreWebtopTicketingService.Services
                         WaitInterval = "100"
                     }
                 },
-                OTA_AirPriceRQ = new EnhancedAirBookRQOTA_AirPriceRQ[]
-                {
-                        new EnhancedAirBookRQOTA_AirPriceRQ()
-                        {
-                            PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
-                            {
-                                AlternativePricingSpecified = quoteRequest.AlternativePricing,
-                                AlternativePricing = quoteRequest.AlternativePricing,
-                                OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
-                                {
-                                    PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
+                OTA_AirPriceRQ = quoteRequest.
+                                    SelectedPassengers.
+                                    GroupBy(pax => new { pax.PaxType, pax.FormOfPayment.CardNumber, pax.FormOfPayment.CreditAmount }).
+                                    Select(s => new EnhancedAirBookRQOTA_AirPriceRQ()
                                     {
-                                        RoundTheWorldSpecified = quoteRequest.IsRTW,
-                                        RoundTheWorld = quoteRequest.SelectedSectors.Count() >= 3 ? quoteRequest.IsRTW: false,
-                                        PassengerType = passengerTypes,
-                                        NameSelect = nameselect,
-                                        //Sector Selection
-                                        ItineraryOptions = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptions()
+                                        PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
                                         {
-                                            SegmentSelect = IsPriceOveride ?
-                                                                quoteRequest.
-                                                                    SelectedSectors.
-                                                                    Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
-                                                                    Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
-                                                                    {
-                                                                        RPH = pnr.Sectors.First(f => f.SectorNo == s.SectorNo).Carrier == quoteRequest.PlatingCarrier?
-                                                                                    s.SectorNo.ToString():
-                                                                                    null,
-                                                                        Number = s.SectorNo.ToString()
-                                                                    }).
-                                                                    ToArray():
-                                                                quoteRequest.
-                                                                    SelectedSectors.
-                                                                    Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
-                                                                    Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
-                                                                    {
-                                                                        Number = s.SectorNo.ToString()
-                                                                    }).
-                                                                    ToArray()
-                                        },
-                                        //Enable Specific Penalty
-                                        SpecificPenalty = IsPriceOveride ?
-                                                                null:
-                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
-                                                                {
-                                                                    AdditionalInfoSpecified = true,
-                                                                    AdditionalInfo = true
-                                                                },
-                                        Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
-                                                    null:
-                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
+                                            AlternativePricingSpecified = quoteRequest.AlternativePricing,
+                                            AlternativePricing = quoteRequest.AlternativePricing,
+                                            OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
+                                            {
+                                                PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
+                                                {
+                                                    RoundTheWorldSpecified = quoteRequest.IsRTW,
+                                                    RoundTheWorld = quoteRequest.SelectedSectors.Count() >= 3 ? quoteRequest.IsRTW : false,
+                                                    PassengerType = GetPaxTypeData(s.Select(m => m).ToList(), pnr),
+                                                    NameSelect = s.Select(p => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
                                                     {
-                                                        //Removed Force flag as this will stop Sabre returning and fare if the price code is not applicable
-                                                        //Force = "true",
-                                                        Code = new string[]
-                                                        {
-                                                            quoteRequest.PriceCode
-                                                        }
+                                                        NameNumber = p.NameNumber
+                                                    }).ToArray(),
+                                                    //Sector Selection
+                                                    ItineraryOptions = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptions()
+                                                    {
+                                                        SegmentSelect = IsPriceOveride ?
+                                                                                quoteRequest.
+                                                                                    SelectedSectors.
+                                                                                    Where(w => !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                                    Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
+                                                                                    {
+                                                                                        RPH = pnr.Sectors.First(f => f.SectorNo == s.SectorNo).Carrier == quoteRequest.PlatingCarrier ?
+                                                                                                    s.SectorNo.ToString() :
+                                                                                                    null,
+                                                                                        Number = s.SectorNo.ToString()
+                                                                                    }).
+                                                                                    ToArray() :
+                                                                                quoteRequest.
+                                                                                    SelectedSectors.
+                                                                                    Where(w => !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                                    Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
+                                                                                    {
+                                                                                        Number = s.SectorNo.ToString()
+                                                                                    }).
+                                                                                    ToArray()
                                                     },
-                                        Overrides = IsPriceOveride ?
-                                                            new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverrides()
-                                                            {
-                                                                GoverningCarrierOverride = quoteRequest.
-                                                                SelectedSectors.
-                                                                Where(w=> !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From) &&
-                                                                          pnr.Sectors.First(f => f.SectorNo == w.SectorNo).Carrier == quoteRequest.PlatingCarrier).
-                                                                Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride()
+                                                    //Enable Specific Penalty
+                                                    SpecificPenalty = IsPriceOveride ?
+                                                                                null :
+                                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
+                                                                                {
+                                                                                    AdditionalInfoSpecified = true,
+                                                                                    AdditionalInfo = true
+                                                                                },
+                                                    Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
+                                                                    null :
+                                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
                                                                     {
-                                                                        RPH = s.SectorNo.ToString(),
-                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverrideAirline()
+                                                                        //Removed Force flag as this will stop Sabre returning and fare if the price code is not applicable
+                                                                        //Force = "true",
+                                                                        Code = new string[]
                                                                         {
-                                                                            Code = quoteRequest.PlatingCarrier
+                                                                            quoteRequest.PriceCode
                                                                         }
-                                                                    }
-                                                                ).
-                                                                ToArray()
-                                                            }:
-                                                            null
-                                    },
-                                    FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
-                                    MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
-                                                     !string.IsNullOrEmpty(quoteRequest.SelectedPassengers.First().FormOfPayment.BCode) ?
-                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiers()
-                                                     {
-                                                         Endorsements = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiersEndorsements()
-                                                         {
-                                                             Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
-                                                         }
-                                                     }:
-                                                     null,
-                                    FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ? 
-                                                                null :
-                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
-                                                                {
-                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
-                                                                    {
-                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
-                                                                        {
-                                                                            Code = quoteRequest.PlatingCarrier
-                                                                        }
-                                                                    }
-                                                                }
-                                }
-                            }
-                        }
-                }
+                                                                    },
+                                                    Overrides = IsPriceOveride ?
+                                                                            new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverrides()
+                                                                            {
+                                                                                GoverningCarrierOverride = quoteRequest.
+                                                                                SelectedSectors.
+                                                                                Where(w => !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From) &&
+                                                                                          pnr.Sectors.First(f => f.SectorNo == w.SectorNo).Carrier == quoteRequest.PlatingCarrier).
+                                                                                Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverride()
+                                                                                {
+                                                                                    RPH = s.SectorNo.ToString(),
+                                                                                    Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersOverridesGoverningCarrierOverrideAirline()
+                                                                                    {
+                                                                                        Code = quoteRequest.PlatingCarrier
+                                                                                    }
+                                                                                }
+                                                                                ).
+                                                                                ToArray()
+                                                                            } :
+                                                                            null
+                                                },
+                                                FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
+                                                MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
+                                                                     !string.IsNullOrEmpty(quoteRequest.SelectedPassengers.First().FormOfPayment.BCode) ?
+                                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiers()
+                                                                     {
+                                                                         Endorsements = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiersEndorsements()
+                                                                         {
+                                                                             Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
+                                                                         }
+                                                                     } :
+                                                                     null,
+                                                FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ?
+                                                                                null :
+                                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
+                                                                                {
+                                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                                                                    {
+                                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                                                                        {
+                                                                                            Code = quoteRequest.PlatingCarrier
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                            }
+                                        }
+                                    }).
+                                    ToArray()
             };
 
             if (quoteRequest.QuoteDate.HasValue)
@@ -464,16 +460,6 @@ namespace SabreWebtopTicketingService.Services
 
         private EnhancedAirBookRQ CreatePriceByForceFBRequest(ForceFBQuoteRQ quoteRequest, PNR pnr)
         {
-            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers, pnr);
-            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
-                            quoteRequest.
-                                SelectedPassengers.
-                                Select(pax => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
-                                {
-                                    NameNumber = pax.NameNumber
-                                }).
-                                ToArray();
-
             EnhancedAirBookRQ enhancedAirBookRQ = new EnhancedAirBookRQ()
             {
                 version = Constants.EnhancedAirBookVersion,
@@ -495,96 +481,90 @@ namespace SabreWebtopTicketingService.Services
                         WaitInterval = "100"
                     }
                 },
-                OTA_AirPriceRQ = new EnhancedAirBookRQOTA_AirPriceRQ[]
-                {
-                        new EnhancedAirBookRQOTA_AirPriceRQ()
-                        {
-                            PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
-                            {
-                                AlternativePricingSpecified = quoteRequest.AlternativePricing,
-                                AlternativePricing = quoteRequest.AlternativePricing,
-                                OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
-                                {
-                                    PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
+                OTA_AirPriceRQ = quoteRequest.
+                                    SelectedPassengers.
+                                    GroupBy(pax => new { pax.PaxType, pax.FormOfPayment.CardNumber, pax.FormOfPayment.CreditAmount }).
+                                    Select(s => new EnhancedAirBookRQOTA_AirPriceRQ()
                                     {
-                                        //RoundTheWorldSpecified = true,
-                                        //RoundTheWorld = quoteRequest.SelectedSectors.Count() >=3 ? true: false,
-                                        PassengerType = passengerTypes,
-                                        NameSelect = nameselect,
-                                        //Sector Selection
-                                        ItineraryOptions = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptions()
+                                        PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
                                         {
-                                            SegmentSelect = quoteRequest.
-                                                                SelectedSectors.
-                                                                Where(w=> pnr.Sectors.First(f=> f.SectorNo == w.SectorNo).From != "SURFACE").
-                                                                Select(s=> new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
-                                                                {
-                                                                    RPH = string.IsNullOrEmpty(s.FareBasis) ? null : s.SectorNo.ToString(),
-                                                                    Number = s.SectorNo.ToString()
-                                                                }).
-                                                                ToArray()
-                                        },
-                                        
-                                        //Enable Specific Penalty
-                                        //SpecificPenalty = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersSpecificPenalty()
-                                        //{
-                                        //    AdditionalInfoSpecified = true,
-                                        //    AdditionalInfo = true,
-                                        //},
-                                        Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
-                                                    null:
-                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
+                                            AlternativePricingSpecified = quoteRequest.AlternativePricing,
+                                            AlternativePricing = quoteRequest.AlternativePricing,
+                                            OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
+                                            {
+                                                PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
+                                                {
+                                                    PassengerType = GetPaxTypeData(s.Select(m => m).ToList(), pnr),
+                                                    NameSelect = s.Select(p => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
                                                     {
-                                                        //Removed Force flag as this will stop Sabre returning and fare if the price code is not applicable
-                                                        //Force = "true",
-                                                        Code = new string[]
-                                                        {
-                                                            quoteRequest.PriceCode
-                                                        }
+                                                        NameNumber = p.NameNumber
+                                                    }).ToArray(),
+                                                    //Sector Selection
+                                                    ItineraryOptions = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptions()
+                                                    {
+                                                        SegmentSelect = quoteRequest.
+                                                                            SelectedSectors.
+                                                                            Where(w => !"SURFACE|ARUNK".Contains(pnr.Sectors.First(f => f.SectorNo == w.SectorNo).From)).
+                                                                            Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersItineraryOptionsSegmentSelect()
+                                                                            {
+                                                                                Number = s.SectorNo.ToString()
+                                                                            }).
+                                                                            ToArray()
                                                     },
-                                        CommandPricing = quoteRequest.
-                                                            SelectedSectors.
-                                                            Where(w=> !string.IsNullOrEmpty(w.FareBasis)).
-                                                            Select(sec => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricing()
-                                                            {
-                                                                RPH = sec.SectorNo.ToString(),
-                                                                FareBasis = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricingFareBasis()
-                                                                {
-                                                                    Code = sec.FareBasis.Trim()
-                                                                }
-                                                            }).
-                                                            ToArray()
-                                    },
-                                    FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
-                                    MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
-                                                     !string.IsNullOrEmpty(quoteRequest.SelectedPassengers.First().FormOfPayment.BCode) ?
-                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiers()
-                                                     {
-                                                         Endorsements = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiersEndorsements()
-                                                         {
-                                                             Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
-                                                         }
-                                                     }:
-                                                     null,
-                                    FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ?
-                                                                null :
-                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
-                                                                {
-                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                                    Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
+                                                                    null :
+                                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
                                                                     {
-                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                                                        //Removed Force flag as this will stop Sabre returning and fare if the price code is not applicable
+                                                                        //Force = "true",
+                                                                        Code = new string[]
                                                                         {
-                                                                            Code = quoteRequest.PlatingCarrier
+                                                                            quoteRequest.PriceCode
                                                                         }
-                                                                    }
-                                                                }
-                                }
-                            }
-                        }
-                }
+                                                                    },
+                                                    CommandPricing = quoteRequest.
+                                                                        SelectedSectors.
+                                                                        Where(w => !string.IsNullOrEmpty(w.FareBasis)).
+                                                                        Select(sec => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricing()
+                                                                        {
+                                                                            RPH = sec.SectorNo.ToString(),
+                                                                            FareBasis = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersCommandPricingFareBasis()
+                                                                            {
+                                                                                Code = sec.FareBasis.Trim()
+                                                                            }
+                                                                        }).
+                                                                        ToArray()
+                                                },
+                                                FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
+                                                MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
+                                                                     !string.IsNullOrEmpty(quoteRequest.SelectedPassengers.First().FormOfPayment.BCode) ?
+                                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiers()
+                                                                     {
+                                                                         Endorsements = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiersEndorsements()
+                                                                         {
+                                                                             Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
+                                                                         }
+                                                                     } :
+                                                                     null,
+                                                FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ?
+                                                                                null :
+                                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
+                                                                                {
+                                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                                                                    {
+                                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                                                                        {
+                                                                                            Code = quoteRequest.PlatingCarrier
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                            }
+                                        }
+                                    }).
+                                    ToArray()
             };
 
-            if(quoteRequest.QuoteDate.HasValue)
+            if (quoteRequest.QuoteDate.HasValue)
             {
                 enhancedAirBookRQ.
                         OTA_AirPriceRQ.
