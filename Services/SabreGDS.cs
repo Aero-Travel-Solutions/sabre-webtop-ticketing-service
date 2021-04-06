@@ -1974,7 +1974,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         //Try get stored cards
                         storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
-                        GetStoredCardDetails(request, result);
+                        GetStoredCardDetails(request, result, storedCreditCards);
                     }
                 }
 
