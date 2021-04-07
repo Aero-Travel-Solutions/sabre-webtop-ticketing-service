@@ -3774,6 +3774,7 @@ namespace SabreWebtopTicketingService.Services
 
         private List<QuoteSector> getSectorData(string response, List<QuoteSector> requestquosec)
         {
+            //Exampole 01
             //PQ 4   ADT
 
 
@@ -3783,6 +3784,23 @@ namespace SabreWebtopTicketingService.Services
             //04 O DXB EK 408B 16NOV  300A
             //     MEL
             //NO FARE CALC
+
+            //Example 02
+            //PQ 3   ADT
+
+
+            //01 O MEL QF1545O 10SEP  310P
+            //02   LST VOID
+            //03 O MEL QF 683E 15SEP 1235P
+            //04   ADL VOID
+            //05 O SYD QF 528O 20SEP  105P
+            //06 O BNE QF 529O 22SEP  110P
+            //     SYD
+            //  NO FARE CALC
+
+
+
+            //9SNJ G4AK *AWS 1720 / 07APR21 PRICE-MANUAL
 
 
             //9SNJ G4AK *AWS 1022 / 07APR21 PRICE-MANUAL
@@ -3796,10 +3814,21 @@ namespace SabreWebtopTicketingService.Services
 
             for (int i = 0; i < seclines.Count - 1; i++)
             {
-                string depcity = seclines[i].LastMatch(@"\s*\d+\s?[OX]\s?([A-Z]{3})", "");
+                if(seclines[i].Contains("VOID"))
+                {
+                    QuoteSector arunksec = requestquosec[i];
+                    if(requestquosec[i].DepartureCityCode == "ARUNK")
+                    {
+                        quoteSectors.Add(arunksec);
+                        continue;
+                    }
+                }
+                string depcity = seclines[i].LastMatch(@"\s*\d+\s+[OX]{0,1}\s+([A-Z]{3})", "");
                 string arrcity = (i + 1 == seclines.Count - 1) ?
                                     seclines[i + 1].Trim() :
-                                    seclines[i + 1].LastMatch(@"\s*\d+\s?[OX]\s?([A-Z]{3})", "");
+                                    seclines[i + 1].Contains("VOID") ?
+                                        seclines[i + 1].LastMatch(@"\s*\d+\s+([A-Z]{3})"):
+                                        seclines[i + 1].LastMatch(@"\s*\d+\s+[OX]{0,1}\s+([A-Z]{3})", "");
 
                 if (string.IsNullOrEmpty(depcity) || string.IsNullOrEmpty(arrcity))
                 {
@@ -3829,10 +3858,6 @@ namespace SabreWebtopTicketingService.Services
                         Arunk = selectedquotesec.Arunk
                     });
             }
-
-
-
-
 
             return quoteSectors;
         }
