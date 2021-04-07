@@ -1409,7 +1409,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 if (request.Amount == 0.00M)
                 {
-                    logger.LogInformation("ZERO_AMOUNT_CONVERSION", "Zero amount detected in currency conversion API.")
+                    logger.LogInformation("ZERO_AMOUNT_CONVERSION", "Zero amount detected in currency conversion API.");
                     return new ConvertCurrencyResponse()
                     {
                         Amount = 0.00M,
