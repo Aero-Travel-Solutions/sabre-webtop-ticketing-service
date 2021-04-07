@@ -78,6 +78,14 @@ namespace SabreWebtopTicketingService.Models
         public List<WebtopError> error { get; set; }
     }
 
+    public class VoidTicketLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public List<VoidTicketResponse> data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
+
     public class GetPNRTextLambdaResponseBody
     {
         public string session_id { get; set; }

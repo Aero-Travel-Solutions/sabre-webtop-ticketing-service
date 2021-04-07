@@ -13,6 +13,7 @@ provider:
     BACKOFFICE_URL: ${self:custom.backoffice_url.${self:provider.stage}}
     BACKOFFICE_SQS_URL: ${self:custom.backoffice_sqs_url.${self:provider.stage}}
     BACKOFFICE_VOID_SQS_URL: ${self:custom.backoffice_void_sqs_url.${self:provider.stage}}
+    VOID_TICKET_TRANSACTION_URL:  ${self:custom.void_ticket_transaction_url.${self:provider.stage}}
     WEBTOP_SERVICE_KEY: ${self:custom.webtop_service_key.${self:provider.stage}}
     ENVIRONMENT: ${self:provider.stage}
   tracing:
@@ -152,6 +153,11 @@ functions:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip 
   DisplayGDSTicketImage:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::DisplayGDSTicketImage
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  VoidTicket:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::VoidTicket
     timeout: 120
     package:
       artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip 
