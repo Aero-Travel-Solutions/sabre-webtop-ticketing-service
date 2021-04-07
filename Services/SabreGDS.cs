@@ -1404,8 +1404,19 @@ namespace SabreWebtopTicketingService.Services
         internal async Task<ConvertCurrencyResponse> CurrencyConvert(ConvertCurrencyRequest request, string contextID)
         {
             ConvertCurrencyResponse convertCurrencyResponse = new ConvertCurrencyResponse();
+
             try
             {
+                if (request.Amount == 0.00M)
+                {
+                    logger.LogInformation("ZERO_AMOUNT_CONVERSION", "Zero amount detected in currency conversion API.")
+                    return new ConvertCurrencyResponse()
+                    {
+                        Amount = 0.00M,
+                        CurrencyCode = request.ToCurrency
+                    };
+                }
+
                 string sessionID = request.SessionID;
                 user = await session.GetSessionUser(sessionID);
                 pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
