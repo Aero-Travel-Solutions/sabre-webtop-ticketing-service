@@ -4164,7 +4164,7 @@ namespace SabreWebtopTicketingService.Services
                         text.Contains("UTL PNR") ||
                         text.Contains("SECURED PNR")))
                     {
-                        throw new GDSException("50000035", text);
+                        throw new GDSException("SECURED _PNR", text);
                     }
 
                     var tktitems = tkt.
@@ -4189,7 +4189,7 @@ namespace SabreWebtopTicketingService.Services
                                 text.Contains("UTL PNR") ||
                                 text.Contains("SECURED PNR")))
                             {
-                                throw new GDSException("50000035", text);
+                                throw new GDSException("SECURED _PNR", text);
                             }
                         }
 
