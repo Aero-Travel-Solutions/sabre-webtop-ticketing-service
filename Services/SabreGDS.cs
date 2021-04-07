@@ -155,7 +155,7 @@ namespace SabreWebtopTicketingService.Services
                 Name = agentDetails?.Name,
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
-                TicketingPcc = await GetTicketingPCC(sessionid, user),
+                TicketingPcc = await GetDefaultTicketingPCC(sessionid, user.ConsolidatorId),
                 Logo = agentDetails.Logo
             };
 
@@ -166,8 +166,60 @@ namespace SabreWebtopTicketingService.Services
             return agent;
         }
 
+        public async Task<string> DisplayTicketImage(DisplayGDSTicketImageRequest rq, string contextID)
+        {
+            string sessionID = rq.SessionID;
+            user = await session.GetSessionUser(sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, sessionID, user);
+            SabreSession sabreSession = null;
+            string gdstktimage = "";
+
+            try
+            {
+                //Obtain session
+                sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, rq.Locator);
+
+                string ticketingpcc = rq.TicketingPcc;
+
+                if ((ticketingpcc != pcc.PccCode) ||
+                    (sabreSession.Stored &&
+                     !sabreSession.Expired &&
+                     (string.IsNullOrEmpty(sabreSession.CurrentPCC) ? sabreSession.ConsolidatorPCC : sabreSession.CurrentPCC) != ticketingpcc))
+                {
+                    //ignore session
+                    await _sabreCommandService.ExecuteCommand(sabreSession.SessionID, pcc, "I");
+
+                    //Context Change
+                    await _changeContextService.ContextChange(sabreSession, pcc, ticketingpcc);
+                }
+
+
+                //Display eticket record
+                string command = rq.DocumentType == "EMD" ? $"WEMD*T{rq.DocumentNumber.SplitOn("-").First()}" : $"WETR*T{rq.DocumentNumber.SplitOn("-").First()}";
+
+                gdstktimage = await _sabreCommandService.ExecuteCommand(sabreSession.SessionID, pcc, command, ticketingpcc);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.Message);
+                throw (ex);
+            }
+            finally
+            {
+                if (sabreSession != null && sabreSession.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(sabreSession.SessionID, pcc);
+                }
+            }
+
+            return gdstktimage.MaskLog();
+        }
+
+
         public async Task<SearchPNRResponse> SearchPNR(SearchPNRRequest request, string contextID)
         {
+            var sw = Stopwatch.StartNew();
+
             string token = "";
             PNR pnr = new PNR();
             List<SabreSearchPNRResponse> res = new List<SabreSearchPNRResponse>();
@@ -188,8 +240,6 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
-                var sw = Stopwatch.StartNew();
-
                 //Obtain session
                 sabreSession = await _sessionCreateService.
                                                     CreateStatefulSessionToken(
@@ -228,10 +278,10 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task<string> GetTicketingPCC(string sessionid, User user)
+        private async Task<string> GetDefaultTicketingPCC(string sessionid,string consolidatorid)
         {
             var res = await _ticketingPccDataSource.
-                            GetDefaultTicketingPccByGdsCode("1W", sessionid, user);
+                            GetDefaultTicketingPccByGdsCode("1W", sessionid, consolidatorid);
 
             return res?.PccCode;
         }
@@ -359,20 +409,25 @@ namespace SabreWebtopTicketingService.Services
             var cardAccessKey = $"{locator}-card".EncodeBase64();
 
             //get reservation
-            GetReservationRS gdsresponse = null;
-            string lagendresponse = "";
+            Task<GetReservationRS> t1 = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc);
+            Task<string> t2 = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*");
 
-            CancellationToken ct = new CancellationToken();
+            await Task.WhenAll(t1, t2);
 
-            ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+            GetReservationRS gdsresponse = t1.Result;
+            string lagendresponse = t2.Result;
 
-            Parallel.
-                Invoke(
-                    //get reservation
-                    () => gdsresponse = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc).GetAwaiter().GetResult(),
-                    //Retrieve agencies
-                    () => lagendresponse = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*").GetAwaiter().GetResult()
-                );
+            //CancellationToken ct = new CancellationToken();
+
+            //ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+
+            //Parallel.
+            //    Invoke(
+            //        //get reservation
+            //        () => gdsresponse = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc).GetAwaiter().GetResult(),
+            //        //Retrieve agencies
+            //        () => lagendresponse = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*").GetAwaiter().GetResult()
+            //    );
 
             //booking pcc
             string bookingpcc = ((ReservationPNRB)gdsresponse.Item).POS.Source.PseudoCityCode;
@@ -647,10 +702,9 @@ namespace SabreWebtopTicketingService.Services
                 token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
                 //Check to see if the session is from cache and usable
+                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
                 if (token.Stored && !token.Expired)
                 {
-                    var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
-
                     //Try get PNR in cache               
                     pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
@@ -703,7 +757,9 @@ namespace SabreWebtopTicketingService.Services
                     if (maskedcards.Count() > 0 &&
                         (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                     {
-                        GetStoredCardDetails(request.SelectedPassengers, result);
+                        //Try get stored cards
+                        storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                        GetStoredCardDetails(request.SelectedPassengers, result, storedCreditCards);
                     }
                 }
 
@@ -778,11 +834,11 @@ namespace SabreWebtopTicketingService.Services
             //Obtain session (if found from cache, else directly from sabre)
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
+            var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
+
             //Check to see if the session is from cache and usable
             if (token.Stored && !token.Expired)
             {
-                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
-
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
@@ -831,13 +887,14 @@ namespace SabreWebtopTicketingService.Services
                 if (maskedcards.Count() > 0 &&
                     (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                 {
-                    GetStoredCardDetails(request.SelectedPassengers, result);
+                    storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                    GetStoredCardDetails(request.SelectedPassengers, result, storedCreditCards);
                 }
             }
 
-            if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+            if (pnr == null) { throw new AeronologyException("PNR_NOT_FOUND", "PNR data not found"); }
 
-            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+            if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("NO_FLIGHTS", "No flights found in the PNR"); }
 
             //published quote
             List<Quote> quotes = new List<Quote>();
@@ -945,10 +1002,9 @@ namespace SabreWebtopTicketingService.Services
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
             //Check to see if the session is from cache and usable
+            var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
             if (token.Stored && !token.Expired)
             {
-                var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
-
                 //Try get PNR in cache               
                 pnr = await _cacheDataSource.Get<PNR>(pnrAccessKey);
 
@@ -992,7 +1048,9 @@ namespace SabreWebtopTicketingService.Services
                 if (maskedcards.Count() > 0 &&
                     (storedCreditCards.IsNullOrEmpty() || storedCreditCards.Count == maskedcards.Count()))
                 {
-                    GetStoredCardDetails(request.SelectedPassengers, result);
+                    //Try get stored cards
+                    storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                    GetStoredCardDetails(request.SelectedPassengers, result, storedCreditCards);
                 }
             }
 
@@ -1227,9 +1285,22 @@ namespace SabreWebtopTicketingService.Services
         private void GetStoredCardDetails(List<QuotePassenger> quotePassengers, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
-
             //1. Extract stored cards from PNR
-            var storedcards = storedCreditCards ?? GetStoredCards(res);
+            List<StoredCreditCard> storedcards = new List<StoredCreditCard>();
+            if (!storedCreditCards.IsNullOrEmpty())
+            {
+                //card data coming from dynamo db from queue record
+                storedcards.AddRange(storedCreditCards);
+            }
+
+            if (res != null)
+            {
+                //card data coming from pnr
+                storedcards.AddRange(GetStoredCards(res));
+            }
+
+            //remove duplicates
+            storedcards = storedcards.DistinctBy(d => d.MaskedCardNumber).ToList();
 
             foreach (var item in quotePassengers.Where(q => q.FormOfPayment.PaymentType == PaymentType.CC && q.FormOfPayment.CardNumber.Contains("XXX")))
             {
@@ -1435,16 +1506,32 @@ namespace SabreWebtopTicketingService.Services
                         ToList();
         }
 
-        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, IEnumerable<StoredCreditCard> storedCreditCards = null)
+        private void GetStoredCardDetails(IssueExpressTicketRQ request, GetReservationRS res = null, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
             //1. Extract stored cards from PNR
-            var storedcards = storedCreditCards ?? GetStoredCards(res);
+            List<StoredCreditCard> storedcards = new List<StoredCreditCard>();
+            if (!storedCreditCards.IsNullOrEmpty()) 
+            { 
+                //card data coming from dynamo db from queue record
+                storedcards.AddRange(storedCreditCards); 
+            }
+
+            if(res != null)
+            {
+                //card data coming from pnr
+                storedcards.AddRange(GetStoredCards(res));
+            }
+
+            //remove duplicates
+            storedcards = storedcards.DistinctBy(d => d.MaskedCardNumber).ToList();
 
             if (!request.Quotes.IsNullOrEmpty())
             {
                 foreach (var item in request.Quotes.Where(q => q.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC && q.QuotePassenger.FormOfPayment.CardNumber.Contains("XXX")))
                 {
+                    logger.LogMaskInformation($"Cache data: {string.Join(", ", storedcards.Select(s => s.MaskedCardNumber))}");
+
                     //2. Match masked cards and extract card details
                     var value = storedcards.
                                     FirstOrDefault(f =>
@@ -1855,6 +1942,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         //Try get stored cards
                         storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
+                        logger.LogMaskInformation($"StoredCards:{string.Join(", ", storedCreditCards.Select(s => s.CreditCard))}");
                         if (!storedCreditCards.IsNullOrEmpty())
                         {
                             GetStoredCardDetails(request, null, storedCreditCards);
@@ -1886,7 +1974,7 @@ namespace SabreWebtopTicketingService.Services
                     {
                         //Try get stored cards
                         storedCreditCards = await _storedCardDataSource.Get(cardAccessKey);
-                        GetStoredCardDetails(request, result);
+                        GetStoredCardDetails(request, result, storedCreditCards);
                     }
                 }
 
@@ -1939,7 +2027,8 @@ namespace SabreWebtopTicketingService.Services
                                 ticketingprinter,
                                 printerbypass,
                                 sessionID,
-                                currencydata);
+                                currencydata,
+                                decimalformatstring);
 
                     //Remove the client added quotes
                     request.Quotes = new List<IssueExpressTicketQuote>();
@@ -1957,7 +2046,7 @@ namespace SabreWebtopTicketingService.Services
                                         CreditCardFee = q.CreditCardFee,
                                         Endorsements = q.Endorsements,
                                         EquivFare = q.EquivFare,
-                                        EquivFareCurrencyCode = q.EquivFareCurrency,
+                                        EquivFareCurrencyCode = q.EquivFareCurrencyCode,
                                         FareCalculation = q.FareCalculation,
                                         FareType = q.FareType,
                                         Fee = q.Fee,
@@ -2292,8 +2381,10 @@ namespace SabreWebtopTicketingService.Services
                                                                             QuotePassenger = q.QuotePassenger,
                                                                             QuoteSectors = q.QuoteSectors,
                                                                             Taxes = q.Taxes,
-                                                                            BaseFare = (q.BaseFare == q.EquivFare ? q.BaseFare: q.EquivFare),
-                                                                            BaseFareCurrency = q.BaseFareCurrency == q.EquivFareCurrency ? q.BaseFareCurrency : q.EquivFareCurrency,
+                                                                            BaseFare = q.BaseFare,
+                                                                            BaseFareCurrency = q.BaseFareCurrency,
+                                                                            EquivFare = q.EquivFare,
+                                                                            EquivFareCurrencyCode = q.EquivFareCurrencyCode,
                                                                             AgentCommissionRate = q.AgentCommissionRate,
                                                                             BspCommissionRate = q.BSPCommissionRate,
                                                                             Fee = q.Fee
@@ -3281,7 +3372,7 @@ namespace SabreWebtopTicketingService.Services
                             BaseFare = q.BaseFare,
                             EquivFare = q.EquivFare,
                             BaseFareCurrency = q.BaseFareCurrency,
-                            EquivFareCurrency = q.EquivFareCurrencyCode,
+                            EquivFareCurrencyCode = q.EquivFareCurrencyCode,
                             TotalFare = q.TotalFare,
                             AgentCommissionRate = q.AgentCommissionRate,
                             BSPCommissionRate = q.BspCommissionRate,
@@ -3396,7 +3487,8 @@ namespace SabreWebtopTicketingService.Services
         }
 
         private async Task ManualBuild(Pcc pcc, string statefultoken, IEnumerable<IssueExpressTicketQuote> manualquotes, 
-            PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, List<CurrencyData> currencydata)
+            PNR pnr, string ticketingpcc, string contextID, string ticketingprinter, string printerbypass, string sessionID, 
+            List<CurrencyData> currencydata, string pccdecimalformatstring)
         {
             string decimalformatstring = "";
             //Assign printer
@@ -3540,11 +3632,11 @@ namespace SabreWebtopTicketingService.Services
                 command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
 
                 //equiv fare and currency
-                if (quote.EquivFare > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrency) && quote.EquivFareCurrency != quote.BaseFareCurrency)
+                if (quote.EquivFare > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency)
                 {
-                    decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrency);
+                    decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrencyCode);
                     string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare, 0).ToString() : quote.EquivFare.ToString(decimalformatstring);
-                    command2 += $"¥E{quote.EquivFareCurrency.Trim().ToUpper()}{equivfare}";
+                    command2 += $"¥E{quote.EquivFareCurrencyCode.Trim().ToUpper()}{equivfare}";
                 }
 
                 //taxes
@@ -3565,7 +3657,7 @@ namespace SabreWebtopTicketingService.Services
                     //    taxes = GroupTax(taxes);
                     //}
 
-                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(decimalformatstring)}{tax.Code}"));
+                    command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(pccdecimalformatstring)}{tax.Code}"));
                 }
                 else
                 {
@@ -3586,11 +3678,6 @@ namespace SabreWebtopTicketingService.Services
 
                 //farecalc  
                 //max char limit = 246
-                if(quote.FareCalculation.Trim().Count() > 246)
-                {
-                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long.(max characters permited: 246)");
-                }
-
                 string farecalc = quote.FareCalculation.Trim().ToUpper();
 
                 if(!farecalc.Contains("END"))
@@ -3634,17 +3721,18 @@ namespace SabreWebtopTicketingService.Services
                     }
                 }
 
-                command2 += $"¥C{farecalc.ToUpper().Trim()}";
+                farecalc = farecalc.ToUpper().Trim();
+                if (farecalc.Length > 246)
+                {
+                    throw new AeronologyException("FARECALC_TOO_LONG", "Fare calculation is too long. Maximum characters permitted including ROE is 246. Please review before proceed to ticketing again.");
+                }
+
+                command2 += $"¥C{farecalc}";
 
 
                 //endorsements
                 //max char limit = 58
                 string endos = string.Join("/", quote.Endorsements).Trim().ToUpper();
-                if (endos.Trim().Count() > 58)
-                {
-                    throw new AeronologyException("ENDORSEMENT_TOO_LONG", "Endorsements are too long.(max characters permited: 58)");
-                }
-
                 command2 += $"¥ED/{endos.Trim().ToUpper()}";
 
                 string response2 = await _sabreCommandService.
@@ -3809,7 +3897,7 @@ namespace SabreWebtopTicketingService.Services
                                      BaseFare = rqquo.BaseFare,
                                      BaseFareCurrency = rqquo.BaseFareCurrency,
                                      EquivFare = rqquo.EquivFare,
-                                     EquivFareCurrency = rqquo.EquivFareCurrency,
+                                     EquivFareCurrencyCode = rqquo.EquivFareCurrencyCode,
                                      FiledFare = rqquo.FiledFare,
                                      PendingSfData = rqquo.PendingSfData,
                                      PlatingCarrier = rqquo.PlatingCarrier,
@@ -5079,7 +5167,7 @@ namespace SabreWebtopTicketingService.Services
 
         private FOP GetFOP(string pricingcommand, decimal TotalFare)
         {
-            List<StoredCreditCard> cards = CreditCardOperations.GetStoredCards(pricingcommand);
+            List<StoredCreditCard> cards = CreditCardOperations.GetStoredCards(pricingcommand, true);
 
             if (!cards.IsNullOrEmpty())
             {
@@ -5130,7 +5218,7 @@ namespace SabreWebtopTicketingService.Services
                                 BaseFare = quote.BaseFare,
                                 BaseFareCurrency = string.IsNullOrEmpty(quote.BaseFareCurrency) ? "AUD" : quote.BaseFareCurrency,
                                 EquivFare = quote.EquivFare,
-                                EquivFareCurrency = quote.EquivFareCurrencyCode,
+                                EquivFareCurrencyCode = quote.EquivFareCurrencyCode,
                                 AgentCommissions = quote.AgentCommissions,
                                 AgentCommissionRate = quote.AgentCommissionRate,
                                 BSPCommissionRate = quote.BspCommissionRate,

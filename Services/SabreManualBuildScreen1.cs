@@ -71,7 +71,7 @@ namespace SabreWebtopTicketingService.Services
                 //EQUIV FARE
                 if (quote.EquivFare != quote.BaseFare)
                 {
-                    returncommand += $"<{quote.EquivFareCurrency}><{quote.EquivFare}";
+                    returncommand += $"<{quote.EquivFareCurrencyCode}><{quote.EquivFare}";
                 }
                 else
                 {

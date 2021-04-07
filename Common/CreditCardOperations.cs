@@ -73,7 +73,7 @@ namespace SabreWebtopTicketingService.Common
             return false;            
         }
 
-        public static List<StoredCreditCard> GetStoredCards(string text)
+        public static List<StoredCreditCard> GetStoredCards(string text, bool ispricecommand = false)
         {
 
             if (string.IsNullOrEmpty(text)) 
@@ -82,7 +82,9 @@ namespace SabreWebtopTicketingService.Common
             }
 
             List<StoredCreditCard> res = new List<StoredCreditCard>();
-            string pattern = @"((?:\d[-\s_~]*?){13,16})[EXPIRYexpiry?\s_\-\/]*(\d{2}[-\/_~\s\\]*\d{2})";
+            string pattern = ispricecommand ?
+                                @"[A-Z]{2}((\d){13,16})[EXPIRYexpiry?\s_\-\/]*(\d{2}[-\/_~\s\\]*\d{2})" :
+                                @"((?:\d[-\s_~]*?){13,16})[EXPIRYexpiry?\s_\-\/]*(\d{2}[-\/_~\s\\]*\d{2})";
 
             try
             {

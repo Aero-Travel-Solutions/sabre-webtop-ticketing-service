@@ -21,7 +21,7 @@ namespace SabreWebtopTicketingService.Models
         public List<QuoteSector> QuoteSectors { get; set; }
         public decimal BaseFare { get; set; }
         public decimal EquivFare { get; set; }
-        public string EquivFareCurrencyCode { get; internal set; }
+        public string EquivFareCurrencyCode { get; set; }
         public decimal CreditCardFee { get; set; } = 0.00M;
         public decimal CreditCardFeeRate { get; set; }
         public decimal? GST

@@ -22,8 +22,8 @@ namespace SabreWebtopTicketingService.Models
     {
         public SearchPNRRequestValidator()
         {
-            RuleFor(x => x.GDSCode).NotNull().NotEmpty().Matches(@"\d[A-Z]").WithMessage("GDS Code not found or not in valid format").WithErrorCode("10000002");
-            RuleFor(x => x.SearchText).NotNull().NotEmpty().WithMessage("Search criteria must be specified").WithErrorCode("10000003");
+            RuleFor(x => x.GDSCode).NotNull().NotEmpty().Matches(@"\d[A-Z]").WithMessage("GDS Code not found or not in valid format").WithErrorCode("GDS_CODE_NOT_FOUND");
+            RuleFor(x => x.SearchText).NotNull().NotEmpty().WithMessage("Search criteria must be specified").WithErrorCode("SEARCH_TEXT_NOT_FOUND");
         }
     }
 }
