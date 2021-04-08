@@ -136,10 +136,17 @@ namespace SabreWebtopTicketingService.Services
 
         private async Task<Agent> getAgentData(string sessionid, User user, string agentid, string webservicepcc)
         {
-            if(user == null) { throw new AeronologyException("USER_NOT_FOUND", "User not found."); }
+            if(user == null) 
+            { 
+                throw new AeronologyException("USER_NOT_FOUND", "Session user not found. Please refresh the screen before trying again."); 
+            }
+
             var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(user.ConsolidatorId, agentid, sessionid);
 
-            if(agentDetails == null) { throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction fail."); }
+            if(agentDetails == null) 
+            { 
+                throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction failed. Please refresh the screen before trying again."); 
+            }
 
             Agent agent = new Agent()
             {
@@ -1407,6 +1414,15 @@ namespace SabreWebtopTicketingService.Services
 
             try
             {
+                if (request.Amount == 0.00M)
+                {
+                    logger.LogInformation("ZERO_AMOUNT_CONVERSION", "Zero amount detected in currency conversion API.");
+                    return new ConvertCurrencyResponse()
+                    {
+                        Amount = 0.00M,
+                        CurrencyCode = request.ToCurrency
+                    };
+                }
 
                 string sessionID = request.SessionID;
                 user = await session.GetSessionUser(sessionID);
@@ -4205,6 +4221,9 @@ namespace SabreWebtopTicketingService.Services
 
         public async Task<List<VoidTicketResponse>> VoidTicket(VoidTicketRequest request, string contextId)
         {
+            string sessionID = request.SessionID;
+            User user = await session.GetSessionUser(sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextId, request.SessionID, user);
             SabreSession token = null;
 
             List<SabreVoidTicketResponse> sabreVoidTicketResponses = new List<SabreVoidTicketResponse>();
@@ -4254,7 +4273,7 @@ namespace SabreWebtopTicketingService.Services
                         text.Contains("UTL PNR") ||
                         text.Contains("SECURED PNR")))
                     {
-                        throw new GDSException("50000035", text);
+                        throw new GDSException("SECURED _PNR", text);
                     }
 
                     var tktitems = tkt.
@@ -4279,7 +4298,7 @@ namespace SabreWebtopTicketingService.Services
                                 text.Contains("UTL PNR") ||
                                 text.Contains("SECURED PNR")))
                             {
-                                throw new GDSException("50000035", text);
+                                throw new GDSException("SECURED _PNR", text);
                             }
                         }
 

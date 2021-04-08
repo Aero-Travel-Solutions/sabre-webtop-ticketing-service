@@ -11,6 +11,7 @@ namespace SabreWebtopTicketingService.Models
         public string GDSCode { get; set; }
         public string Locator { get; set; }
         public List<VoidTicket> Tickets { get; set; }
+        public string warmer { get; set; }
     }
 
     public class VoidTicketRequestValidator : AbstractValidator<VoidTicketRequest>

@@ -18,7 +18,7 @@ namespace SabreWebtopTicketingService
     {
         private readonly SabreGDS sabreGDS;
         private readonly ILogger logger;
-        
+
         public Handler()
         {
             //Set up Dependency Injection
@@ -30,7 +30,7 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> SearchPNR(SearchPNRRequest rq)
         {
-            if(!string.IsNullOrEmpty(rq.warmer))
+            if (!string.IsNullOrEmpty(rq.warmer))
             {
                 return new LambdaResponse()
                 {
@@ -39,7 +39,7 @@ namespace SabreWebtopTicketingService
                     {
                         contentType = "application/json"
                     },
-                    body = ""                    
+                    body = ""
                 };
             }
 
@@ -651,7 +651,7 @@ namespace SabreWebtopTicketingService
                                                 {
                                                     context_id = contextid,
                                                     session_id = rq.SessionID,
-                                                    error = result.Tickets.IsNullOrEmpty() ? result.Errors.Select(s=> s.Error).ToList(): null,
+                                                    error = result.Tickets.IsNullOrEmpty() ? result.Errors.Select(s => s.Error).ToList() : null,
                                                     data = result.Tickets.IsNullOrEmpty() && result.ValidateCommissionWarnings.IsNullOrEmpty() ? null : result
                                                 },
                                                 new JsonSerializerSettings()
@@ -1348,99 +1348,38 @@ namespace SabreWebtopTicketingService
 
             return lambdaResponse;
         }
-    
 
-    public async Task<LambdaResponse> DisplayGDSTicketImage(DisplayGDSTicketImageRequest rq)
-    {
-        if (!string.IsNullOrEmpty(rq.warmer))
+        public async Task<LambdaResponse> DisplayGDSTicketImage(DisplayGDSTicketImageRequest rq)
         {
-            return new LambdaResponse()
+            if (!string.IsNullOrEmpty(rq.warmer))
             {
-                statusCode = 200,
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
+            logger.LogInformation("*****DisplayGDSTicketImage invoked *****");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
                 headers = new Headers()
                 {
                     contentType = "application/json"
-                },
-                body = ""
+                }
             };
-        }
 
-        logger.LogInformation("*****GetROE invoked *****");
-        logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+            string contextid = "";
 
-        LambdaResponse lambdaResponse = new LambdaResponse()
-        {
-            headers = new Headers()
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.DocumentNumber) || string.IsNullOrEmpty(rq.DocumentType) || string.IsNullOrEmpty(rq.TicketingPcc))
             {
-                contentType = "application/json"
-            }
-        };
-
-        string contextid = "";
-
-        if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.DocumentNumber) || string.IsNullOrEmpty(rq.DocumentType) || string.IsNullOrEmpty(rq.TicketingPcc))
-        {
-            lambdaResponse.statusCode = 400;
-            lambdaResponse.body = JsonConvert.
-                                        SerializeObject
-                                        (
-                                            new DisplayTicketLambdaResponseBody()
-                                            {
-                                                context_id = contextid,
-                                                session_id = rq.SessionID,
-                                                error = new List<WebtopError>()
-                                                {
-                                                        new WebtopError
-                                                        {
-                                                            code = "INVALID_REQUEST",
-                                                            message = "Mandatory request elements missing."
-                                                        }
-                                                }
-                                            },
-                                            new JsonSerializerSettings()
-                                            {
-                                                ContractResolver = new DefaultContractResolver()
-                                                {
-                                                    NamingStrategy = new SnakeCaseNamingStrategy()
-                                                    {
-                                                        OverrideSpecifiedNames = false
-                                                    }
-                                                }
-                                            }
-                                        );
-        }
-        else
-        {
-            contextid = $"1W-GetROE-{rq.SessionID}-{Guid.NewGuid()}";
-            try
-            {
-                string result = await sabreGDS.DisplayTicketImage(rq, contextid);
-                lambdaResponse.statusCode = 200;
-                lambdaResponse.body = JsonConvert.
-                                            SerializeObject
-                                            (
-                                                new DisplayTicketLambdaResponseBody()
-                                                {
-                                                    context_id = contextid,
-                                                    session_id = rq.SessionID,
-                                                    error = new List<WebtopError>(),
-                                                    data = result
-                                                },
-                                                new JsonSerializerSettings()
-                                                {
-                                                    ContractResolver = new DefaultContractResolver()
-                                                    {
-                                                        NamingStrategy = new SnakeCaseNamingStrategy()
-                                                        {
-                                                            OverrideSpecifiedNames = false
-                                                        }
-                                                    }
-                                                }
-                                            );
-            }
-            catch (Exception ex)
-            {
-                lambdaResponse.statusCode = 500;
+                lambdaResponse.statusCode = 400;
                 lambdaResponse.body = JsonConvert.
                                             SerializeObject
                                             (
@@ -1450,14 +1389,12 @@ namespace SabreWebtopTicketingService
                                                     session_id = rq.SessionID,
                                                     error = new List<WebtopError>()
                                                     {
-                                                            new WebtopError()
-                                                            {
-                                                                message = ex.Message,
-                                                                code = "UNKNOWN_ERROR",
-                                                                stack = ex.StackTrace.ToString()
-                                                            }
-                                                    },
-                                                    data = null
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
                                                 },
                                                 new JsonSerializerSettings()
                                                 {
@@ -1471,11 +1408,201 @@ namespace SabreWebtopTicketingService
                                                 }
                                             );
             }
+            else
+            {
+                contextid = $"1W-DisplayGDSTicket-{rq.SessionID}-{Guid.NewGuid()}";
+                try
+                {
+                    string result = await sabreGDS.DisplayTicketImage(rq, contextid);
+                    lambdaResponse.statusCode = 200;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new DisplayTicketLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>(),
+                                                        data = result
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+                catch (Exception ex)
+                {
+                    lambdaResponse.statusCode = 500;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new DisplayTicketLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>()
+                                                        {
+                                                            new WebtopError()
+                                                            {
+                                                                message = ex.Message,
+                                                                code = "UNKNOWN_ERROR",
+                                                                stack = ex.StackTrace.ToString()
+                                                            }
+                                                        },
+                                                        data = null
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+            }
+
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
         }
 
-        logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+        public async Task<LambdaResponse> VoidTicket(VoidTicketRequest rq)
+        {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
 
-        return lambdaResponse;
+            logger.LogInformation("*****Void Ticket invoked *****");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                }
+            };
+
+            string contextid = "";
+
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || rq.Tickets.IsNullOrEmpty())
+            {
+                lambdaResponse.statusCode = 400;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new VoidTicketLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            else
+            {
+                contextid = $"1W-VoidTicket-{rq.SessionID}-{Guid.NewGuid()}";
+                try
+                {
+                    List<VoidTicketResponse> result = await sabreGDS.VoidTicket(rq, contextid);
+                    lambdaResponse.statusCode = 200;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new VoidTicketLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>(),
+                                                        data = result
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+                catch (Exception ex)
+                {
+                    lambdaResponse.statusCode = 500;
+                    lambdaResponse.body = JsonConvert.
+                                                SerializeObject
+                                                (
+                                                    new VoidTicketLambdaResponseBody()
+                                                    {
+                                                        context_id = contextid,
+                                                        session_id = rq.SessionID,
+                                                        error = new List<WebtopError>()
+                                                        {
+                                                            new WebtopError()
+                                                            {
+                                                                message = ex.Message,
+                                                                code = "UNKNOWN_ERROR",
+                                                                stack = ex.StackTrace.ToString()
+                                                            }
+                                                        },
+                                                        data = null
+                                                    },
+                                                    new JsonSerializerSettings()
+                                                    {
+                                                        ContractResolver = new DefaultContractResolver()
+                                                        {
+                                                            NamingStrategy = new SnakeCaseNamingStrategy()
+                                                            {
+                                                                OverrideSpecifiedNames = false
+                                                            }
+                                                        }
+                                                    }
+                                                );
+                }
+            }
+
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
+        }
     }
-}
 }

@@ -75,6 +75,8 @@ namespace SabreWebtopTicketingService
 
             services.AddHttpClient<SessionCreateService>();
 
+            var voidTicketTransactionURL = Environment.GetEnvironmentVariable("VOID_TICKET_TRANSACTION_URL") ?? "https://localhost:9002/transaction-gateway";
+            services.AddHttpClient(Constants.VOID_TICKET_TRANSACTION_HTTP_CLIENT, c => c.BaseAddress = new Uri(voidTicketTransactionURL));
             var backofficeUrl = Environment.GetEnvironmentVariable(Constants.BACKOFFICE_URL);
             services.AddHttpClient(Constants.BACKOFFICE_URL, c => c.BaseAddress = new Uri(backofficeUrl));
 
@@ -133,6 +135,7 @@ namespace SabreWebtopTicketingService
             return new ConfigurationBuilder()
                 .AddEnvironmentVariables()
                 .AddSystemsManager($"/{Environment.GetEnvironmentVariable("ENVIRONMENT")}/backoffice", TimeSpan.FromMinutes(15))
+                .AddSystemsManager($"/{Environment.GetEnvironmentVariable("ENVIRONMENT")}/transaction-gateway", TimeSpan.FromMinutes(15))
                 .AddSystemsManager($"/{Environment.GetEnvironmentVariable("ENVIRONMENT")}/redis-cache", TimeSpan.FromMinutes(15))
                 .Build();
         }
