@@ -136,10 +136,17 @@ namespace SabreWebtopTicketingService.Services
 
         private async Task<Agent> getAgentData(string sessionid, User user, string agentid, string webservicepcc)
         {
-            if(user == null) { throw new AeronologyException("USER_NOT_FOUND", "User not found."); }
+            if(user == null) 
+            { 
+                throw new AeronologyException("USER_NOT_FOUND", "Session user not found. Please refresh the screen before trying again."); 
+            }
+
             var agentDetails = await _agentPccDataSource.RetrieveAgentDetails(user.ConsolidatorId, agentid, sessionid);
 
-            if(agentDetails == null) { throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction fail."); }
+            if(agentDetails == null) 
+            { 
+                throw new AeronologyException("AGENT_NOT_FOUND", "Agent data extraction failed. Please refresh the screen before trying again."); 
+            }
 
             Agent agent = new Agent()
             {
