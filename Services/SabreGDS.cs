@@ -4133,6 +4133,9 @@ namespace SabreWebtopTicketingService.Services
 
         public async Task<List<VoidTicketResponse>> VoidTicket(VoidTicketRequest request, string contextId)
         {
+            string sessionID = request.SessionID;
+            User user = await session.GetSessionUser(sessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextId, request.SessionID, user);
             SabreSession token = null;
 
             List<SabreVoidTicketResponse> sabreVoidTicketResponses = new List<SabreVoidTicketResponse>();
