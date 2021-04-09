@@ -4284,7 +4284,7 @@ namespace SabreWebtopTicketingService.Services
                         try
                         {
                             //End the transaction
-                            await enhancedEndTransService.EndTransaction(token.SessionID, contextId, "Aeronology", request.SessionID, true);
+                            await enhancedEndTransService.EndTransaction(token.SessionID, contextId, "Aeronology", request.SessionID, true, pcc);
                         }
                         catch (GDSException gdsex)
                         {
