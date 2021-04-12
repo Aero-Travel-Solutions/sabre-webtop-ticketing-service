@@ -770,9 +770,9 @@ namespace SabreWebtopTicketingService.Services
                     }
                 }
 
-                if (pnr == null) { throw new AeronologyException("50000017", "PNR data not found"); }
+                if (pnr == null) { throw new AeronologyException("PNR_NOT_FOUND", "PNR data not found"); }
 
-                if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("50000002", "No flights found in the PNR"); }
+                if (pnr.Sectors.IsNullOrEmpty()) { throw new AeronologyException("NO_FLIGHTS", "No flights found in the PNR"); }
 
                 //published quote
                 List<Quote> quotes = new List<Quote>();
@@ -3602,9 +3602,12 @@ namespace SabreWebtopTicketingService.Services
                 logger.LogInformation($"##### PQ number : {groupindex}");
                 string command2 = $"W¥I{groupindex}";
 
+                //read sector data
+                List<QuoteSector> secs = getSectorData(response1, quote.QuoteSectors);
+
                 //loop per sector to get farebasis NVA, NVB, Baggage
                 int index = 1;
-                foreach (var quoteSector in quote.QuoteSectors)
+                foreach (var quoteSector in secs)
                 {
                     var bag = quoteSector.
                                     Baggageallowance.
@@ -3667,11 +3670,6 @@ namespace SabreWebtopTicketingService.Services
 
                 if (!taxes.IsNullOrEmpty())
                 {
-                    //if (taxes.Count > 16)
-                    //{
-                    //    taxes = GroupTax(taxes);
-                    //}
-
                     command2 += string.Join("", taxes.Select(tax => $"/{tax.Amount.ToString(pccdecimalformatstring)}{tax.Code}"));
                 }
                 else
@@ -3790,6 +3788,96 @@ namespace SabreWebtopTicketingService.Services
 
             //receieve and end transact
             await enhancedEndTransService.EndTransaction(statefultoken, contextID, sessionID, agent?.FullName ?? "Aeronology", true, pcc);
+        }
+
+        private List<QuoteSector> getSectorData(string response, List<QuoteSector> requestquosec)
+        {
+            //Exampole 01
+            //PQ 4   ADT
+
+
+            //01 O MEL EK 409O 10OCT 1015P
+            //02 O DXB EK   1O 11OCT  745A
+            //03 O LHR EK   2B 15NOV  140P
+            //04 O DXB EK 408B 16NOV  300A
+            //     MEL
+            //NO FARE CALC
+
+            //Example 02
+            //PQ 3   ADT
+
+
+            //01 O MEL QF1545O 10SEP  310P
+            //02   LST VOID
+            //03 O MEL QF 683E 15SEP 1235P
+            //04   ADL VOID
+            //05 O SYD QF 528O 20SEP  105P
+            //06 O BNE QF 529O 22SEP  110P
+            //     SYD
+            //  NO FARE CALC
+
+
+
+            //9SNJ G4AK *AWS 1720 / 07APR21 PRICE-MANUAL
+
+
+            //9SNJ G4AK *AWS 1022 / 07APR21 PRICE-MANUAL
+
+            List<QuoteSector> quoteSectors = new List<QuoteSector>();
+            List<string> seclines = response.
+                                        SplitOn("\n").
+                                        SkipWhile(w => !w.IsMatch(@"^\s*\d+\s+")).
+                                        TakeWhile(w => !w.Trim().StartsWith("NO FARE CALC")).
+                                        ToList();
+
+            for (int i = 0; i < seclines.Count - 1; i++)
+            {
+                if(seclines[i].Contains("VOID"))
+                {
+                    QuoteSector arunksec = requestquosec[i];
+                    if(requestquosec[i].DepartureCityCode == "ARUNK")
+                    {
+                        quoteSectors.Add(arunksec);
+                        continue;
+                    }
+                }
+                string depcity = seclines[i].LastMatch(@"\s*\d+\s+[OX]{0,1}\s+([A-Z]{3})", "");
+                string arrcity = (i + 1 == seclines.Count - 1) ?
+                                    seclines[i + 1].Trim() :
+                                    seclines[i + 1].Contains("VOID") ?
+                                        seclines[i + 1].LastMatch(@"\s*\d+\s+([A-Z]{3})"):
+                                        seclines[i + 1].LastMatch(@"\s*\d+\s+[OX]{0,1}\s+([A-Z]{3})", "");
+
+                if (string.IsNullOrEmpty(depcity) || string.IsNullOrEmpty(arrcity))
+                {
+                    logger.LogInformation($"Departure({depcity}) or arrival({arrcity}) city not found.");
+                    throw new AeronologyException("UNABLE_TO_READ_DEP_ARR_CITY", $"Departure or arrival city not found.");
+                }
+
+                QuoteSector selectedquotesec = requestquosec.FirstOrDefault(f => f.DepartureCityCode == depcity && f.ArrivalCityCode == arrcity);
+
+                if(selectedquotesec == null)
+                {
+                    throw new AeronologyException("QUOTE_SECTOR_NOT_FOUND", $"Sector change detected. Please requote before proceeding to ticket.");
+                }
+
+                quoteSectors.
+                    Add(new QuoteSector()
+                    {
+                        DepartureCityCode = depcity,
+                        ArrivalCityCode = arrcity,
+                        PQSectorNo = selectedquotesec.PQSectorNo,
+                        Baggageallowance = selectedquotesec.Baggageallowance,
+                        FareBasis = selectedquotesec.FareBasis,
+                        NVA = selectedquotesec.NVA,
+                        NVB = selectedquotesec.NVB,
+                        DepartureDate = selectedquotesec.DepartureDate,
+                        Void = selectedquotesec.Void,
+                        Arunk = selectedquotesec.Arunk
+                    });
+            }
+
+            return quoteSectors;
         }
 
         private static string GetNVANVB(QuoteSector quoteSector)
