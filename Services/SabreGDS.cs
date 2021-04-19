@@ -3609,7 +3609,9 @@ namespace SabreWebtopTicketingService.Services
                 int index = 1;
                 foreach (var quoteSector in secs)
                 {
-                    var bag = quoteSector.
+                    if (quoteSector.DepartureCityCode != "ARUNK")
+                    {
+                        var bag = quoteSector.
                                     Baggageallowance.
                                     ToUpper().
                                         RegexReplace(@"\s+", "").
@@ -3622,17 +3624,16 @@ namespace SabreWebtopTicketingService.Services
                                         Trim().
                                         PadLeft(3, '0');
 
-                    if(!string.IsNullOrEmpty(bag.LastMatch(@"\d+", "")) && int.Parse(bag.LastMatch(@"\d+").Replace(".", "")) == 0)
-                    {
-                        bag = "NIL";
-                    }
+                        if (!string.IsNullOrEmpty(bag.LastMatch(@"\d+", "")) && int.Parse(bag.LastMatch(@"\d+").Replace(".", "")) == 0)
+                        {
+                            bag = "NIL";
+                        }
 
-                    if (quoteSector.DepartureCityCode != "ARUNK")
-                    {
+
                         string baggageallowance = string.IsNullOrEmpty(quoteSector.Baggageallowance) ?
                                                         "" :
                                                         $"*BA{bag}";
-                        string nvbnva =  GetNVANVB(quoteSector);
+                        string nvbnva = GetNVANVB(quoteSector);
 
                         command2 += $"¥L{index}" +//connection indicator
                                                   //farebasis
@@ -3834,12 +3835,12 @@ namespace SabreWebtopTicketingService.Services
             {
                 if(seclines[i].Contains("VOID"))
                 {
-                    QuoteSector arunksec = requestquosec[i];
-                    if(requestquosec[i].DepartureCityCode == "ARUNK")
+                    quoteSectors.Add(new QuoteSector()
                     {
-                        quoteSectors.Add(arunksec);
-                        continue;
-                    }
+                        DepartureCityCode = "ARUNK",
+                        Arunk = true
+                    });
+                    continue;
                 }
                 string depcity = seclines[i].LastMatch(@"\s*\d+\s+[OX]{0,1}\s+([A-Z]{3})", "");
                 string arrcity = (i + 1 == seclines.Count - 1) ?
