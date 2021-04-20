@@ -42,9 +42,10 @@ namespace SabreWebtopTicketingService.Models
 
             dob = paxs.SpecialRequests != null &&
                   paxs.SpecialRequests.APISRequest != null &&
-                  paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true) != null &&
-                  paxname == $"{paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Surname}/{paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Forename}" ?
-                  paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.DateOfBirth :
+                  !paxs.SpecialRequests.APISRequest.All(w => w.DOCSEntry == null) &&
+                  paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry?.DateOfBirthSpecified ??false == true) != null &&
+                  paxname == $"{paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry?.DateOfBirthSpecified ?? false == true).DOCSEntry.Surname}/{paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Forename}" ?
+                  paxs.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry?.DateOfBirthSpecified ?? false == true).DOCSEntry.DateOfBirth :
                   default(DateTime?);
 
             if (!dob.HasValue && PaxType == "CHD")
@@ -69,6 +70,7 @@ namespace SabreWebtopTicketingService.Models
                 gender = string.IsNullOrEmpty(pax.Gender) ?
                                         pax.SpecialRequests != null &&
                                         pax.SpecialRequests.APISRequest != null &&
+                                        !pax.SpecialRequests.APISRequest.All(w => w.DOCSEntry == null) &&
                                         pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.GenderSpecified) != null &&
                                         paxname == $"{pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Surname}/{pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.DateOfBirthSpecified == true).DOCSEntry.Forename}" ?
                                             GetGender(pax.SpecialRequests.APISRequest.FirstOrDefault(w => w.DOCSEntry.GenderSpecified).DOCSEntry.Gender) :
@@ -100,7 +102,9 @@ namespace SabreWebtopTicketingService.Models
 
         public string PhoneNumbers
         {
-            get => pax.PhoneNumbers.
+            get => pax.PhoneNumbers == null ?
+                        "":
+                        pax.PhoneNumbers.
                             Select(s => s.Number +
                                         (string.IsNullOrEmpty(s.Extension) ?
                                                 "" :
