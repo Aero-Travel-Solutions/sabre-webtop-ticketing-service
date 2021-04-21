@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -4449,7 +4450,9 @@ namespace SabreWebtopTicketingService.Services
 
                     if (response.StatusCode != System.Net.HttpStatusCode.OK)
                     {
-                        logger.LogError($"VoidTicketTransactions Unsuccessful: {response.Content}");
+                        using var reader = new StreamReader(await response.Content.ReadAsStreamAsync());
+                        string content = reader.ReadToEnd();
+                        logger.LogError($"VoidTicketTransactions Unsuccessful: {content}");
                     }
 
                     _backofficeOptions.ConsolidatorsBackofficeProcess.TryGetValue(user.ConsolidatorId, out var backofficeProcess);

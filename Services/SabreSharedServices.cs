@@ -346,17 +346,15 @@ namespace SabreWebtopTicketingService.Services
 
                 response.EnsureSuccessStatusCode();
 
-                using (var reader = new StreamReader(await response.Content.ReadAsStreamAsync()))
+                using var reader = new StreamReader(await response.Content.ReadAsStreamAsync());
+                string content = reader.ReadToEnd();
+
+                if (string.IsNullOrEmpty(content))
                 {
-                    string content = reader.ReadToEnd();
-
-                    if (string.IsNullOrEmpty(content))
-                    {
-                        throw new GDSException("5000002", $"{Enum.GetName(typeof(RestServices), service)} rest service return no content.");
-                    }
-
-                    return content.ReplaceAllSabreSpecialChar();
+                    throw new GDSException("5000002", $"{Enum.GetName(typeof(RestServices), service)} rest service return no content.");
                 }
+
+                return content.ReplaceAllSabreSpecialChar();
             }
         }
 
