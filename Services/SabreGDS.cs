@@ -4463,8 +4463,7 @@ namespace SabreWebtopTicketingService.Services
                             SessionId = sessionID,
                             ConsolidatorId = user.ConsolidatorId,
                             Locator = request.Locator,
-                            Tickets = tickets,
-                            VoidFees = voidtickets
+                            Tickets = tickets
                         });
                     }
                 }
