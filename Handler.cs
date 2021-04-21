@@ -10,6 +10,7 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using SabreWebtopTicketingService.CustomException;
+using System.Net.Http;
 
 [assembly:LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 namespace SabreWebtopTicketingService
@@ -1479,6 +1480,7 @@ namespace SabreWebtopTicketingService
 
         public async Task<LambdaResponse> VoidTicket(VoidTicketRequest rq)
         {
+            List<VoidTicketResponse> result = new List<VoidTicketResponse>();
             if (!string.IsNullOrEmpty(rq.warmer))
             {
                 return new LambdaResponse()
@@ -1541,7 +1543,7 @@ namespace SabreWebtopTicketingService
                 contextid = $"1W-VoidTicket-{rq.SessionID}-{Guid.NewGuid()}";
                 try
                 {
-                    List<VoidTicketResponse> result = await sabreGDS.VoidTicket(rq, contextid);
+                    result = await sabreGDS.VoidTicket(rq, contextid);
                     lambdaResponse.statusCode = 200;
                     lambdaResponse.body = JsonConvert.
                                                 SerializeObject

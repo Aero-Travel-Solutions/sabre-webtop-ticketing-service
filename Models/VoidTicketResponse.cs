@@ -13,5 +13,6 @@ namespace SabreWebtopTicketingService.Models
         public bool Voided { get; set; }
         public bool AlreadyVoided { get; set; }
         public List<string> Errors { get; set; }
+        public decimal? VoidFee { get; set; }
     }
 }

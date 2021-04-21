@@ -9,5 +9,7 @@ namespace SabreWebtopTicketingService.Models
         public string Locator { get; set; }
         public string HostUserId { get; set; }
         public List<string> Tickets { get; set; }
+        public string VoidFeeCurrencyCode { get; set; }
+        public Dictionary<string, decimal> VoidFees { get; set; }
     }
 }

@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using FrequentFlyer = SabreWebtopTicketingService.Models.FrequentFlyer;
@@ -58,6 +59,7 @@ namespace SabreWebtopTicketingService.Services
         private readonly S3Helper _s3Helper;
         private readonly IStoredCardDataSource _storedCardDataSource;
         private readonly IQueueManagementDataSource _queueManagementDataSource;
+        private readonly ApiInvoker _apiInvoker;
 
         public User user { get; set; }
         public Pcc pcc { get; set; }
@@ -96,7 +98,8 @@ namespace SabreWebtopTicketingService.Services
             ICacheDataSource cacheDataSource,
             S3Helper s3Helper,
             IStoredCardDataSource storedCardDataSource,
-            IQueueManagementDataSource queueManagementDataSource)
+            IQueueManagementDataSource queueManagementDataSource,
+            ApiInvoker apiInvoker)
         {
             url = Constants.GetSoapUrl();
             _sessionCreateService = sessionCreateService;
@@ -132,6 +135,7 @@ namespace SabreWebtopTicketingService.Services
             this.session = session;
             _storedCardDataSource = storedCardDataSource;
             _queueManagementDataSource = queueManagementDataSource;
+            _apiInvoker = apiInvoker;
         }
 
         private async Task<Agent> getAgentData(string sessionid, User user, string agentid, string webservicepcc)
@@ -4421,7 +4425,53 @@ namespace SabreWebtopTicketingService.Services
             voidTicketResponses = query.ToList();
 
             //reporting Reissue EMDs
-            return HandleReissueEMD(request, voidTicketResponses);
+            voidTicketResponses = HandleReissueEMD(request, voidTicketResponses);
+
+            #region Transaction reporting
+            //void ticket transactions only when tickets have been successfully voided in the GDS
+            if (!voidTicketResponses.IsNullOrEmpty())
+            {
+                var ticketsList = voidTicketResponses.Where(w => w.AlreadyVoided || w.Voided);
+
+                if (!ticketsList.IsNullOrEmpty())
+                {
+                    var tickets = ticketsList.Select(s => s.DocumentNumber).ToList();
+                    var response = await _apiInvoker.InvokeApi(
+                            Constants.VOID_TICKET_TRANSACTION_HTTP_CLIENT,
+                            HttpMethod.Post,
+                            "/voidTickets",
+                            payload: new VoidTicketTransactionsRequest
+                            {
+                                Locator = request.Locator,
+                                TicketNumberList = tickets
+                            },
+                            sessionId: sessionID);
+
+                    if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        logger.LogError($"VoidTicketTransactions Unsuccessful: {response.Content}");
+                    }
+
+                    _backofficeOptions.ConsolidatorsBackofficeProcess.TryGetValue(user.ConsolidatorId, out var backofficeProcess);
+                    //Void ticket to Backoffice
+                    Dictionary<string, decimal> voidtickets = new Dictionary<string, decimal>();
+
+                    if (!string.IsNullOrEmpty(agent?.CustomerNo) && (backofficeProcess?.DownloadVoidDocuments ?? false))
+                    {
+                        await _backofficeDataSource.VoidTickets(new BackofficeVoidTicketRequest()
+                        {
+                            SessionId = sessionID,
+                            ConsolidatorId = user.ConsolidatorId,
+                            Locator = request.Locator,
+                            Tickets = tickets,
+                            VoidFees = voidtickets
+                        });
+                    }
+                }
+            }
+            #endregion
+
+            return voidTicketResponses;
         }
 
         private async Task<List<TicketData>> GetTicketsFromGDS(string locator, string token)
