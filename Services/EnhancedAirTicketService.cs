@@ -581,7 +581,7 @@ namespace SabreWebtopTicketingService.Services
                                     DocumentType = "QUOTE",
                                     PassengerName = s.QuotePassenger.PassengerName,
                                     Route = s.Route,
-                                    PriceIt = s.TotalFare + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M),
+                                    PriceIt = s.TotalFare + s.Fee + (s.FeeGST.HasValue ? s.FeeGST.Value : 0.00M) + s.CreditCardFee,
                                     PlatingCarrier = s.PlatingCarrier,
                                     TotalFare = (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare) + s.TotalTax,
                                     TotalTax = s.TotalTax,
