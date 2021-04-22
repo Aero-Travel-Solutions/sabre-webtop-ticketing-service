@@ -1284,16 +1284,6 @@ namespace SabreWebtopTicketingService.Services
             return command;
         }
 
-        private string GetManualPlatingCarrier(PNR pnr, GetQuoteRQ request)
-        {
-            string platingcarrier = pnr.
-                                      Sectors.
-                                      First(f => f.SectorNo == request.SelectedSectors.Select(s=>s.SectorNo).OrderBy(o => o).First()).
-                                      Carrier;               
-
-            return platingcarrier;
-        }
-
         private void GetStoredCardDetails(List<QuotePassenger> quotePassengers, GetReservationRS res, List<StoredCreditCard> storedCreditCards = null)
         {
             //if stored card been used extract card info
@@ -1338,7 +1328,6 @@ namespace SabreWebtopTicketingService.Services
         private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
         {
             string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
-            logger.LogInformation("QuoteRedisplayTest");
             logger.LogMaskInformation(pqtext);
             List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
             if (applicabledpqres.Any(w => w.PQNo != -1))
@@ -4456,6 +4445,7 @@ namespace SabreWebtopTicketingService.Services
                     }
 
                     _backofficeOptions.ConsolidatorsBackofficeProcess.TryGetValue(user.ConsolidatorId, out var backofficeProcess);
+                    
                     //Void ticket to Backoffice
                     Dictionary<string, decimal> voidtickets = new Dictionary<string, decimal>();
 
@@ -4948,7 +4938,7 @@ namespace SabreWebtopTicketingService.Services
                                         agent.Consolidator.CountryCode :
                                         "AU",
                     AgentIata = user?.Agent?.FinanceDetails?.IataNumber??"",
-                    BspCommission = default,
+                    BspCommission = quote.BspCommissionRate.HasValue ? quote.BspCommissionRate.Value : default,
                     FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                         "CREDIT_CARD" :
                                         "CASH",
