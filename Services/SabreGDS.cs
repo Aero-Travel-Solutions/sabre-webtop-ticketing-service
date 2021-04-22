@@ -4938,7 +4938,7 @@ namespace SabreWebtopTicketingService.Services
                                         agent.Consolidator.CountryCode :
                                         "AU",
                     AgentIata = user?.Agent?.FinanceDetails?.IataNumber??"",
-                    BspCommission = quote.BspCommissionRate.HasValue ? quote.BspCommissionRate.Value : default,
+                    BspCommission = quote.BspCommissionRate,
                     FormOfPayment = quote.QuotePassenger.FormOfPayment != null && quote.QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ?
                                         "CREDIT_CARD" :
                                         "CASH",
