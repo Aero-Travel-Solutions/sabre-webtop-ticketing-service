@@ -4416,7 +4416,14 @@ namespace SabreWebtopTicketingService.Services
 
             //reporting Reissue EMDs
             voidTicketResponses = HandleReissueEMD(request, voidTicketResponses);
+            
+            await DownloadVoidTransaction(request, sessionID, user, voidTicketResponses);
+            
+            return voidTicketResponses;
+        }
 
+        private async Task DownloadVoidTransaction(VoidTicketRequest request, string sessionID, User user, List<VoidTicketResponse> voidTicketResponses)
+        {
             #region Transaction reporting
             //void ticket transactions only when tickets have been successfully voided in the GDS
             if (!voidTicketResponses.IsNullOrEmpty())
@@ -4432,6 +4439,7 @@ namespace SabreWebtopTicketingService.Services
                             "/voidTickets",
                             payload: new VoidTicketTransactionsRequest
                             {
+                                AgentID = request.AgentID,
                                 Locator = request.Locator,
                                 TicketNumberList = tickets
                             },
@@ -4445,7 +4453,7 @@ namespace SabreWebtopTicketingService.Services
                     }
 
                     _backofficeOptions.ConsolidatorsBackofficeProcess.TryGetValue(user.ConsolidatorId, out var backofficeProcess);
-                    
+
                     //Void ticket to Backoffice
                     Dictionary<string, decimal> voidtickets = new Dictionary<string, decimal>();
 
@@ -4462,8 +4470,6 @@ namespace SabreWebtopTicketingService.Services
                 }
             }
             #endregion
-
-            return voidTicketResponses;
         }
 
         private async Task<List<TicketData>> GetTicketsFromGDS(string locator, string token)

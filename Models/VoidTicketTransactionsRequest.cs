@@ -7,6 +7,9 @@ namespace SabreWebtopTicketingService.Models
 {
     public class VoidTicketTransactionsRequest
     {
+        [JsonPropertyName("agent_id")]
+        public string AgentID { get; set; }
+
         [JsonPropertyName("locator")]
         public string Locator { get; set; }
 
