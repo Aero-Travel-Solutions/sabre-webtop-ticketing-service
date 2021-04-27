@@ -10,6 +10,7 @@ namespace SabreWebtopTicketingService.Models
         public string SessionID { get; set; }
         public string GDSCode { get; set; }
         public string Locator { get; set; }
+        public string AgentID { get; set; }
         public List<VoidTicket> Tickets { get; set; }
         public string warmer { get; set; }
     }
