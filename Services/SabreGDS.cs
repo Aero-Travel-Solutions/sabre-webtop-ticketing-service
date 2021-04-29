@@ -794,17 +794,6 @@ namespace SabreWebtopTicketingService.Services
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
-                ////WP*Bag
-                //string wpbagres = "";
-                //if (bestbuyresponse.Contains("BAGGAGE INFO AVAILABLE"))
-                //{
-                //    logger.LogInformation("Baggage information found. Executing WP*BAG");
-
-                //    string wpbagcommand = "WP*BAG";
-                //    wpbagres = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, wpbagcommand);
-                //    logger.LogMaskInformation($"{wpbagres}");
-                //}
-
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
 
                 //redislpay price quotes
@@ -1266,7 +1255,7 @@ namespace SabreWebtopTicketingService.Services
         private string GetBestbuyCommand(GetQuoteRQ request, string platingcarrier)
         {
             string platingcarrierstring = string.IsNullOrEmpty(platingcarrier) ? "" : $"¥A{platingcarrier}";
-            string command = $"WPNC{platingcarrierstring}¥P{}¥N{}¥S{string.Join("/", request.SelectedSectors.Select(s => s.SectorNo))}";
+            string command = $"WPNC{platingcarrierstring}¥S{string.Join("/", request.SelectedSectors.Select(s => s.SectorNo))}";
             string fopstring = request.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CA ?
                         string.IsNullOrEmpty(request.SelectedPassengers.First().FormOfPayment.BCode) ?
                             "¥FCASH" :
@@ -1442,7 +1431,11 @@ namespace SabreWebtopTicketingService.Services
                                    LastMatch(@"COMM\sPCT\s*(\d+)", "");
 
                 string pricecommandline = diffquotes[i + 1].SplitOn("BASE FARE").First().Trim().Replace("\n", "");
-                string paxtype = pricecommandline.LastMatch(@"ÂP([ACI][D\dN][T\dNF])");
+                string paxtype = diffquotes[i + 1].
+                                        SplitOn("\n").
+                                        First(w => w.IsMatch(@"\w{3}\s*-\s*\d+")).
+                                        LastMatch(@"(\w{3})\s*-\s*\d+");
+
                 if (string.IsNullOrEmpty(paxtype))
                 {
                     paxtype = diffquotes[i + 1].LastMatch(@"\s+INPUT\s+PTC\s*-\s*(.*)");
@@ -5011,7 +5004,15 @@ namespace SabreWebtopTicketingService.Services
                                         "CASH",
                     Quotes = new CalculateCommissionQuoteRequest[]
                     {
-.
+                            new CalculateCommissionQuoteRequest()
+                            {
+                                BaseFareAmount = quote.BaseFare == quote.EquivFare ? quote.BaseFare: quote.EquivFare,
+                                FuelSurcharge = quote.Taxes?.FirstOrDefault(w=> w.Fuel)?.Amount??0.00M,
+                                QuoteNumber = quote.QuoteNo.ToString(),
+                                PassengerNumber = quote.QuotePassenger.NameNumber,
+                                Currency = quote.BaseFareCurrency == quote.EquivFareCurrencyCode ? quote.BaseFareCurrency : quote.EquivFareCurrencyCode,
+                                QuotedSectors = quote.QuoteSectors.Select(qsec => qsec.PQSectorNo.ToString()).ToArray()
+                            }
                     }
                 };
 
