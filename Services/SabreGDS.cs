@@ -797,7 +797,7 @@ namespace SabreWebtopTicketingService.Services
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
 
                 //redislpay price quotes
-                await RedisplayGeneratedQuotes(token.SessionID, quotes, true);
+                await RedisplayGeneratedQuotes(token.SessionID, quotes);
 
                 //workout fuel surcharge taxcode
                 GetFuelSurcharge(quotes);
@@ -1317,7 +1317,7 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes, bool needsecpopulate = false)
+        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
         {
             string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
             logger.LogMaskInformation(pqtext);
@@ -1336,17 +1336,14 @@ namespace SabreWebtopTicketingService.Services
                                         qf.QuoteNo = f.PQNo;
                                         qf.BspCommissionRate = f.BSPCommission;
                                         qf.TourCode = f.TourCode;
-                                        if (needsecpopulate)
+                                        foreach (var sec in qf.QuoteSectors.Where(w => !w.Arunk || !w.Void))
                                         {
-                                            foreach (var sec in qf.QuoteSectors.Where(w => !w.Arunk || !w.Void))
-                                            {
-                                                PQTextSector pqsec = f.Sectors.FirstOrDefault(f => f.SectorNo == sec.PQSectorNo);
-                                                if (pqsec == null) { continue; }
-                                                sec.NVA = pqsec.NVA;
-                                                sec.NVB = pqsec.NVB;
-                                                sec.Baggageallowance = pqsec.BaggageAllowance;
-                                                sec.FareBasis = pqsec.Farebasis;
-                                            }
+                                            PQTextSector pqsec = f.Sectors.FirstOrDefault(f => f.SectorNo == sec.PQSectorNo);
+                                            if (pqsec == null) { continue; }
+                                            sec.NVA = pqsec.NVA;
+                                            sec.NVB = pqsec.NVB;
+                                            sec.Baggageallowance = pqsec.BaggageAllowance;
+                                            sec.FareBasis = pqsec.Farebasis;
                                         }
                                     }));
             }
