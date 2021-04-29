@@ -237,6 +237,7 @@ namespace SabreWebtopTicketingService.Services
             List<SabreSearchPNRResponse> res = new List<SabreSearchPNRResponse>();
             SabreSession sabreSession = null;
             user = await session.GetSessionUser(request.SessionID);
+            //store this in the cache
             pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID, user);
             agent = null;
             List<GST> gst = GetGST(user?.Consolidator?.CountryCode??"AU"); 
@@ -793,18 +794,10 @@ namespace SabreWebtopTicketingService.Services
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
-                //WP*Bag
-                string wpbagres = "";
-                if (bestbuyresponse.Contains("BAGGAGE INFO AVAILABLE"))
-                {
-                    logger.LogInformation("Baggage information found. Executing WP*BAG");
+                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
 
-                    string wpbagcommand = "WP*BAG";
-                    wpbagres = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, wpbagcommand);
-                    logger.LogMaskInformation($"{wpbagres}");
-                }
-
-                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier, wpbagres);
+                //redislpay price quotes
+                await RedisplayGeneratedQuotes(token.SessionID, quotes);
 
                 //workout fuel surcharge taxcode
                 GetFuelSurcharge(quotes);
@@ -1148,7 +1141,7 @@ namespace SabreWebtopTicketingService.Services
             return quotes;
         }
 
-        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier, string wpbagres = "")
+        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier)
         {
             List<Quote> quotes = new List<Quote>();
 
@@ -1158,8 +1151,7 @@ namespace SabreWebtopTicketingService.Services
                                                             (IBestBuyQuote)new SabreBestBuyQuote(
                                                                 bestbuyresponse, 
                                                                 request.SelectedSectors.Select(s=>s.SectorNo).ToList(), 
-                                                                pnr.Sectors,
-                                                                wpbagres) :
+                                                                pnr.Sectors) :
                                                         bestbuyresponse.Contains("PSGR TYPE")?
                                                             (IBestBuyQuote)new AbacusBuyQuote(
                                                                 bestbuyresponse,
@@ -1344,6 +1336,15 @@ namespace SabreWebtopTicketingService.Services
                                         qf.QuoteNo = f.PQNo;
                                         qf.BspCommissionRate = f.BSPCommission;
                                         qf.TourCode = f.TourCode;
+                                        foreach (var sec in qf.QuoteSectors.Where(w => !w.Arunk || !w.Void))
+                                        {
+                                            PQTextSector pqsec = f.Sectors.FirstOrDefault(f => f.SectorNo == sec.PQSectorNo);
+                                            if (pqsec == null) { continue; }
+                                            sec.NVA = pqsec.NVA;
+                                            sec.NVB = pqsec.NVB;
+                                            sec.Baggageallowance = pqsec.BaggageAllowance;
+                                            sec.FareBasis = pqsec.Farebasis;
+                                        }
                                     }));
             }
         }
@@ -1373,6 +1374,52 @@ namespace SabreWebtopTicketingService.Services
 
         private List<PQTextResp> ParsePQText(string pqtext)
         {
+
+            //PQ 1  AVN‡RQ
+
+            //BASE FARE TAXES/ FEES / CHARGES          TOTAL
+            //AUD1330.00                      173.30XT AUD1503.30ADT
+            //XT BREAKDOWN
+            //        60.00AU          4.00WG         42.00WY         38.80YQ
+            //        25.90JC          2.60C4
+            //ADT - 01  LH1YAUF LL1YAUF
+            //MEL VN SGN625.62VN MEL401.63NUC1027.25END ROE1.294714
+            //PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+            //VALIDATING CARRIER SPECIFIED - VN
+            //RESTRICTIONS MAY APPLY./ NON - END.
+            //01 O MEL VN 780L 15JAN 1125A LH1YAUF         15JAN2215JAN22 01P
+            //02 O SGN VN 781L 30JAN  905P LL1YAUF         30JAN2230JAN22 01P
+            //     MEL
+            //TOUR CODE-AUS0011F
+            //PRIVATE Â¤                                                      
+            //FARE SOURCE -ATPC
+            //9SNJ 9SNJ* A03 1044 / 26APR21 PRICE-SYSTEM
+
+
+
+            //PQ 2  AVN‡RQ
+
+            //BASE FARE TAXES/ FEES / CHARGES          TOTAL
+            //AUD998.00                       99.10XT AUD1097.10CNN
+            //XT BREAKDOWN
+            //         4.00WG         42.00WY         38.80YQ         13.00JC
+            //         1.30C4
+            //CNN - 01  LH1YAUF / CH25 LL1YAUF / CH25
+            //MEL VN SGN469.21VN MEL301.22NUC770.43END ROE1.294714
+            //EACH CNN REQUIRES ACCOMPANYING SAME CABIN ADT
+            //PRIVATE FARE APPLIED -CHECK RULES FOR CORRECT TICKETING
+            //VALIDATING CARRIER SPECIFIED - VN
+            //RESTRICTIONS MAY APPLY./ NON - END.
+            //01 O MEL VN 780L 15JAN 1125A LH1YAUF/ CH25    15JAN2215JAN22 01P
+            //02 O SGN VN 781L 30JAN  905P LL1YAUF/ CH25    30JAN2230JAN22 01P
+            //      MEL
+            //COMM PCT        5
+            //TOUR CODE-AUS0011F
+            //PRIVATE Â¤                                                      
+            //FARE SOURCE -ATPC
+            //9SNJ 9SNJ* A03 1044 / 26APR21 PRICE-SYSTEM
+
+
             List<PQTextResp> result = new List<PQTextResp>();
             List<string> diffquotes = pqtext.SplitOnRegex(@"(PQ\s*\d+)").Skip(1).ToList();
             for (int i = 0; i < diffquotes.Count(); i += 2)
@@ -1381,7 +1428,11 @@ namespace SabreWebtopTicketingService.Services
                                    LastMatch(@"COMM\sPCT\s*(\d+)", "");
 
                 string pricecommandline = diffquotes[i + 1].SplitOn("BASE FARE").First().Trim().Replace("\n", "");
-                string paxtype = pricecommandline.LastMatch(@"ÂP([ACI][D\dN][T\dNF])");
+                string paxtype = diffquotes[i + 1].
+                                        SplitOn("\n").
+                                        First(w => w.IsMatch(@"\w{3}\s*-\s*\d+")).
+                                        LastMatch(@"(\w{3})\s*-\s*\d+");
+
                 if (string.IsNullOrEmpty(paxtype))
                 {
                     paxtype = diffquotes[i + 1].LastMatch(@"\s+INPUT\s+PTC\s*-\s*(.*)");
@@ -1396,7 +1447,12 @@ namespace SabreWebtopTicketingService.Services
                                 LastMatch(@"TOUR\sCODE-(\w*)") ?? "",
                     BSPCommission = string.IsNullOrEmpty(bsprate) ?
                                     default(decimal?) :
-                                    decimal.Parse(bsprate)
+                                    decimal.Parse(bsprate),
+                    Sectors = diffquotes[i + 1].
+                                SplitOn("\n").
+                                Where(w => w.IsMatch(@"^\d+\s[A-Z]\s[A-Z]{3}.*")).
+                                Select(s=> new PQTextSector(s)).
+                                ToList()
                 });
             }
             return result;
@@ -5670,6 +5726,30 @@ namespace SabreWebtopTicketingService.Services
         public string PassengerType { get; set; }
         public decimal? BSPCommission { get; set; }
         public string TourCode { get; set; }
+        public List<PQTextSector> Sectors { get; set; }
+    }
+
+    public class PQTextSector
+    {
+
+        //                            Farebasis         NVB     NVA
+        //01 O MEL VN 780L 15JAN 1125A LH1YAUF         15JAN2215JAN22 01P
+        //02 O SGN VN 781L 30JAN  905P LL1YAUF         30JAN2230JAN22 01P
+
+        string sectorline = "";
+        string[] linetems = null;
+        public PQTextSector(string sectorline)
+        {
+            this.sectorline = sectorline;
+            linetems = sectorline.SplitOnRegex(@"\s+");
+        }
+
+
+        public int SectorNo => int.Parse(sectorline.LastMatch(@"^(\d+)", "-1"));
+        public string Farebasis => sectorline.SplitOnRegex(@"\s+")[linetems.Count() - 3];
+        public string NVB => sectorline.SplitOnRegex(@"\s+")[linetems.Count() - 2].Trim().Substring(0, 7);
+        public string NVA => sectorline.SplitOnRegex(@"\s+")[linetems.Count() - 2].Trim().Substring(7);
+        public string BaggageAllowance => linetems.Last();
     }
 
     internal class AgentCommissionData
