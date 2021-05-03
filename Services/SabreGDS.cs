@@ -5748,9 +5748,9 @@ namespace SabreWebtopTicketingService.Services
 
 
         public int SectorNo => int.Parse(sectorline.LastMatch(@"^(\d+)", "-1"));
-        public string Farebasis => sectorline.Substring(30, 16).Trim();
-        public string NVB => linetems.Count() == 7 ? "" : sectorline.Substring(46, 7).Trim();
-        public string NVA => linetems.Count() == 7 ? "" : sectorline.Substring(53, 7).Trim();
+        public string Farebasis => sectorline.Substring(29, 16).Trim();
+        public string NVB => linetems.Count() == 7 ? "" : sectorline.Substring(45, 7).Trim();
+        public string NVA => linetems.Count() == 7 ? "" : sectorline.Substring(52, 7).Trim();
         public string BaggageAllowance => linetems.Last();
     }
 
