@@ -5773,7 +5773,7 @@ namespace SabreWebtopTicketingService.Services
         public string NVA => linetems.Count() == 7 ? "" : GetNVA(sectorline);
         private string GetNVA(string sectorline)
         {
-            string match = sectorline.LastMatch(@"\d{2}[A-Z]{3}\d{2})(\d{2}[A-Z]{3}\d{2})\s{1}\w{3}");
+            string match = sectorline.LastMatch(@"\d{2}[A-Z]{3}\d{2}(\d{2}[A-Z]{3}\d{2})\s{1}\w{3}");
 
             if (string.IsNullOrEmpty(match))
             {
