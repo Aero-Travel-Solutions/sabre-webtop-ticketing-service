@@ -5748,47 +5748,9 @@ namespace SabreWebtopTicketingService.Services
 
 
         public int SectorNo => int.Parse(sectorline.LastMatch(@"^(\d+)", "-1"));
-        public string Farebasis => linetems[6];
-        public string NVB => linetems.Count()==7 ? "" : GetNVB(sectorline);
-
-        private string GetNVB(string sectorline)
-        {
-            string match = sectorline.LastMatch(@"(\d{2}[A-Z]{3}\d{2})\d{2}[A-Z]{3}\d{2}\s{1}\w{3}");
-
-            if(string.IsNullOrEmpty(match))
-            {
-                if(sectorline.IsMatch(@"\s{7}\d{2}[A-Z]{3}\d{2}\s{1}\w{3}"))
-                {
-                    match = "";
-                }
-                else if((sectorline.IsMatch(@"\d{2}[A-Z]{3}\d{2}\s{8}\w{3}")))
-                {
-                    match = sectorline.LastMatch(@"(\d{2}[A-Z]{3}\d{2})\s{8}\w{3}");
-                }
-            }
-
-            return match;
-        }
-
-        public string NVA => linetems.Count() == 7 ? "" : GetNVA(sectorline);
-        private string GetNVA(string sectorline)
-        {
-            string match = sectorline.LastMatch(@"\d{2}[A-Z]{3}\d{2}(\d{2}[A-Z]{3}\d{2})\s{1}\w{3}");
-
-            if (string.IsNullOrEmpty(match))
-            {
-                if (sectorline.IsMatch(@"\d{2}[A-Z]{3}\d{2}\s{8}\w{3}"))
-                {
-                    match = "";
-                }
-                else if ((sectorline.IsMatch(@"\d{2}[A-Z]{3}\d{2}\s{8}\w{3}")))
-                {
-                    match = sectorline.LastMatch(@"\s{7}(\d{2}[A-Z]{3}\d{2})\s{1}\w{3}");
-                }
-            }
-
-            return match;
-        }
+        public string Farebasis => sectorline.Substring(30, 16).Trim();
+        public string NVB => linetems.Count() == 7 ? "" : sectorline.Substring(46, 7).Trim();
+        public string NVA => linetems.Count() == 7 ? "" : sectorline.Substring(53, 7).Trim();
         public string BaggageAllowance => linetems.Last();
     }
 
