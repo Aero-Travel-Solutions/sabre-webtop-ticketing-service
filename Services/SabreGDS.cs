@@ -5023,7 +5023,7 @@ namespace SabreWebtopTicketingService.Services
                 //read contextID
                 quote.ContextID = _commissionDataService.ContextID;
 
-                if (!(calculateCommissionResponse.PlatingCarrierBspRate.HasValue || (calculateCommissionResponse.PlatingCarrierAgentFee != null && calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue)))
+                if (!(!calculateCommissionResponse.AgentCommissions.IsNullOrEmpty() || (calculateCommissionResponse.PlatingCarrierAgentFee != null && calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue)))
                 {
                     quote.Errors = new List<WebtopError>()
                     {
@@ -5208,7 +5208,7 @@ namespace SabreWebtopTicketingService.Services
                 //read contextID
                 quote.ContextID = _commissionDataService.ContextID;
 
-                if (!(calculateCommissionResponse.PlatingCarrierBspRate.HasValue || (calculateCommissionResponse.PlatingCarrierAgentFee != null && calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue)))
+                if (!(!calculateCommissionResponse.AgentCommissions.IsNullOrEmpty() || (calculateCommissionResponse.PlatingCarrierAgentFee != null && calculateCommissionResponse.PlatingCarrierAgentFee.Amount.HasValue)))
                 {
                     quote.Errors = new List<WebtopError>()
                     {
@@ -5735,7 +5735,9 @@ namespace SabreWebtopTicketingService.Services
         //                            Farebasis         NVB     NVA
         //01 O MEL VN 780L 15JAN 1125A LH1YAUF         15JAN2215JAN22 01P
         //02 O SGN VN 781L 30JAN  905P LL1YAUF         30JAN2230JAN22 01P
-
+        //01 O LST QF1546Q 05JAN  455P QDQW                   05JAN23 01P
+        //01 O LST QF1546Q 05JAN  455P QDQW            05JAN23        01P
+        //01 O LST QF1546Q 05JAN  455P QDQW                           01P
         string sectorline = "";
         string[] linetems = null;
         public PQTextSector(string sectorline)
@@ -5746,9 +5748,47 @@ namespace SabreWebtopTicketingService.Services
 
 
         public int SectorNo => int.Parse(sectorline.LastMatch(@"^(\d+)", "-1"));
-        public string Farebasis => sectorline.SplitOnRegex(@"\s+")[linetems.Count() - 3];
-        public string NVB => sectorline.SplitOnRegex(@"\s+")[linetems.Count() - 2].Trim().Substring(0, 7);
-        public string NVA => sectorline.SplitOnRegex(@"\s+")[linetems.Count() - 2].Trim().Substring(7);
+        public string Farebasis => linetems[6];
+        public string NVB => linetems.Count()==7 ? "" : GetNVB(sectorline);
+
+        private string GetNVB(string sectorline)
+        {
+            string match = sectorline.LastMatch(@"(\d{2}[A-Z]{3}\d{2})\d{2}[A-Z]{3}\d{2}\s{1}\w{3}");
+
+            if(string.IsNullOrEmpty(match))
+            {
+                if(sectorline.IsMatch(@"\s{7}\d{2}[A-Z]{3}\d{2}\s{1}\w{3}"))
+                {
+                    match = "";
+                }
+                else if((sectorline.IsMatch(@"\d{2}[A-Z]{3}\d{2}\s{8}\w{3}")))
+                {
+                    match = sectorline.LastMatch(@"(\d{2}[A-Z]{3}\d{2})\s{8}\w{3}");
+                }
+            }
+
+            return match;
+        }
+
+        public string NVA => linetems.Count() == 7 ? "" : GetNVA(sectorline);
+        private string GetNVA(string sectorline)
+        {
+            string match = sectorline.LastMatch(@"\d{2}[A-Z]{3}\d{2})(\d{2}[A-Z]{3}\d{2})\s{1}\w{3}");
+
+            if (string.IsNullOrEmpty(match))
+            {
+                if (sectorline.IsMatch(@"\d{2}[A-Z]{3}\d{2}\s{8}\w{3}"))
+                {
+                    match = "";
+                }
+                else if ((sectorline.IsMatch(@"\d{2}[A-Z]{3}\d{2}\s{8}\w{3}")))
+                {
+                    match = sectorline.LastMatch(@"\s{7}(\d{2}[A-Z]{3}\d{2})\s{1}\w{3}");
+                }
+            }
+
+            return match;
+        }
         public string BaggageAllowance => linetems.Last();
     }
 
