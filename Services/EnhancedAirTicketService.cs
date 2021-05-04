@@ -586,6 +586,7 @@ namespace SabreWebtopTicketingService.Services
                                     TotalFare = (s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare) + s.TotalTax,
                                     TotalTax = s.TotalTax,
                                     Commission = Math.Round((((s.BaseFare == s.EquivFare ? s.BaseFare : s.EquivFare) * s.AgentCommissionRate ?? 0.00M) / 100), 2, MidpointRounding.AwayFromZero),
+                                    CCFee = s.CreditCardFee,
                                     Fee = s.Fee,
                                     FeeGST = s.FeeGST,
                                     FormOfPayment = s.QuotePassenger.FormOfPayment,
@@ -649,5 +650,6 @@ namespace SabreWebtopTicketingService.Services
         public decimal? FeeGST { get; set; }
         public decimal AgentPrice { get; set; }
         public FOP FormOfPayment { get; set; }
+        public decimal CCFee { get; set; }
     }
 }

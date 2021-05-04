@@ -2594,7 +2594,7 @@ namespace SabreWebtopTicketingService.Services
                                 TotalCreditAmount = rq.MerchantData != null ?
                                                         0.00M :
                                                         result.DocumentType == "TKT" && quote != null ?
-                                                            quote.FormOfPayment.CreditAmount :
+                                                            quote.FormOfPayment.CreditAmount + quote.CCFee :
                                                             result.DocumentType == "EMD" && emd != null ?
                                                                 emd.FormOfPayment.CreditAmount :
                                                                 0.00M,
@@ -4064,7 +4064,8 @@ namespace SabreWebtopTicketingService.Services
                                      ApplySupressITFlag = rqquo.ApplySupressITFlag,
                                      PriceType = rqquo.PriceType,
                                      Taxes = rqquo.Taxes,
-                                     FareCalculation = quo.FareCalculation
+                                     FareCalculation = quo.FareCalculation,
+                                     CreditCardFee = quo.CreditCardFee
                                  };
                 }
 
@@ -5433,7 +5434,8 @@ namespace SabreWebtopTicketingService.Services
                                 Endorsements = quote.Endorsements,
                                 ApplySupressITFlag = applySupressITFlag,
                                 Taxes = quote.Taxes,
-                                PriceType = quote.PriceType
+                                PriceType = quote.PriceType,
+                                CreditCardFee = quote.CreditCardFee
                             }
                         ).
                         EncodeBase64();
