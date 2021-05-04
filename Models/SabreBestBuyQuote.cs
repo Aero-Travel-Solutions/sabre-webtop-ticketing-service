@@ -242,8 +242,9 @@ namespace SabreWebtopTicketingService.Models
 
                 endos = endos.
                             Where(w => 
-                                    !w.StartsWith("PRIVATE FARE APPLIED") || 
-                                    !w.StartsWith("RATE USED")).
+                                    !w.StartsWith("PRIVATE FARE APPLIED") && 
+                                    !w.StartsWith("RATE USED") &&
+                                    !w.StartsWith("PRIVATE Â¤")).
                             Distinct().
                             ToList();
 
