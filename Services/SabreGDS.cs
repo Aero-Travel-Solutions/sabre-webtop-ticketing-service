@@ -430,18 +430,6 @@ namespace SabreWebtopTicketingService.Services
             GetReservationRS gdsresponse = t1.Result;
             string lagendresponse = t2.Result;
 
-            //CancellationToken ct = new CancellationToken();
-
-            //ParallelOptions options = new ParallelOptions { CancellationToken = ct };
-
-            //Parallel.
-            //    Invoke(
-            //        //get reservation
-            //        () => gdsresponse = _getReservationService.RetrievePNR(locator, sabresessionid, pcc, ticketingpcc).GetAwaiter().GetResult(),
-            //        //Retrieve agencies
-            //        () => lagendresponse = _sabreCommandService.ExecuteCommand(sabresessionid, pcc, "W/LRGEND¥*").GetAwaiter().GetResult()
-            //    );
-
             //booking pcc
             string bookingpcc = ((ReservationPNRB)gdsresponse.Item).POS.Source.PseudoCityCode;
 

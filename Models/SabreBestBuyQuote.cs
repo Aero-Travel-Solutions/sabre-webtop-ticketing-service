@@ -240,6 +240,13 @@ namespace SabreWebtopTicketingService.Models
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")).
                                             ToList();
 
+                endos = endos.
+                            Where(w => 
+                                    !w.StartsWith("PRIVATE FARE APPLIED") || 
+                                    !w.StartsWith("RATE USED")).
+                            Distinct().
+                            ToList();
+
                 //remove XF and ZP from endorsements
                 if (!endos.IsNullOrEmpty())
                 {
