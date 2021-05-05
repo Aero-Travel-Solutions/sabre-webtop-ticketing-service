@@ -1320,7 +1320,7 @@ namespace SabreWebtopTicketingService.Services
         {
             string pqtext = pqresp;
 
-            if(!string.IsNullOrEmpty(pqtext))
+            if(string.IsNullOrEmpty(pqtext))
             {
                 pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
             }
