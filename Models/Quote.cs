@@ -45,8 +45,8 @@ namespace SabreWebtopTicketingService.Models
         public decimal TotalFare => (BaseFare == EquivFare ?  BaseFare : EquivFare) + TotalTax;
         public decimal AgentPrice { get; set; }
         public string BaseFareCurrency { get; set; }
-        public decimal TotalGrossPrice => BaseFare + TotalTax + Commission + Fee + (FeeGST.HasValue ? FeeGST.Value : 0.00M);
-        public decimal DefaultPriceItAmount => TotalFare + Fee + (FeeGST.HasValue ? FeeGST.Value : 0.00M);
+        public decimal TotalGrossPrice => BaseFare + TotalTax + Commission + Fee + (FeeGST.HasValue ? FeeGST.Value : 0.00M) + (QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ? CreditCardFee : 0.00M);
+        public decimal DefaultPriceItAmount => TotalFare + Fee + (FeeGST.HasValue ? FeeGST.Value : 0.00M) + (QuotePassenger.FormOfPayment.PaymentType == PaymentType.CC ? CreditCardFee : 0.00M);
         public decimal DefaultCreditCardAmount => TotalFare;
         public decimal TotalTax => Taxes?.Sum(s => s.Amount) ?? 0.00M;
         public List<Tax> Taxes { get; set; }

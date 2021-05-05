@@ -704,6 +704,7 @@ namespace SabreWebtopTicketingService.Services
 
                 //Check to see if the session is from cache and usable
                 var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
+
                 if (token.Stored && !token.Expired)
                 {
                     //Try get PNR in cache               
@@ -785,7 +786,13 @@ namespace SabreWebtopTicketingService.Services
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
 
                 //redislpay price quotes
-                await RedisplayGeneratedQuotes(token.SessionID, quotes);
+                string pqtext = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "*PQ");
+                logger.LogMaskInformation($"*PQ Response: {pqtext}");
+
+                if (pqtext.Trim().StartsWith("PRICE QUOTE RECORD - DETAILS"))
+                {
+                    await RedisplayGeneratedQuotes(token.SessionID, quotes, pqtext);
+                }
 
                 //workout fuel surcharge taxcode
                 GetFuelSurcharge(quotes);
@@ -1243,7 +1250,9 @@ namespace SabreWebtopTicketingService.Services
         private string GetBestbuyCommand(GetQuoteRQ request, string platingcarrier)
         {
             string platingcarrierstring = string.IsNullOrEmpty(platingcarrier) ? "" : $"¥A{platingcarrier}";
-            string command = $"WPNC{platingcarrierstring}¥S{string.Join("/", request.SelectedSectors.Select(s => s.SectorNo))}";
+            string command = $"WPNC{platingcarrierstring}" +
+                                    $"¥S{string.Join("/", request.SelectedSectors.Select(s => s.SectorNo))}"+
+                                    $"¥N{string.Join("/", request.SelectedPassengers.Select(s => s.NameNumber))}";
             string fopstring = request.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CA ?
                         string.IsNullOrEmpty(request.SelectedPassengers.First().FormOfPayment.BCode) ?
                             "¥FCASH" :
@@ -1260,6 +1269,8 @@ namespace SabreWebtopTicketingService.Services
             {
                 command += $"¥AC*{request.PriceCode}";
             }
+
+            command += "¥RQ";
 
             return command;
         }
@@ -1305,9 +1316,15 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
+        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes, string pqresp = "")
         {
-            string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
+            string pqtext = pqresp;
+
+            if(!string.IsNullOrEmpty(pqtext))
+            {
+                pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
+            }
+
             logger.LogMaskInformation(pqtext);
             List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
             if (applicabledpqres.Any(w => w.PQNo != -1))
