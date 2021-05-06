@@ -244,7 +244,8 @@ namespace SabreWebtopTicketingService.Models
                             Where(w => 
                                     !w.StartsWith("PRIVATE FARE APPLIED") && 
                                     !w.StartsWith("RATE USED") &&
-                                    !w.StartsWith("PRIVATE Â¤")).
+                                    !w.StartsWith("PRIVATE Â¤") &&
+                                    !w.IsMatch(@"EACH \w{3} REQUIRES ACCOMPANYING ADT PASSENGER")).
                             Distinct().
                             ToList();
 
