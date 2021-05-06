@@ -106,7 +106,7 @@ namespace SabreWebtopTicketingService.Services
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
 
-                logger.LogInformation($"{nameof(ExecuteCommand)} invoke SabreCommandLLSRQAsync-{command}");
+                logger.LogMaskInformation($"{nameof(ExecuteCommand)} invoke SabreCommandLLSRQAsync-{command}");
                 var sw = Stopwatch.StartNew();
 
                 var result = await client.
@@ -227,7 +227,7 @@ namespace SabreWebtopTicketingService.Services
 
         private async Task<string> ExecCommand(string token, Pcc pcc, string agentPCC, SabreCommandLLSPortTypeClient client, string command)
         {
-            logger.LogInformation($"{nameof(ExecuteCommand)} invoke \"SabreCommandLLSRQAsync\"");
+            logger.LogMaskInformation($"{nameof(ExecuteCommand)} invoke \"SabreCommandLLSRQAsync\". Command: {command}");
             var sw = Stopwatch.StartNew();
 
             var result = await client.
