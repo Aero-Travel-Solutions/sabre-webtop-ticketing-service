@@ -786,10 +786,10 @@ namespace SabreWebtopTicketingService.Services
                 quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
 
                 //redislpay price quotes
-                string pqtext = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "*PQ");
-                logger.LogMaskInformation($"*PQ Response: {pqtext}");
+                //string pqtext = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "*PQ");
+                //logger.LogMaskInformation($"*PQ Response: {pqtext}");
 
-                await RedisplayGeneratedQuotes(token.SessionID, quotes, pqtext);
+                await RedisplayGeneratedQuotes(token.SessionID, quotes);//, pqtext);
 
                 //workout fuel surcharge taxcode
                 GetFuelSurcharge(quotes);
@@ -1267,7 +1267,7 @@ namespace SabreWebtopTicketingService.Services
                 command += $"¥AC*{request.PriceCode}";
             }
 
-            command += "¥RQ";
+            //command += "¥RQ";
 
             return command;
         }
@@ -1311,14 +1311,14 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes, string pqresp = "")
+        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)//, string pqresp = "")
         {
-            string pqtext = pqresp;
+            string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
 
-            if (string.IsNullOrEmpty(pqtext))
-            {
-                pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
-            }
+            //if (string.IsNullOrEmpty(pqtext))
+            //{
+            //    pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
+            //}
 
             logger.LogMaskInformation(pqtext);
             List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
