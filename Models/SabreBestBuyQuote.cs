@@ -145,13 +145,16 @@ namespace SabreWebtopTicketingService.Models
         string fullgdsresponse = "";
         List<int> selectedsectors = null;
         List<PNRSector> pnrsecs = null;
+        string wpbag = "";
 
-        public SabreBestBuyQuote(string res, List<int> selsec, List<PNRSector> pnrsec)
+        public SabreBestBuyQuote(string res, List<int> selsec, List<PNRSector> pnrsec, string wpbagres = "")
         {
+            wpbag = wpbagres;
             selectedsectors = selsec;
             pnrsecs = pnrsec;
             fullgdsresponse = res;
             gdsresponse = res.SplitOnRegex(@"BASE\s+FARE\s+TAXES/FEES/CHARGES\s+TOTAL").Last().SplitOn("FORM OF PAYMENT FEES PER TICKET MAY APPLY").First().Trim();
+
         }
 
         public List<BestBuyItem> BestBuyItems => GetBestBuyItems();
@@ -162,6 +165,8 @@ namespace SabreWebtopTicketingService.Models
             var items = gdsresponse.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)");
             List<string> usedfbs = new List<string>();
             List<SectorFBData> sectors = null;
+            List<BaggageInfo> baggageinfo = GetBestBuyBaggageAllowance(wpbag);
+
 
             for (int i = 1; i < items.Skip(1).Count(); i += 2)
             {
@@ -301,12 +306,15 @@ namespace SabreWebtopTicketingService.Models
                                                             farebasis.FirstOrDefault(f => pnrsec.Class == f.Substring(0, 1)) :
                                                             farebasis.FirstOrDefault(f => !usedfbs.Contains(f) && pnrsec.Class == f.Substring(0, 1)) :
                                                     farebasis.FirstOrDefault(f => f.Substring(0, 1) == changesec.LastMatch(@"\d+([A-Z])")) ?? "";
+                    
+                    string baggage = GetBaggage(baggageinfo, paxtype, ref previousbagallowance, pnrsec);
 
                     sectors.
                         Add(new SectorFBData()
                         {
                             SectorNo = sectorno,
-                            Farebasis = selectedfarebasis
+                            Farebasis = selectedfarebasis,
+                            Baggage = baggage
                         });
 
                     usedfbs.Add(selectedfarebasis);
@@ -345,6 +353,21 @@ namespace SabreWebtopTicketingService.Models
             }
 
             return bestBuyItems;
+        }
+
+        private static string GetBaggage(List<BaggageInfo> baggageinfo, string paxtype, ref string previousbagallowance, PNRSector pnrsec)
+        {
+            var bagdata = baggageinfo.IsNullOrEmpty() ?
+                            null :
+                            baggageinfo.
+                                First(w =>
+                                    w.PaxType == paxtype)?.
+                                SectorBags.
+                                FirstOrDefault(f => (f.From == pnrsec.From &&
+                                           f.To == pnrsec.To) || f.From == pnrsec.From);
+            string baggage = bagdata == null ? string.IsNullOrEmpty(previousbagallowance) ? "" : previousbagallowance : bagdata.BaggageAllowance;
+            previousbagallowance = bagdata == null ? previousbagallowance : bagdata.BaggageAllowance;
+            return baggage;
         }
 
         private string GetFareCalc(List<string> farecalcitems)

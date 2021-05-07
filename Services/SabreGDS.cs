@@ -783,13 +783,19 @@ namespace SabreWebtopTicketingService.Services
                 //sabre best buy
                 string bestbuyresponse = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, command);
 
-                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier);
+                //WP*Bag
+                string wpbagres = "";
+                if (bestbuyresponse.Contains("BAGGAGE INFO AVAILABLE"))
+                {
+                    logger.LogInformation("Baggage information found. Executing WP*BAG");
 
-                //redislpay price quotes
-                //string pqtext = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "*PQ");
-                //logger.LogMaskInformation($"*PQ Response: {pqtext}");
+                    string wpbagcommand = "WP*BAG";
+                    wpbagres = await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, wpbagcommand);
+                    logger.LogMaskInformation($"{wpbagres}");
+                }
 
-                await RedisplayGeneratedQuotes(token.SessionID, quotes);//, pqtext);
+                quotes = ParseFQBBResponse(bestbuyresponse, request, pnr, platingcarrier, wpbagres);
+
 
                 //workout fuel surcharge taxcode
                 GetFuelSurcharge(quotes);
@@ -1133,7 +1139,7 @@ namespace SabreWebtopTicketingService.Services
             return quotes;
         }
 
-        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier)
+        private List<Quote> ParseFQBBResponse(string bestbuyresponse, GetQuoteRQ request, PNR pnr, string platingcarrier,string wpbagres)
         {
             List<Quote> quotes = new List<Quote>();
 
@@ -1143,7 +1149,8 @@ namespace SabreWebtopTicketingService.Services
                                                             (IBestBuyQuote)new SabreBestBuyQuote(
                                                                 bestbuyresponse, 
                                                                 request.SelectedSectors.Select(s=>s.SectorNo).ToList(), 
-                                                                pnr.Sectors) :
+                                                                pnr.Sectors,
+                                                                wpbagres) :
                                                         bestbuyresponse.Contains("PSGR TYPE")?
                                                             (IBestBuyQuote)new AbacusBuyQuote(
                                                                 bestbuyresponse,
