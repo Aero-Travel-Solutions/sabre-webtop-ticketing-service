@@ -57,7 +57,6 @@ namespace SabreWebtopTicketingService.Models
             this.gdsresponse = s.Replace("\n", "###");
         }
 
-        public string PaxType => gdsresponse.SplitOn("###").First().Last(3);
         public List<Tax> Taxes => gdsresponse.
                                     AllMatches(@"(\d+\.*\d*\w{2})\s+").
                                     Where(w => w.Trim().Last(2) != "XT").

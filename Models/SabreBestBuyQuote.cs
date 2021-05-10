@@ -137,7 +137,44 @@ namespace SabreWebtopTicketingService.Models
     //.
 
     //Example 05
-
+    //1-   AUD1320.00                    229.10XT AUD1549.10ADT
+    //XT     60.00AU       4.00WG      42.00WY      77.50YQ 
+    //            5.60AX       1.20C4      32.30KX       6.50L5 
+    //    1-    AUD990.00                    150.20XT AUD1140.20CNN
+    //XT      4.00WG      42.00WY      77.50YQ       2.80AX 
+    //            0.60C4      16.80KX       6.50L5 
+    //    1-    AUD132.00                     15.60YQ AUD147.60INF
+    //            2442.00                    394.90           2836.90TTL
+    //ADT-01  LH1YAUF LL1YAUF
+    //    MEL VN X/SGN VN HAN606.56/-PNH VN X/SGN VN MEL400.56NUC1007.12
+    //    END ROE1.310655
+    //RESTRICTIONS MAY APPLY./NON-END.
+    //PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //PRIVATE Â¤
+    //VALIDATING CARRIER - VN
+    //CHANGE BOOKING CLASS -   5L
+    //CNN-01  LH1YAUF/CH25 LL1YAUF/CH25
+    //    MEL VN X/SGN VN HAN454.92/-PNH VN X/SGN VN MEL300.42NUC755.34
+    //    END ROE1.310655
+    //RESTRICTIONS MAY APPLY./NON-END.
+    //EACH CNN REQUIRES ACCOMPANYING SAME CABIN ADT
+    //PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //PRIVATE Â¤
+    //VALIDATING CARRIER - VN
+    //CHANGE BOOKING CLASS -   5L
+    //INF-01  LH1YAUF/IN90 LL1YAUF/IN90
+    //    MEL VN X/SGN VN HAN60.65/-PNH VN X/SGN VN MEL40.05NUC100.70
+    //    END ROE1.310655
+    //RESTRICTIONS MAY APPLY./NON-END.
+    //PRIVATE FARE APPLIED - CHECK RULES FOR CORRECT TICKETING
+    //EACH INF REQUIRES ACCOMPANYING ADT PASSENGER
+    //PRIVATE Â¤
+    //VALIDATING CARRIER - VN
+    //CHANGE BOOKING CLASS -   5L
+                                                               
+    //AIR EXTRAS AVAILABLE - SEE WP* AE
+    //BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    //.
 
     internal class SabreBestBuyQuote : IBestBuyQuote
     {
@@ -179,9 +216,17 @@ namespace SabreWebtopTicketingService.Models
                                     ToList();
 
                 int paxtypeindex = taxlines.FindLastIndex(f => f.IsMatch(@"\d+\s*-.*" + paxtype));
-                if (paxtypeindex != -1 && taxlines[paxtypeindex + 1].Trim().StartsWith("XT"))
+                if (paxtypeindex != -1)
                 {
-                    taxitems.Add(new TaxInfo(string.Join("###", taxlines[paxtypeindex + 1].SplitOn("\n").Where(w => !w.Contains("TTL")))));
+                    if (taxlines[paxtypeindex + 1].Trim().StartsWith("XT"))
+                    {
+                        taxitems.Add(new TaxInfo(string.Join("###", taxlines[paxtypeindex + 1].SplitOn("\n").Where(w => !w.Contains("TTL")))));
+                    }
+                    else
+                    {
+                        var totalitems = taxlines[paxtypeindex].SplitOnRegex(@"\s+");
+                        taxitems.Add(new TaxInfo(totalitems[totalitems.Count()- 2]));
+                    }
                 }
 
                 //base fare
@@ -251,6 +296,7 @@ namespace SabreWebtopTicketingService.Models
                                     !w.StartsWith("RATE USED") &&
                                     !w.StartsWith("PRIVATE Â¤") &&
                                     !w.IsMatch(@"EACH \w{3} REQUIRES ACCOMPANYING ADT PASSENGER") &&
+                                    !w.IsMatch(@"EACH \w{3} REQUIRES ACCOMPANYING ADT") &&
                                     !w.IsMatch(@"EACH \w{3} REQUIRES ACCOMPANYING SAME CABIN ADT")).
                             Distinct().
                             ToList();
