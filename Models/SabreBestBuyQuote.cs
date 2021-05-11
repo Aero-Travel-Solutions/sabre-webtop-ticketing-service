@@ -225,7 +225,10 @@ namespace SabreWebtopTicketingService.Models
                     else
                     {
                         var totalitems = taxlines[paxtypeindex].SplitOnRegex(@"\s+");
-                        taxitems.Add(new TaxInfo(totalitems[totalitems.Count()- 2]));
+                        if (totalitems[totalitems.Count() - 2].IsMatch(@"\s+\d+\.*\d*\w{2}\s+"))
+                        {
+                            taxitems.Add(new TaxInfo(totalitems[totalitems.Count() - 2]));
+                        }
                     }
                 }
 
