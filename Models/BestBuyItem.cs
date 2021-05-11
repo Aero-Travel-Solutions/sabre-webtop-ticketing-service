@@ -58,7 +58,7 @@ namespace SabreWebtopTicketingService.Models
         }
 
         public List<Tax> Taxes => gdsresponse.
-                                    AllMatches(@"(\d+\.*\d*\w{2})\s+").
+                                    AllMatches(@"(\d+\.*\d*\w{2})\s*").
                                     Where(w => w.Trim().Last(2) != "XT").
                                     Select(tax => new Tax()
                                     {
