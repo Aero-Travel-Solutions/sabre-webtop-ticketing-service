@@ -261,22 +261,11 @@ namespace SabreWebtopTicketingService.Models
                 List<string> farecalcitems = new List<string>();
                 if (items[i + 1].Contains("ROE"))
                 {
-                    farecalcitems = string.Join(" ", items[i + 1].
+                    farecalcitems = string.Join("\n", items[i + 1].
                                                     SplitOn("\n").
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER"))).
-                                                    SplitOnRegex(@"(ROE\d+\.\d+)\s*").
+                                                    SplitOnRegex(@"(END)").
                                                     ToList();
-                }
-
-                string farecalclines = string.Join(" ", items[i + 1].
-                                                    SplitOn("\n").
-                                                    TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")));
-                int splitindex = farecalclines.IndexOf("END");
-                if (splitindex > 0)
-                {
-                    farecalcitems.Add(farecalclines.Substring(0, splitindex).Trim());
-                    farecalcitems.Add("END");
-                    farecalcitems.Add(farecalclines.Substring(splitindex + 3));
                 }
 
                 List<string> endos = items[i + 1].Contains("ROE") ?
@@ -385,7 +374,7 @@ namespace SabreWebtopTicketingService.Models
                                                 Trim(),
                         Endorsements = endos.Where(w=> !string.IsNullOrEmpty(w)).ToList(),
                         FareCalculation = GetFareCalc(farecalcitems),
-                        ROE = farecalclines.LastMatch(@"ROE(\d+\.\d+)\s*", "1.0000"),
+                        ROE = items[i+1].LastMatch(@"ROE(\d+\.\d+)\s*", "1.0000"),
                         Taxes = taxitems.
                                     SelectMany(s => s.Taxes).
                                     Select(s => new Tax()
@@ -427,7 +416,7 @@ namespace SabreWebtopTicketingService.Models
                 return string.Join("", farecalcitems).SplitOn("END").First() + "END";
             }
 
-            string farecalc = farecalcitems.First();
+            string farecalc = farecalcitems.First().Replace("\n", "");
 
             if (farecalcitems.Count() > 2)
             {
@@ -437,18 +426,26 @@ namespace SabreWebtopTicketingService.Models
             //SYD QF TYO AA LAX AA HNL QF SYD2860.27NUC2860.27END ROE1.293231 XFHNL4.5
             //MEL LH X/HKG LH X/FRA LH LON193.31/-ROM LH X/MUC LH NYC//LAX QF MEL386.62NUC579.93END ROE1.293231 XFLAX4.5
             //LAX AA HNL134.96USD134.96END ZPLAX XFLAX4.5
+            //MEL SQ X/SIN Q96.13SQ BKK LX ZRH623.73LX ROM//LON LH EWR//LAS UA X/SFO UA SYD Q ZRHSYD382.00M4577.86NUC5679.72END ROE1.310655 XFLAS4.5SFO4.5
 
-            if (farecalcitems.Last().Contains("ZP"))
+            if (farecalcitems.Last().Contains("ZP") || farecalcitems.Last().Contains("XF"))
             {
-                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(ZP\s*[A-Z]{3})\s*")[1];
+                if (farecalcitems.Last().Contains("ZP"))
+                {
+                    farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(.*ZP\s*[A-Z]{3}.*)\n")[1].Replace("\n", "");
+                }
+
+                if (farecalcitems.Last().Contains("XF"))
+                {
+                    farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(.*XF\s*[A-Z]{3}\d+\.*\d*.*)\n")[1].Replace("\n", "");
+                }
+            }
+            else if(farecalcitems.Last().Contains("ROE"))
+            {
+                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(ROE\d+\.\d+)\n")[1];
             }
 
-            if (farecalcitems.Last().Contains("XF"))
-            {
-                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(XF\s*[A-Z]{3}\d+\.*\d*)\s*")[1];
-            }
-
-            return farecalc;
+            return farecalc.Trim();
         }
 
         private List<BaggageInfo> GetBestBuyBaggageAllowance(string wpbag)
