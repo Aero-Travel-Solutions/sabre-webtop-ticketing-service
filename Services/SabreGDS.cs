@@ -5063,20 +5063,16 @@ namespace SabreWebtopTicketingService.Services
             if (rq.Quotes.All(a => a.Route == rq.Quotes.First().Route))
             {
                 logger.LogInformation("Single turnround point detected.");
+                
                 var secs = rq.
                             Quotes.
                             First().
                             QuoteSectors.
                             Where(w => w.DepartureCityCode != "ARUNK").
-                            Select(s => rq.
-                                            Sectors.
-                                            First(f => f.From == s.DepartureCityCode &&
-                                                        f.To == s.ArrivalCityCode &&
-                                                        f.DepartureDate == s.DepartureDate)).
                             Select(s => new TPSector()
                             {
-                                From = s.From,
-                                To = s.To
+                                From = s.DepartureCityCode,
+                                To = s.ArrivalCityCode
                             }).
                             ToList();
 
