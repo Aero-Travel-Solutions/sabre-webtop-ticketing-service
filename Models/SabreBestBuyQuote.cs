@@ -440,12 +440,12 @@ namespace SabreWebtopTicketingService.Models
 
             if (farecalcitems.Last().Contains("ZP"))
             {
-                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(ZP[A-Z]{3})\s*")[1];
+                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(ZP\s*[A-Z]{3})\s*")[1];
             }
 
             if (farecalcitems.Last().Contains("XF"))
             {
-                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(XF[A-Z]{3}\d+\.*\d*)\s*")[1];
+                farecalc += " " + farecalcitems.Last().SplitOnRegex(@"(XF\s*[A-Z]{3}\d+\.*\d*)\s*")[1];
             }
 
             return farecalc;
