@@ -36,7 +36,7 @@ namespace SabreWebtopTicketingService.Services
             if (!pnr.
                     Sectors.
                     Where(w => w.From != "ARUNK").
-                    Any(a => "HK,KK,KL,RR,TK,EK".Contains(a.Status)))
+                    Any(a => "HK,KK,KL,RR,TK,EK,GK,AK".Contains(a.Status)))
             {
                 throw new AeronologyException("50000004", "No confirmed/live sectors were found in the PNR");
             }

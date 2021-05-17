@@ -413,14 +413,14 @@ namespace SabreWebtopTicketingService.Models
         {
             if (farecalcitems.Count() == 1)
             {
-                return string.Join("", farecalcitems).SplitOn("END").First() + "END";
+                return string.Join("", farecalcitems).SplitOn("END").First().Trim() + " END";
             }
 
-            string farecalc = farecalcitems.First().Replace("\n", "");
+            string farecalc = farecalcitems.First().Replace("\n", "").Trim();
 
             if (farecalcitems.Count() > 2)
             {
-                farecalc += farecalcitems[1];
+                farecalc += " "+ farecalcitems[1].Trim();
             }
 
             //SYD QF TYO AA LAX AA HNL QF SYD2860.27NUC2860.27END ROE1.293231 XFHNL4.5
