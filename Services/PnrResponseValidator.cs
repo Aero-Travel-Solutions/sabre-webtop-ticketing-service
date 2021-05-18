@@ -20,25 +20,25 @@ namespace SabreWebtopTicketingService.Services
         {
             if (pnr == null)
             {
-                throw new AeronologyException("50000005", "PNR not found");
+                throw new AeronologyException("PNR_NOT_FOUND", "PNR not found");
             }
 
             if (pnr.Sectors.IsNullOrEmpty())
             {
-                throw new AeronologyException("50000002", "No flights found in the PNR");
+                throw new AeronologyException("NO_FLIGHT", "No flights found in the PNR");
             }
 
             if (pnr.Sectors.All(a => a.Flown))
             {
-                throw new AeronologyException("50000003", "All sectors were flown");
+                throw new AeronologyException("ALL_SECTORS_FLOWN", "All sectors were flown");
             }
 
             if (!pnr.
                     Sectors.
                     Where(w => w.From != "ARUNK").
-                    Any(a => "HK,KK,KL,RR,TK,EK,GK,AK".Contains(a.Status)))
+                    Any(a => "HK,KK,KL,RR,TK,EK,GK,AK,BK,YK,DS".Contains(a.Status)))
             {
-                throw new AeronologyException("50000004", "No confirmed/live sectors were found in the PNR");
+                throw new AeronologyException("NO_LIVE_SECTORS", "No confirmed/live sectors were found in the PNR");
             }
         }
 
