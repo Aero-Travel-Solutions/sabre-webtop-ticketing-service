@@ -274,14 +274,14 @@ namespace SabreWebtopTicketingService.Models
                                             SkipWhile(s => !s.Contains("ROE")).
                                             Skip(1).
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")).
-                                            Where(w=> !w.IsMatch(@"\d+\.*\d*")).
+                                            Where(w=> !w.IsMatch(@"\d+\.*\d*$")).
                                             ToList() :
                                         items[i + 1].
                                             SplitOn("\n").
                                             SkipWhile(s => !s.Contains("END")).
                                             Skip(1).
                                             TakeWhile(t => !t.StartsWith("VALIDATING CARRIER")).
-                                            Where(w => !w.IsMatch(@"\d+\.*\d*")).
+                                            Where(w => !w.IsMatch(@"\d+\.*\d*$")).
                                             ToList();
 
                 endos = endos.
