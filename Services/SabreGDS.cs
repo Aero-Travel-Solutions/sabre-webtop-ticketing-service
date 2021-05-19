@@ -4084,7 +4084,7 @@ namespace SabreWebtopTicketingService.Services
                                      PriceType = rqquo.PriceType,
                                      Taxes = rqquo.Taxes,
                                      FareCalculation = quo.FareCalculation,
-                                     CreditCardFee = quo.CreditCardFee
+                                     CreditCardFee = rqquo.CreditCardFee == 0.00M ? quo.CreditCardFee: rqquo.CreditCardFee
                                  };
                 }
 
