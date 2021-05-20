@@ -1161,12 +1161,12 @@ namespace SabreWebtopTicketingService.Services
             int index = 0;
             quotes = (from pax in request.SelectedPassengers
                       let specificpaxquote = bestbuyquote.
-                                    BestBuyItems.
-                                    FirstOrDefault(f => f.PaxType == pax.PaxType||
-                                                         (pax.PaxType.StartsWith("C") && f.PaxType == "CNN"))
+                                                BestBuyItems.
+                                                FirstOrDefault(f => f.PaxType == pax.PaxType||
+                                                                     (pax.PaxType.StartsWith("C") && f.PaxType == "CNN"))
                       let adtquote = bestbuyquote.
-                                    BestBuyItems.
-                                    FirstOrDefault(f => f.PaxType == "ADT")
+                                        BestBuyItems.
+                                        FirstOrDefault(f => f.PaxType == "ADT")
                       let s = specificpaxquote == null ? adtquote : specificpaxquote
                       select new Quote()
                       {
@@ -1318,14 +1318,9 @@ namespace SabreWebtopTicketingService.Services
 
         }
 
-        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)//, string pqresp = "")
+        private async Task RedisplayGeneratedQuotes(string token, List<Quote> quotes)
         {
             string pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
-
-            //if (string.IsNullOrEmpty(pqtext))
-            //{
-            //    pqtext = await _sabreCommandService.ExecuteCommand(token, pcc, "PQ");
-            //}
 
             logger.LogMaskInformation(pqtext);
             List<PQTextResp> applicabledpqres = ParsePQText(pqtext);
@@ -1347,8 +1342,8 @@ namespace SabreWebtopTicketingService.Services
                                         {
                                             PQTextSector pqsec = f.Sectors.FirstOrDefault(f => f.SectorNo == sec.PQSectorNo);
                                             if (pqsec == null) { continue; }
-                                            sec.NVA = pqsec.NVA;
-                                            sec.NVB = pqsec.NVB;
+                                            sec.NVA = string.IsNullOrEmpty(pqsec.NVA) ? null : DateTime.Parse(pqsec.NVA).GetISODateString();
+                                            sec.NVB = string.IsNullOrEmpty(pqsec.NVB)? null: DateTime.Parse(pqsec.NVB).GetISODateString();
                                             sec.Baggageallowance = pqsec.BaggageAllowance;
                                             sec.FareBasis = pqsec.Farebasis;
                                         }

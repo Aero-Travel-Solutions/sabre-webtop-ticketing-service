@@ -259,14 +259,11 @@ namespace SabreWebtopTicketingService.Models
                                         "";
 
                 List<string> farecalcitems = new List<string>();
-                if (items[i + 1].Contains("ROE"))
-                {
-                    farecalcitems = string.Join("\n", items[i + 1].
+                farecalcitems = string.Join("\n", items[i + 1].
                                                     SplitOn("\n").
                                                     TakeWhile(t => !t.StartsWith("VALIDATING CARRIER"))).
                                                     SplitOnRegex(@"(END)").
                                                     ToList();
-                }
 
                 List<string> endos = items[i + 1].Contains("ROE") ?
                                         items[i + 1].
