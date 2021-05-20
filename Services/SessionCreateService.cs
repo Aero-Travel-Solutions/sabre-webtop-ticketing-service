@@ -173,13 +173,13 @@ namespace SabreWebtopTicketingService.Services
             string url = Constants.GetRestUrl();
             var client = _httpClientFactory.CreateClient();
 
-            //URL               
-            var uri = new Uri(url.Trim() + "/v2/auth/token");
+            //URL
+            var uri = new Uri(url.Trim() + "/v3/auth/token");
 
             //Authorization Header
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                 "Basic",
-                SabreSharedServices.GetSabreToken(pcc.Username, pcc.Password, pcc.PccCode));
+                 "G2FK-Aerotickets:gN3W5pzH".EncodeBase64());
 
             // Add an Accept header for content type
             client.DefaultRequestHeaders.Accept.Add(
@@ -187,7 +187,10 @@ namespace SabreWebtopTicketingService.Services
 
             var form = new Dictionary<string, string>
                 {
-                    { "grant_type", "client_credentials" }
+                    //{ "grant_type", "client_credentials" }
+                    {"grant_type","password"},
+                    {"username", $"{pcc.Username}-{pcc.PccCode}-AA"},
+                    {"password",$"{pcc.Password}" }
                 };
 
             // List data response.
