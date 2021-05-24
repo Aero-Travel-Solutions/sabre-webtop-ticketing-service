@@ -3703,7 +3703,7 @@ namespace SabreWebtopTicketingService.Services
                 command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
 
                 //equiv fare and currency
-                if (quote.EquivFare > 0 && !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency)
+                if (!string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency)
                 {
                     decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrencyCode);
                     string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare, 0).ToString() : quote.EquivFare.ToString(decimalformatstring);
