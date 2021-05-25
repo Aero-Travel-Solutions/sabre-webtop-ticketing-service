@@ -3699,11 +3699,14 @@ namespace SabreWebtopTicketingService.Services
                 }
                 //base fare and currency
                 decimalformatstring = GetDecimalFormatString(currencydata, "", quote.BaseFareCurrency);
+                string basefarecurrencycode = !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency ?
+                                                        quote.EquivFareCurrencyCode.Trim().ToUpper():
+                                                        quote.BaseFareCurrency.Trim().ToUpper();
                 string basefare = decimalformatstring == "0" ? Math.Round(quote.BaseFare, 0).ToString() : quote.BaseFare.ToString(decimalformatstring);
-                command2 += $"¥Y{quote.BaseFareCurrency.Trim().ToUpper()}{basefare}";
+                command2 += $"¥Y{basefarecurrencycode}{basefare}";
 
                 //equiv fare and currency
-                if (!string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency)
+                if (!string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency)
                 {
                     decimalformatstring = GetDecimalFormatString(currencydata, "", quote.EquivFareCurrencyCode);
                     string equivfare = decimalformatstring == "0" ? Math.Round(quote.EquivFare, 0).ToString() : quote.EquivFare.ToString(decimalformatstring);
