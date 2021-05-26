@@ -3697,6 +3697,7 @@ namespace SabreWebtopTicketingService.Services
                     }
                     index++;
                 }
+
                 //base fare and currency
                 decimalformatstring = GetDecimalFormatString(currencydata, "", quote.BaseFareCurrency);
                 string basefarecurrencycode = quote.EquivFare == 0.00M && !string.IsNullOrEmpty(quote.EquivFareCurrencyCode) && quote.EquivFareCurrencyCode != quote.BaseFareCurrency ?
