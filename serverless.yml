@@ -88,7 +88,7 @@ custom:
   void_ticket_transaction_url:
     dev: ${ssm:/dev/transaction-gateway/url}
     stg: ${ssm:/stg/transaction-gateway/url}
-    prod: ${ssm:/prod//transaction-gateway/url}
+    prod: ${ssm:/prod/transaction-gateway/url}
   webtop_service_key:
     dev: ${ssm:/dev/sabre_webtop_service_key~true}
     stg: ${ssm:/stg/sabre_webtop_service_key~true}
