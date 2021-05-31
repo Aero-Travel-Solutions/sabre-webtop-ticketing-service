@@ -106,6 +106,8 @@ namespace SabreWebtopTicketingService.Services
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
 
+                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
+
                 logger.LogMaskInformation($"{nameof(ExecuteCommand)} invoke SabreCommandLLSRQAsync-{command}");
                 var sw = Stopwatch.StartNew();
 
@@ -169,6 +171,8 @@ namespace SabreWebtopTicketingService.Services
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
 
+                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
+
                 //Construct display pnr command
                 string command = string.Format("*{0}", locator);
                 string temptext = await ExecCommand(token, pcc, agentPCC, client, command);
@@ -228,6 +232,8 @@ namespace SabreWebtopTicketingService.Services
         private async Task<string> ExecCommand(string token, Pcc pcc, string agentPCC, SabreCommandLLSPortTypeClient client, string command)
         {
             logger.LogMaskInformation($"{nameof(ExecuteCommand)} invoke \"SabreCommandLLSRQAsync\". Command: {command}");
+            client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
+
             var sw = Stopwatch.StartNew();
 
             var result = await client.
@@ -266,6 +272,8 @@ namespace SabreWebtopTicketingService.Services
                 //Attach client credentials
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
+
+                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
 
                 //Construct display pnr command
                 string command = "";
