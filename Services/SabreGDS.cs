@@ -702,6 +702,9 @@ namespace SabreWebtopTicketingService.Services
                 //Obtain session (if found from cache, else directly from sabre)
                 token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
+                //switch to ticketing pcc
+                await _changeContextService.ContextChange(token, pcc, ticketingpcc);
+
                 //Check to see if the session is from cache and usable
                 var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
 
