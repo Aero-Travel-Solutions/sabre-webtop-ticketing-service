@@ -702,6 +702,9 @@ namespace SabreWebtopTicketingService.Services
                 //Obtain session (if found from cache, else directly from sabre)
                 token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
+                //ignore session
+                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
                 //switch to ticketing pcc
                 await _changeContextService.ContextChange(token, pcc, ticketingpcc);
 
@@ -840,6 +843,12 @@ namespace SabreWebtopTicketingService.Services
             //Obtain session (if found from cache, else directly from sabre)
             token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
 
+            //ignore session
+            await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+
+            //Context Change
+            await _changeContextService.ContextChange(token, pcc, ticketingpcc);
+
             var cardAccessKey = $"{request.Locator}-card".EncodeBase64();
 
             //Check to see if the session is from cache and usable
@@ -866,18 +875,6 @@ namespace SabreWebtopTicketingService.Services
 
             if (pnr == null)
             {
-                if ((ticketingpcc != pcc.PccCode) ||
-                    (token.Stored &&
-                     !token.Expired &&
-                     (string.IsNullOrEmpty(token.CurrentPCC) ? token.ConsolidatorPCC : token.CurrentPCC) != ticketingpcc))
-                {
-                    //ignore session
-                    await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
-
-                    //Context Change
-                    await _changeContextService.ContextChange(token, pcc, ticketingpcc);
-                }
-
                 //Retrieve PNR
                 GetReservationRS result = await _getReservationService.RetrievePNR(request.Locator, token.SessionID, pcc);
 
