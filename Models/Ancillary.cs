@@ -20,7 +20,7 @@ namespace SabreWebtopTicketingService.Models
         public string CurrencyCode { get; set; }
         public string PassengerName { get; set; }
         public string NameNumber { get; set; }
-        public string Carrier { get; set; }
+        public string PlatingCarrier { get; set; }
         public List<AncillarySector> Sectors { get; set; }
         public string Route => Origin + "-" + Destination;
         public string Origin { get; set; }
