@@ -18,6 +18,7 @@ namespace SabreWebtopTicketingService.Models
         public List<IssueExpressTicketEMD> EMDs { get; set; }
         public decimal? GrandPriceItAmount { get; set; }
         public MerchantData MerchantData { get; set; }
+        public string QueueID { get; set; }
     }
 
     public class ContactDetails

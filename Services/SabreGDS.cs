@@ -2252,7 +2252,8 @@ namespace SabreWebtopTicketingService.Services
                         ContactEmail = request.ContactDetails.Email,
                         ContactPhone = request.ContactDetails.PhoneNumber,
                         AgentUserName = request.ContactDetails.AgentUserName,
-                        AgentUserFullName = request.ContactDetails.AgentUserFullName
+                        AgentUserFullName = request.ContactDetails.AgentUserFullName,
+                        QueueID = request.QueueID
                     },
                     Pnr = pnr,
                     TicketingResult = ticketData

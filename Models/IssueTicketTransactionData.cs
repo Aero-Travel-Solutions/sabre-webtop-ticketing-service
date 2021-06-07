@@ -23,5 +23,6 @@ namespace SabreWebtopTicketingService.Models
         public string ContactPhone { get; set; }
         public string ConsolidatorUserName { get; set; }
         public string ConsolidatorUserFullName { get; set; }
+        public string QueueID { get; set; }
     }
 }
