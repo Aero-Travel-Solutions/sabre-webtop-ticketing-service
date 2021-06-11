@@ -218,10 +218,15 @@ namespace SabreWebtopTicketingService.Services
                 {
                     miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
                     {
+                        Text = quotes.First().TourCode,
                         SuppressFareReplaceWithBT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressFareReplaceWithBT()
                         {
                             Ind = true
-                        }
+                        },
+                        SuppressIT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressIT()
+                                    {
+                                        Ind = true
+                                    }
                     };
                 }
 
@@ -232,7 +237,12 @@ namespace SabreWebtopTicketingService.Services
                     {
                         miscQualifiers.TourCode = new AirTicketRQTicketingMiscQualifiersTourCode()
                         {
+                            Text = quotes.First().TourCode,
                             SuppressITSupressFare = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressITSupressFare()
+                            {
+                                Ind = true
+                            },
+                            SuppressIT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressIT()
                             {
                                 Ind = true
                             }
