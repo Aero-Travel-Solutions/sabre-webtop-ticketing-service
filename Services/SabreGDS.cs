@@ -1427,7 +1427,7 @@ namespace SabreWebtopTicketingService.Services
             for (int i = 0; i < diffquotes.Count(); i += 2)
             {
                 var bsprate = diffquotes[i + 1].
-                                   LastMatch(@"COMM\sPCT\s*(\d+)", "");
+                                   LastMatch(@"COMM\sPCT[A-Z\s]*(\d+)", "");
 
                 string pricecommandline = diffquotes[i + 1].SplitOn("BASE FARE").First().Trim().Replace("\n", "");
                 string paxtype = diffquotes[i + 1].
