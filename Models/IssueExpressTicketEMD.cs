@@ -18,5 +18,6 @@ namespace SabreWebtopTicketingService.Models
         public string Route { get; set; }
         public string RFISC { get; set; }
         public int SectorCount { get; set; }
+        public TicketingPCCData TicketingPCC { get; set; }
     }
 }

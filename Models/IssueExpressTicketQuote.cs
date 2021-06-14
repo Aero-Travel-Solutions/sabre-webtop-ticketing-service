@@ -61,7 +61,7 @@ namespace SabreWebtopTicketingService.Models
         public string PriceCode { get; set; }
         public string TourCode { get; set; }
         public bool ApplySupressITFlag { get; set; }
-        public string TicketingPCC { get; set; }
+        public TicketingPCCData TicketingPCC { get; set; }
         public string BCode { get; set; }
         public List<string> Endorsements { get; set; }
         public decimal MerchantFee { get; set; }

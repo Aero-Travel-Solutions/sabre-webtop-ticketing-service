@@ -70,7 +70,7 @@ namespace SabreWebtopTicketingService.Models
         public bool CAT35 => FiledFare && !string.IsNullOrEmpty(TourCode);
         [JsonIgnore]
         public List<string> DifferentPaxType { get; set; }
-        public string TicketingPCC { get; set; }
+        public TicketingPCCData TicketingPCC { get; set; }
         public string PricingHint { get; set; }
         public string CCFeeData { get; set; }
 
@@ -126,5 +126,12 @@ namespace SabreWebtopTicketingService.Models
         IT,
         BT,
         NR
+    }
+
+    public class TicketingPCCData
+    {
+        public string TicketingPCC { get; set; }
+        public string TicketPrinterAddress { get; set; }
+        public string PrinterByPass { get; set; }
     }
 }

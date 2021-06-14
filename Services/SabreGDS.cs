@@ -961,7 +961,7 @@ namespace SabreWebtopTicketingService.Services
                                                         f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
 
                 //Generate the IssueTicketQuoteKey
-                string platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
+                TicketingPCCData platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
                 quotes.
                     ForEach(quote =>
                     {
@@ -1119,7 +1119,7 @@ namespace SabreWebtopTicketingService.Services
                                                         f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
 
                 //Generate the IssueTicketQuoteKey
-                string platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
+                TicketingPCCData platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
                 quotes.
                     ForEach(quote =>
                     {
@@ -1968,9 +1968,32 @@ namespace SabreWebtopTicketingService.Services
                 //Populate request collections
                 ReconstructRequestFromKeys(request);
 
-                string ticketingpcc = request.Quotes.IsNullOrEmpty() || string.IsNullOrEmpty(request.Quotes.First().TicketingPCC) ?
-                                                GetTicketingPCC(agent?.TicketingPcc, pcc.PccCode) :
-                                                request.Quotes.First().TicketingPCC;
+                string ticketingpcc = agent?.TicketingPcc;
+                if (!request.Quotes.IsNullOrEmpty() && request.Quotes.First().TicketingPCC != null)
+                {
+                    ticketingpcc = request.Quotes.First().TicketingPCC.TicketingPCC;
+                    if (!string.IsNullOrEmpty(request.Quotes.First().TicketingPCC.TicketPrinterAddress))
+                    {
+                        ticketingprinter = request.Quotes.First().TicketingPCC.TicketPrinterAddress;
+                    }
+                    if (!string.IsNullOrEmpty(request.Quotes.First().TicketingPCC.PrinterByPass))
+                    {
+                        printerbypass = request.Quotes.First().TicketingPCC.PrinterByPass;
+                    }
+                }
+                else if (!request.EMDs.IsNullOrEmpty() && request.EMDs.First().TicketingPCC != null)
+                {
+                    ticketingpcc = request.EMDs.First().TicketingPCC.TicketingPCC;
+                    if (!string.IsNullOrEmpty(request.EMDs.First().TicketingPCC.TicketPrinterAddress))
+                    {
+                        ticketingprinter = request.EMDs.First().TicketingPCC.TicketPrinterAddress;
+                    }
+                    if (!string.IsNullOrEmpty(request.EMDs.First().TicketingPCC.PrinterByPass))
+                    {
+                        printerbypass = request.EMDs.First().TicketingPCC.PrinterByPass;
+                    }
+                }
+
                 if (string.IsNullOrEmpty(ticketingpcc))
                 {
                     throw new ExpiredSessionException(request.SessionID, "INVALID_TICKETING_PCC", "Invalid ticketing pcc.");
@@ -2131,7 +2154,7 @@ namespace SabreWebtopTicketingService.Services
                                         GSTRate = GetGSTPercentage(q.Taxes.Select(s => new Tax() { Code = s.Code.Trim().ToUpper(), Amount = s.Amount }).ToList(), agent?.Consolidator?.CountryCode ?? "AU"),
                                         TourCode = q.TourCode,
                                         ROE = q.ROE,
-                                        TicketingPCC = ticketingpcc,
+                                        TicketingPCC = q.TicketingPCC,
                                         Commission = q.AgentCommissionRate.HasValue ? Math.Round((q.BaseFare == q.EquivFare ? q.BaseFare : q.EquivFare) * (q.AgentCommissionRate.Value / 100), 2, MidpointRounding.AwayFromZero) : 0.00M,
                                         AgentPrice = q.QuotePassenger.FormOfPayment == null ?
                                                             q.TotalFare - (q.AgentCommissionRate.HasValue ? (q.BaseFare == q.EquivFare ? q.BaseFare : q.EquivFare) * (q.AgentCommissionRate.Value / 100) : 0.00M) :
@@ -5408,7 +5431,7 @@ namespace SabreWebtopTicketingService.Services
             Parallel.ForEach(issuablequotes, options, (quote) =>
             {
                 quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
-                quote.Expired = quote.Expired || string.IsNullOrEmpty(quote.TicketingPCC);
+                quote.Expired = quote.Expired || quote.TicketingPCC == null;
                 quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote, quote.QuotePassenger.FormOfPayment.BCode, applySupressITFlag);
             });
         }
@@ -5457,7 +5480,7 @@ namespace SabreWebtopTicketingService.Services
         }
 
 
-        private async Task<string> GetPlateManagementPCC(Quote quote, PNR pnr, string sessionID, Agent agent)
+        private async Task<TicketingPCCData> GetPlateManagementPCC(Quote quote, PNR pnr, string sessionID, Agent agent)
         {
             List<PNRSector> secs = quote.
                                     QuoteSectors.
@@ -5470,7 +5493,7 @@ namespace SabreWebtopTicketingService.Services
                                     Where(w => w != null).
                                     ToList();
 
-            if (secs.IsNullOrEmpty()) { return ""; }
+            if (secs.IsNullOrEmpty()) { return null; }
 
             PlateRuleTicketingPccRequest rq = new PlateRuleTicketingPccRequest()
             {
@@ -5494,7 +5517,12 @@ namespace SabreWebtopTicketingService.Services
 
             PlateRuleTicketingPccResponse res = await _ticketingPccDataSource.GetTicketingPccFromRules(rq, sessionID);
 
-            return res.TicketingPccCode;
+            return new TicketingPCCData()
+            {
+                TicketingPCC = res.TicketingPccCode,
+                TicketPrinterAddress = res.TicketinPrinterAddress,
+                PrinterByPass = string.IsNullOrEmpty(res.PrinterCountryCode) || !res.PrinterCountryCode.Contains("|") ? "" : res.PrinterCountryCode.SplitOn("|").First()
+            };
         }
 
         private string GetCabin(string cabinDescription)

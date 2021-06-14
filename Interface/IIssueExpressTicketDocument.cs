@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using SabreWebtopTicketingService.Models;
+using System.Collections.Generic;
 
 namespace SabreWebtopTicketingService.Interface
 {
@@ -11,5 +12,6 @@ namespace SabreWebtopTicketingService.Interface
         public string PlatingCarrier { get; set; }
         public string Route { get; set; }
         public decimal PriceIt { get; set; }
+        public TicketingPCCData TicketingPCC { get; set; }
     }
 }
