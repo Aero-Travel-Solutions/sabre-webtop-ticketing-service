@@ -171,8 +171,6 @@ namespace SabreWebtopTicketingService.Services
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
 
-                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
-
                 //Construct display pnr command
                 string command = string.Format("*{0}", locator);
                 string temptext = await ExecCommand(token, pcc, agentPCC, client, command);
@@ -272,8 +270,6 @@ namespace SabreWebtopTicketingService.Services
                 //Attach client credentials
                 client.ClientCredentials.UserName.UserName = pcc.Username;
                 client.ClientCredentials.UserName.Password = pcc.Password;
-
-                client.Endpoint.EndpointBehaviors.Add(new LoggingEndpointBehaviour(new LoggingMessageInspector()));
 
                 //Construct display pnr command
                 string command = "";

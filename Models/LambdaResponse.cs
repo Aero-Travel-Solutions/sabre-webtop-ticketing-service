@@ -4,13 +4,13 @@ using System.Text;
 
 namespace SabreWebtopTicketingService.Models
 {
-    public class LambdaResponse
-    {
-        public int statusCode { get; set; }
-        public Headers headers { get; set; }
-        public string body { get; set; }
-        public bool isBase64Encoded { get; set; }
-    }
+        public class LambdaResponse
+        {
+            public int statusCode { get; set; }
+            public Headers headers { get; set; }
+            public string body { get; set; }
+            public bool isBase64Encoded { get; set; }
+        }
 
     public class Headers
     {
