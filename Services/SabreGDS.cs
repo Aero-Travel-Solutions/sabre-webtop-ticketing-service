@@ -563,32 +563,31 @@ namespace SabreWebtopTicketingService.Services
                 //Obtain session
                 sabreSession = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.SearchText, true);
                 string token = sabreSession.SessionID;
-                Task<string> pnrtext = _sabreCommandService.
+
+                //Parallel processing not possible - ‡ PREVIOUS ENTRY ACTIVE-PLEASE WAIT FOR RESPONSE ‡
+                string pnrtext = await _sabreCommandService.
                                                 GetPNRText(token, pcc, request.SearchText, pcc.PccCode);
 
-                Task<GetQuoteTextResponse> getQuoteTextResponse = GetQuoteText(new GetQuoteTextRequest()
-                {
-                    GDSCode = request.GDSCode,
-                    Locator = request.SearchText,
-                    SessionID = request.SessionID
-                },
-                contextID,
-                pcc);
+                GetQuoteTextResponse getQuoteTextResponse = await GetQuoteText(new GetQuoteTextRequest()
+                                                                        {
+                                                                            GDSCode = request.GDSCode,
+                                                                            Locator = request.SearchText,
+                                                                            SessionID = request.SessionID
+                                                                        },
+                                                                        contextID,
+                                                                        pcc);
 
-                await Task.WhenAll(pnrtext, getQuoteTextResponse);
-
-                string text = pnrtext.Result;
-                GetQuoteTextResponse quotetextres = getQuoteTextResponse == null ? null : getQuoteTextResponse.Result;
+                GetQuoteTextResponse quotetextres = getQuoteTextResponse == null ? null : getQuoteTextResponse;
 
                 if (quotetextres != null &&
                    string.IsNullOrEmpty(quotetextres.QuoteError) &&
                    !quotetextres.QuoteData.IsNullOrEmpty() &&
                    quotetextres.QuoteData.Any(a => !a.Expired))
                 {
-                    text += Environment.NewLine;
-                    text += Environment.NewLine;
-                    text += Environment.NewLine;
-                    text += string.
+                    pnrtext += Environment.NewLine;
+                    pnrtext += Environment.NewLine;
+                    pnrtext += Environment.NewLine;
+                    pnrtext += string.
                                 Join(
                                     Environment.NewLine,
                                     quotetextres.
@@ -597,7 +596,7 @@ namespace SabreWebtopTicketingService.Services
                                     Select(s => s.QuoteText));
                 }
 
-                return text.ReplaceAllSabreSpecialChar().Mask();
+                return pnrtext.ReplaceAllSabreSpecialChar().Mask();
             }
             finally
             {
