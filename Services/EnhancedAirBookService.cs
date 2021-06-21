@@ -873,7 +873,6 @@ namespace SabreWebtopTicketingService.Services
                             null,
                             true);
 
-
             //check if private fare returned
             if (!string.IsNullOrEmpty(request.PriceCode) && !quotes.IsNullOrEmpty() && quotes.First().FareType == FareType.Published)
             {
@@ -884,7 +883,7 @@ namespace SabreWebtopTicketingService.Services
                         if (f.Errors.IsNullOrEmpty()) { f.Errors = new List<WebtopError>(); }
                         f.Errors.Add(new WebtopError()
                         {
-                            code = "PRIVATE_FARE_NOT_RETURNED",
+                            code = "PRIVATE_FARE_NOT_FOUND",
                             message = "No corporate/ account code pricing found. To receive publish level pricing please remove corporate/ account code and try again."
                         });
                     });
