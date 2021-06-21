@@ -864,7 +864,7 @@ namespace SabreWebtopTicketingService.Services
         {
             var response = await ExecForceFarebasis(request, sessionID, pcc, pnr, ticketingpcc);
 
-            return ParseSabreQuote(
+            List<Quote> quotes = ParseSabreQuote(
                             response.OTA_AirPriceRS, 
                             request.SelectedPassengers,
                             request.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
@@ -872,6 +872,25 @@ namespace SabreWebtopTicketingService.Services
                             Models.PriceType.Manual,
                             null,
                             true);
+
+
+            //check if private fare returned
+            if (!string.IsNullOrEmpty(request.PriceCode) && !quotes.IsNullOrEmpty() && quotes.First().FareType == FareType.Published)
+            {
+
+                quotes.
+                    ForEach(f =>
+                    {
+                        if (f.Errors.IsNullOrEmpty()) { f.Errors = new List<WebtopError>(); }
+                        f.Errors.Add(new WebtopError()
+                        {
+                            code = "PRIVATE_FARE_NOT_RETURNED",
+                            message = "No corporate/ account code pricing found. To receive publish level pricing please remove corporate/ account code and try again."
+                        });
+                    });
+            }
+
+            return quotes;
         }
 
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
@@ -1175,7 +1194,8 @@ namespace SabreWebtopTicketingService.Services
                                       SectorCount = pqsecdata.SectorCount,
                                       Route = pqsecdata.Route,
                                       LastPurchaseDate = lastpurchasedate,
-                                      PricingHint = pricehint
+                                      PricingHint = pricehint,
+                                      FareType = GetFareType(pqs.FareCalculationBreakdown.Where(w => !string.IsNullOrEmpty(w.FareBasis?.FareType))?.FirstOrDefault()?.FareBasis?.FareType ?? "")
                                   },
                                   PaxType = pqs.PassengerTypeQuantity.Code,
                                   Qty = int.Parse(pqs.PassengerTypeQuantity.Quantity)
@@ -1227,7 +1247,8 @@ namespace SabreWebtopTicketingService.Services
                                       DifferentPaxType = returnedPTCs.Any(a => (a.StartsWith("C") && a.Substring(0, 1) == pax.PaxType.Substring(0, 1)) || a == pax.PaxType) ? 
                                                                 new List<string>() : 
                                                                 returnedPTCs.Distinct().Except(paxsdata.Select(S=> s.PaxType).Distinct()).ToList(),
-                                      PricingHint = s.Quote.PricingHint
+                                      PricingHint = s.Quote.PricingHint,
+                                      FareType = s.Quote.FareType
                                   };
 
             quotes.AddRange(singlepaxquotes.ToList());
@@ -1280,7 +1301,8 @@ namespace SabreWebtopTicketingService.Services
                         DifferentPaxType = returnedPTCs.Any(a => (a.StartsWith("C") && a.Substring(0,1) == item.PaxType.Substring(0,1)) || a == item.PaxType) ?
                                                                 new List<string>() :
                                                                 returnedPTCs.Distinct().Except(paxsdata.Select(s => s.PaxType).Distinct()).ToList(),
-                        PricingHint = item.Quote.PricingHint
+                        PricingHint = item.Quote.PricingHint,
+                        FareType = item.Quote.FareType
                     };
 
                     quotes.Add(multipaxquotes.Quote);
@@ -1302,6 +1324,17 @@ namespace SabreWebtopTicketingService.Services
                         ToList();
 
             return quotes;
+        }
+
+        private FareType GetFareType(string gdsfaretype)
+        {
+            switch (gdsfaretype)
+            {
+                case "P":
+                    return FareType.Published;
+                default:
+                    return FareType.UNKNOWN;
+            }
         }
 
         private string getLastPurchaseDate(EnhancedAirBookRSOTA_AirPriceRS resp, EnhancedAirBookRSOTA_AirPriceRSPriceQuotePricedItineraryAirItineraryPricingInfo pqs)

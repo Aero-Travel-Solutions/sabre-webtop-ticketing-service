@@ -126,7 +126,8 @@ namespace SabreWebtopTicketingService.Models
         Published,
         IT,
         BT,
-        NR
+        NR,
+        UNKNOWN
     }
 
     public class TicketingPCCData
