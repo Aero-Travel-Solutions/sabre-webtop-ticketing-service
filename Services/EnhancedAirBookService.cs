@@ -60,25 +60,42 @@ namespace SabreWebtopTicketingService.Services
                         ToList());
             }
 
-            return ParseSabreQuote(
+            List<Quote> quotes = ParseSabreQuote(
                         response.OTA_AirPriceRS, 
                         quoteRequest.SelectedPassengers,
                         quoteRequest.SelectedSectors.Select(s => new SectorData() { SectorNo = s.SectorNo }).ToList(),
                         pnr,
                         Models.PriceType.Published,
                         quotenos);
+
+            //check if private fare returned
+            if (!string.IsNullOrEmpty(quoteRequest.PriceCode) && !quotes.IsNullOrEmpty() && quotes.First().FareType == FareType.Published)
+            {
+                throw new AeronologyException("PRIVATE_FARE_NOT_FOUND", "No corporate/ account code pricing found. To receive published price level please remove corporate/ account code and try again.");
+            }
+
+            return quotes;
         }
 
         public async Task<List<Quote>> PricePNR(GetQuoteRQ quoteRequest, string token, Pcc pcc, PNR pnr, string ticketingpcc, bool IsPriceOverride)
         {
             var response = await PricePNR(CreatePriceByPaxRequest(quoteRequest, pnr, IsPriceOverride), token, pcc, ticketingpcc);
 
-            return ParseSabreQuote(
+            List<Quote> quotes =  ParseSabreQuote(
                             response.OTA_AirPriceRS, 
                             quoteRequest.SelectedPassengers, 
                             quoteRequest.SelectedSectors.Select(s=> new SectorData() { SectorNo = s.SectorNo}).ToList(),
                             pnr,
                             Models.PriceType.Published);
+
+
+            //check if private fare returned
+            if (!string.IsNullOrEmpty(quoteRequest.PriceCode) && !quotes.IsNullOrEmpty() && quotes.First().FareType == FareType.Published)
+            {
+                throw new AeronologyException("PRIVATE_FARE_NOT_FOUND", "No corporate/ account code pricing found. To receive publish level pricing please remove corporate/ account code and try again.");
+            }
+
+            return quotes;
         }
 
         private static MessageHeader CreateHeader(string pcc, string ticketingpcc)
@@ -876,17 +893,7 @@ namespace SabreWebtopTicketingService.Services
             //check if private fare returned
             if (!string.IsNullOrEmpty(request.PriceCode) && !quotes.IsNullOrEmpty() && quotes.First().FareType == FareType.Published)
             {
-
-                quotes.
-                    ForEach(f =>
-                    {
-                        if (f.Errors.IsNullOrEmpty()) { f.Errors = new List<WebtopError>(); }
-                        f.Errors.Add(new WebtopError()
-                        {
-                            code = "PRIVATE_FARE_NOT_FOUND",
-                            message = "No corporate/ account code pricing found. To receive publish level pricing please remove corporate/ account code and try again."
-                        });
-                    });
+                throw new AeronologyException("PRIVATE_FARE_NOT_FOUND", "No corporate/ account code pricing found. To receive published price level please remove corporate/ account code and try again.");
             }
 
             return quotes;
