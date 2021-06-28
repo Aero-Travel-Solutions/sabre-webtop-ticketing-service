@@ -1522,7 +1522,9 @@ namespace SabreWebtopTicketingService.Services
 
             Parallel.ForEach(agentlist, options, (agent) =>
             {
-                agent.Name = _agentPccDataSource.RetrieveAgentDetails(user?.ConsolidatorId, agent.AgentId, sessionid).GetAwaiter().GetResult().Name;
+                var agentdata = _agentPccDataSource.RetrieveAgentDetails(user?.ConsolidatorId, agent.AgentId, sessionid).GetAwaiter().GetResult();
+                agent.Name = agentdata.Name;
+                agent.PhoneNumber = agentdata.Contacts.Where(w => !string.IsNullOrEmpty(w.Phone))?.FirstOrDefault()?.Phone ?? "";
             });
 
             return agentlist;

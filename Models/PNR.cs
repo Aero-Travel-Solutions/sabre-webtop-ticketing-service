@@ -48,6 +48,7 @@ public class PNRAgent
     {
         public string AgentId { get; set; }
         public string Name { get; set; }
+        public string PhoneNumber { get; set; }
     }
 
     public class PNRValidator : AbstractValidator<PNR>
