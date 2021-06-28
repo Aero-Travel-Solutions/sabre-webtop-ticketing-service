@@ -1524,7 +1524,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 var agentdata = _agentPccDataSource.RetrieveAgentDetails(user?.ConsolidatorId, agent.AgentId, sessionid).GetAwaiter().GetResult();
                 agent.Name = agentdata.Name;
-                agent.PhoneNumber = agentdata.Contacts.Where(w => !string.IsNullOrEmpty(w.Phone))?.FirstOrDefault()?.Phone ?? "";
+                agent.PhoneNumber = agentdata.Contacts?.Where(w => !string.IsNullOrEmpty(w.Phone))?.FirstOrDefault()?.Phone ?? "";
             });
 
             return agentlist;
