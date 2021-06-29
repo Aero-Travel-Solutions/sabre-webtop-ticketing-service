@@ -168,8 +168,9 @@ namespace SabreWebtopTicketingService.Services
                 CreditLimit = agentDetails.AccounDetails?.CreditLimit,
                 Address = agentDetails?.Address,
                 TicketingPcc = await GetDefaultTicketingPCC(sessionid, user.ConsolidatorId),
-                Logo = agentDetails.Logo
-            };
+                Logo = agentDetails.Logo,
+                PhoneNumber = agentDetails.Contacts?.Where(w => !string.IsNullOrEmpty(w.Phone))?.FirstOrDefault()?.Phone ?? ""
+        };
 
             if (user?.Agent != null)
             {

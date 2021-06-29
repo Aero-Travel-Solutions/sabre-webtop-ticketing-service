@@ -16,5 +16,6 @@ namespace SabreWebtopTicketingService.Models
         public string CustomerNo { get; set; }
         public Address Address { get; set; }
         public string Logo { get; set; }
+        public string PhoneNumber { get; set; }
     }
 }
