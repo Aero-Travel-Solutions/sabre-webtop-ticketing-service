@@ -490,7 +490,8 @@ namespace SabreWebtopTicketingService.Services
                         new PNRAgent()
                         {
                             AgentId = agent.AgentId,
-                            Name = agent.Name
+                            Name = agent.Name,
+                            PhoneNumber = agent.PhoneNumber
                         }
                     };
                 }
