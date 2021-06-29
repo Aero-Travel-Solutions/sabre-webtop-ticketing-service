@@ -39,5 +39,8 @@ namespace SabreWebtopTicketingService.Models
 
         [JsonPropertyName("customer_no")]
         public string CustomerNo { get; set; }
+        [JsonPropertyName("phone_number")]
+        public string PhoneNumber { get; set; }
+
     }
 }

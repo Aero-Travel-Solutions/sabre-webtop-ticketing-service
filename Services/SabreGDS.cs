@@ -169,7 +169,7 @@ namespace SabreWebtopTicketingService.Services
                 Address = agentDetails?.Address,
                 TicketingPcc = await GetDefaultTicketingPCC(sessionid, user.ConsolidatorId),
                 Logo = agentDetails.Logo,
-                PhoneNumber = agentDetails.Contacts?.Where(w => !string.IsNullOrEmpty(w.Phone))?.FirstOrDefault()?.Phone ?? ""
+                PhoneNumber = agentDetails?.PhoneNumber ?? ""
         };
 
             if (user?.Agent != null)
@@ -1526,7 +1526,7 @@ namespace SabreWebtopTicketingService.Services
             {
                 var agentdata = _agentPccDataSource.RetrieveAgentDetails(user?.ConsolidatorId, agent.AgentId, sessionid).GetAwaiter().GetResult();
                 agent.Name = agentdata.Name;
-                agent.PhoneNumber = agentdata.Contacts?.Where(w => !string.IsNullOrEmpty(w.Phone))?.FirstOrDefault()?.Phone ?? "";
+                agent.PhoneNumber = agentdata?.PhoneNumber ?? "";
             });
 
             return agentlist;
