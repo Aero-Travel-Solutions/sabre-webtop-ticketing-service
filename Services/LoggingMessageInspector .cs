@@ -31,9 +31,10 @@ namespace SabreWebtopTicketingService.Services
                 {
                     Console.WriteLine(document.OuterXml.MaskLog());
                     XmlNodeList nodelist = document.GetElementsByTagName("PriceQuoteInfo");
-                    Constants.xml = nodelist.Count > 0 && !nodelist[0].OuterXml.ToString().Contains("ErrorMessage") ?
+                    XmlNodeList PriceQuotexmlNode = document.GetElementsByTagName("or114:PriceQuote");
+                    Constants.xml = nodelist.Count > 0 && PriceQuotexmlNode.Count > 0 && !PriceQuotexmlNode[0].OuterXml.ToString().Contains("ErrorMessage") ?
                                         XElement.Parse(nodelist[0].OuterXml) :
-                                        Constants.xml == null ?
+                                        Constants.xml == null && PriceQuotexmlNode.Count > 0 && !PriceQuotexmlNode[0].OuterXml.ToString().Contains("ErrorMessage") ?
                                             null :
                                             Constants.xml;
                 }
