@@ -46,6 +46,15 @@ namespace SabreWebtopTicketingService.Models
         public List<WebtopError> error { get; set; }
     }
 
+    public class PriceExclusiveFareLambdaResponseBody
+    {
+        public string session_id { get; set; }
+        public string context_id { get; set; }
+        public bool data { get; set; }
+        public List<WebtopError> error { get; set; }
+    }
+    
+
     public class IssueTicketLambdaResponseBody
     {
         public string session_id { get; set; }
