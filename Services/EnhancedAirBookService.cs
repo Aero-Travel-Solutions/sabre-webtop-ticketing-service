@@ -961,6 +961,8 @@ namespace SabreWebtopTicketingService.Services
                         {
                             PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
                             {
+                                RetainSpecified = true,
+                                Retain = true,
                                 OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
                                 {
                                     PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()

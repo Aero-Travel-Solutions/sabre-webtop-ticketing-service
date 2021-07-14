@@ -1,0 +1,25 @@
+{
+  "warmer": null,
+  "sessionID": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uX2lkIjoiNzFkY2Q0Yjg2M2ZiMzZiMDI5NjkyYTI2NTk5ODEyZTc4Y2RlNmY1NGE5ODViZmQ5ZTVlMTUwZmJjZTM1MWJhMiIsInVzZXIiOnsiY29uc29saWRhdG9yX2lkIjoiZXhwcmVzc3RyYXZlbGdyb3VwIiwiYWdlbnRfaWQiOiI2MTAwMDEwMDAxIiwibmFtZSI6ImRhcnNoYW5hLW9ldG0tZGV2Iiwicm9sZXMiOlsiVFJBVkVMX0FHRU5UX0FETUlOIiwiQ01TX0VESVRPUiIsIlRSQVZFTF9BR0VOVF9VU0VSIl0sImltcGVyc29uYXRlZF9ieSI6ImRhcnNoYW5hIn0sImV4cGlyZXNfaW5fc2VjIjozNjAwLCJpYXQiOjE2MjYyMzQyNjAsImV4cCI6MTYyNjIzNzg2MH0.jeSzg0pRrDfnQZdEBH-h55PNCWwaxEVwFGVqr5MrwV8",
+  "gdsCode": "1W",
+  "locator": "FNURXG",
+  "selectedPassengers": [{
+  "nameNumber": "1.1",
+  "paxType": "ADT",
+  "formOfPayment": {
+  "paymentType": 0,
+  "bCode": null,
+  "cardNumber": null,
+  "expiryDate": null,
+  "approvalCode": null,
+  "creditAmount": 0.0,
+  "cardType": null,
+  "maskedCardNumber": null
+}
+}],
+  "exclusivePCC": "60B5",
+  "priceCode": "ETC01",
+  "platingCarrier": "SQ",
+  "alternativePricing": false,
+  "isRTW": false
+}

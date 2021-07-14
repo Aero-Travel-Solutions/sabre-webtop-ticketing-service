@@ -853,7 +853,7 @@ namespace SabreWebtopTicketingService.Services
                 if(quoteresp.ApplicationResults.status == EnhancedAirBook.CompletionCodes.Complete)
                 {
                     //receieve and end transact
-                    await enhancedEndTransService.EndTransaction(token.SessionID, contextID, request.SessionID, aDBAgent?.Name ?? "Aeronology", true, pcc);
+                    await enhancedEndTransService.EndTransaction(token.SessionID, contextID, aDBAgent?.Name ?? "Aeronology", request.SessionID, true, pcc);
                 }
             }
             finally
