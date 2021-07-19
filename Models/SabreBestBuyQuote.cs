@@ -176,6 +176,21 @@ namespace SabreWebtopTicketingService.Models
     //BAGGAGE INFO AVAILABLE - SEE WP* BAG
     //.
 
+    //Example 06
+    //1-    AUD533.00                     52.10XT AUD585.10U05
+    //XT     29.76WG      22.34WY 
+    //          533.00                     52.10            585.10TTL
+    //U05-01  NKSOACH
+    // MEL QF SIN412.16NUC412.16END ROE1.29318
+    //CARRIER RESTRICTIONS APPLY/FEES APPLY
+    //VALIDATING CARRIER SPECIFIED - QF
+    //CAT 15 SALES RESTRICTIONS FREE TEXT FOUND - VERIFY RULES
+
+
+    //AIR EXTRAS AVAILABLE - SEE WP* AE
+    //BAGGAGE INFO AVAILABLE - SEE WP* BAG
+    //.
+
     internal class SabreBestBuyQuote : IBestBuyQuote
     {
         string gdsresponse = "";
@@ -199,7 +214,7 @@ namespace SabreWebtopTicketingService.Models
         private List<BestBuyItem> GetBestBuyItems()
         {
             List<BestBuyItem> bestBuyItems = new List<BestBuyItem>();
-            var items = gdsresponse.SplitOnRegex(@"([ACI][DHN][TDFN]-\d+.*)");
+            var items = gdsresponse.SplitOnRegex(@"(\w{3}-\d+.*)");
             List<string> usedfbs = new List<string>();
             List<SectorFBData> sectors = null;
             List<BaggageInfo> baggageinfo = GetBestBuyBaggageAllowance(wpbag);
@@ -253,7 +268,7 @@ namespace SabreWebtopTicketingService.Models
                                     taxlines[paxtypeindex].
                                         SplitOnRegex(@"\d+\s*-\s+([A-Z]{3})\d+\.{0,1}\d*")[1];
 
-                string[] farebasis = items[i].SplitOnRegex(@"[ACI][DHN][TDFN]-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
+                string[] farebasis = items[i].SplitOnRegex(@"\w{3}-\d+(.*)")[1].SplitOnRegex(@"\s+").Where(w=> !string.IsNullOrEmpty(w)).ToArray();
                 string pricehint = items[i + 1].Contains("CHANGE BOOKING CLASS") ?
                                         items[i + 1].SplitOn("\n").First(f => f.StartsWith("CHANGE BOOKING CLASS")) :
                                         "";
