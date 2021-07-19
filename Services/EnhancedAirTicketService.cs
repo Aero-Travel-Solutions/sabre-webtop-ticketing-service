@@ -222,11 +222,7 @@ namespace SabreWebtopTicketingService.Services
                         SuppressFareReplaceWithBT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressFareReplaceWithBT()
                         {
                             Ind = true
-                        },
-                        SuppressIT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressIT()
-                                    {
-                                        Ind = true
-                                    }
+                        }
                     };
                 }
 
@@ -239,10 +235,6 @@ namespace SabreWebtopTicketingService.Services
                         {
                             Text = quotes.First().TourCode,
                             SuppressITSupressFare = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressITSupressFare()
-                            {
-                                Ind = true
-                            },
-                            SuppressIT = new AirTicketRQTicketingMiscQualifiersTourCodeSuppressIT()
                             {
                                 Ind = true
                             }
