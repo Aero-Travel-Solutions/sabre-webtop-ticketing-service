@@ -1,4 +1,5 @@
-﻿using GetElectronicDocumentService;
+﻿using EnhancedAirBook;
+using GetElectronicDocumentService;
 using GetReservation;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
@@ -820,6 +821,50 @@ namespace SabreWebtopTicketingService.Services
                 }
             }
         }
+
+        public async Task PriceExclusiveFare(PriceExclusiveFareRQ request, string contextID, bool IsPriceOverride = false)
+        {
+            SabreSession token = null;
+            user = await session.GetSessionUser(request.SessionID);
+            pcc = await _consolidatorPccDataSource.GetWebServicePccByGdsCode("1W", contextID, request.SessionID, user);
+            string ticketingpcc = request.ExclusivePCC;
+            ADBAgent aDBAgent = user.Agent;
+
+            //Obtain session (if found from cache, else directly from sabre)
+            token = await _sessionCreateService.CreateStatefulSessionToken(pcc, request.Locator);
+
+            if (token.Stored)
+            {
+                //ignore session
+                await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, "I");
+            }
+
+            //Context Change
+            await _changeContextService.ContextChange(token, pcc, ticketingpcc);
+
+            //retrieve PNR
+            await _sabreCommandService.ExecuteCommand(token.SessionID, pcc, $"*{request.Locator}");
+
+            //quoting
+            try
+            {
+                EnhancedAirBookRS quoteresp = await _enhancedAirBookService.GetQuoteResponse(request, token.SessionID, pcc, ticketingpcc);
+
+                if(quoteresp.ApplicationResults.status == EnhancedAirBook.CompletionCodes.Complete)
+                {
+                    //receieve and end transact
+                    await enhancedEndTransService.EndTransaction(token.SessionID, contextID, aDBAgent?.Name ?? "Aeronology", request.SessionID, true, pcc);
+                }
+            }
+            finally
+            {
+                if (token.IsLimitReached)
+                {
+                    await _sessionCloseService.SabreSignout(token.SessionID, pcc);
+                }
+            }
+        }
+
 
         public async Task<List<Quote>> GetQuote(GetQuoteRQ request, string contextID, bool IsPriceOverride = false)
         {

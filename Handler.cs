@@ -1606,5 +1606,97 @@ namespace SabreWebtopTicketingService
 
             return lambdaResponse;
         }
+
+        public async Task<LambdaResponse> PriceExclusiveFare(PriceExclusiveFareRQ rq)
+        {
+            if (!string.IsNullOrEmpty(rq.warmer))
+            {
+                return new LambdaResponse()
+                {
+                    statusCode = 200,
+                    headers = new Headers()
+                    {
+                        contentType = "application/json"
+                    },
+                    body = ""
+                };
+            }
+
+            logger.LogInformation("*****PriceExclusiveFare invoked *****");
+            logger.LogMaskInformation($"#Request: {JsonConvert.SerializeObject(rq)}");
+
+            LambdaResponse lambdaResponse = new LambdaResponse()
+            {
+                headers = new Headers()
+                {
+                    contentType = "application/json"
+                }
+            };
+
+            string contextid = "";
+
+            if (rq == null || string.IsNullOrEmpty(rq.SessionID) || string.IsNullOrEmpty(rq.GDSCode) || string.IsNullOrEmpty(rq.Locator)||string.IsNullOrEmpty(rq.ExclusivePCC))
+            {
+                lambdaResponse.statusCode = 400;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new PriceExclusiveFareLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>()
+                                                    {
+                                                        new WebtopError
+                                                        {
+                                                            code = "INVALID_REQUEST",
+                                                            message = "Mandatory request elements missing."
+                                                        }
+                                                    }
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+            else
+            {
+                contextid = $"1W-{rq.Locator}-{rq.SessionID}-{Guid.NewGuid()}";
+                await sabreGDS.PriceExclusiveFare(rq, contextid);
+                lambdaResponse.statusCode = 200;
+                lambdaResponse.body = JsonConvert.
+                                            SerializeObject
+                                            (
+                                                new PriceExclusiveFareLambdaResponseBody()
+                                                {
+                                                    context_id = contextid,
+                                                    session_id = rq.SessionID,
+                                                    error = new List<WebtopError>(),
+                                                    data = true
+                                                },
+                                                new JsonSerializerSettings()
+                                                {
+                                                    ContractResolver = new DefaultContractResolver()
+                                                    {
+                                                        NamingStrategy = new SnakeCaseNamingStrategy()
+                                                        {
+                                                            OverrideSpecifiedNames = false
+                                                        }
+                                                    }
+                                                }
+                                            );
+            }
+
+            logger.LogMaskInformation($"Response: {JsonConvert.SerializeObject(lambdaResponse)}");
+
+            return lambdaResponse;
+        }
     }
 }

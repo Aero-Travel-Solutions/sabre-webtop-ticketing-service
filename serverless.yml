@@ -164,4 +164,9 @@ functions:
     handler: CsharpHandlers::SabreWebtopTicketingService.Handler::VoidTicket
     timeout: 120
     package:
-      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip 
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip
+  PriceExclusiveFare:
+    handler: CsharpHandlers::SabreWebtopTicketingService.Handler::PriceExclusiveFare
+    timeout: 120
+    package:
+      artifact: bin/Release/netcoreapp3.1/sabrewebtopticketing.zip

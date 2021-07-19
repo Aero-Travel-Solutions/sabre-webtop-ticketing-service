@@ -512,6 +512,24 @@ namespace SabreWebtopTicketingService.Services
             return passengerTypes;
         }
 
+        private static EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] GetPaxTypeData(List<PriceExclusiveFarePassenger> selpax)
+        {
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes =
+                                        selpax.
+                                            GroupBy(g => g.PaxType).
+                                            Select(s => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType()
+                                            {
+                                                Code = s.Key,
+                                                Quantity = s.Count().ToString(),
+                                                //Removed Force flag as this will stop Sabre defaulting to ADT if the specified pax type is not available
+                                                //ForceSpecified = true,
+                                                //Force = true
+                                            }).
+                                            ToArray();
+
+            return passengerTypes;
+        }
+
         private static string GetPaxType(QuotePassenger selpax, PNR pnr)
         {
             DateTime FirstDepartureDate = GetFirstDepartureDate(pnr);
@@ -898,6 +916,103 @@ namespace SabreWebtopTicketingService.Services
 
             return quotes;
         }
+
+        public async Task<EnhancedAirBookRS> GetQuoteResponse(PriceExclusiveFareRQ quoteRequest, string token, Pcc pcc, string ticketingpcc)
+        {
+            return await PricePNR(CreatePriceByPaxRequest(quoteRequest), token, pcc, ticketingpcc);
+        }
+
+        private EnhancedAirBookRQ CreatePriceByPaxRequest(PriceExclusiveFareRQ quoteRequest)
+        {
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersPassengerType[] passengerTypes = GetPaxTypeData(quoteRequest.SelectedPassengers);
+            EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect[] nameselect =
+                            quoteRequest.
+                                SelectedPassengers.
+                                Select(pax => new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersNameSelect()
+                                {
+                                    NameNumber = pax.NameNumber
+                                }).
+                                ToArray();
+
+            EnhancedAirBookRQ enhancedAirBookRQ = new EnhancedAirBookRQ()
+            {
+                version = Constants.EnhancedAirBookVersion,
+                PreProcessing = new EnhancedAirBookRQPreProcessing()
+                {
+                    IgnoreBeforeSpecified = true,
+                    IgnoreBefore = true,
+                    UniqueID = new EnhancedAirBookRQPreProcessingUniqueID()
+                    {
+                        ID = quoteRequest.Locator
+                    }
+                },
+                PostProcessing = new EnhancedAirBookRQPostProcessing()
+                {
+                    IgnoreAfterSpecified = true,
+                    IgnoreAfter = false,
+                    RedisplayReservation = new EnhancedAirBookRQPostProcessingRedisplayReservation()
+                    {
+                        WaitInterval = "100"
+                    }
+                },
+                OTA_AirPriceRQ = new EnhancedAirBookRQOTA_AirPriceRQ[]
+                {
+                        new EnhancedAirBookRQOTA_AirPriceRQ()
+                        {
+                            PriceRequestInformation = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformation()
+                            {
+                                RetainSpecified = true,
+                                Retain = true,
+                                OptionalQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiers()
+                                {
+                                    PricingQualifiers = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiers()
+                                    {
+                                        PassengerType = passengerTypes,
+                                        NameSelect = nameselect,
+                                        Account = string.IsNullOrEmpty(quoteRequest.PriceCode) ?
+                                                    null:
+                                                    new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersPricingQualifiersAccount()
+                                                    {
+                                                        //Removed Force flag as this will stop Sabre returning and fare if the price code is not applicable
+                                                        //Force = "true",
+                                                        Code = new string[]
+                                                        {
+                                                            quoteRequest.PriceCode
+                                                        }
+                                                    },
+                                    },
+                                    FOP_Qualifiers = getFormOfPayment(quoteRequest.SelectedPassengers.First().FormOfPayment),
+                                    MiscQualifiers = quoteRequest.SelectedPassengers.First().FormOfPayment.PaymentType == PaymentType.CC &&
+                                                     !string.IsNullOrEmpty(quoteRequest.SelectedPassengers.First().FormOfPayment.BCode) ?
+                                                     new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiers()
+                                                     {
+                                                         Endorsements = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersMiscQualifiersEndorsements()
+                                                         {
+                                                             Text = quoteRequest.SelectedPassengers.First().FormOfPayment.BCode
+                                                         }
+                                                     }:
+                                                     null,
+                                    FlightQualifiers = string.IsNullOrEmpty(quoteRequest.PlatingCarrier) ?
+                                                                null :
+                                                                new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiers()
+                                                                {
+                                                                    VendorPrefs = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefs()
+                                                                    {
+                                                                        Airline = new EnhancedAirBookRQOTA_AirPriceRQPriceRequestInformationOptionalQualifiersFlightQualifiersVendorPrefsAirline()
+                                                                        {
+                                                                            Code = quoteRequest.PlatingCarrier
+                                                                        }
+                                                                    }
+                                                                }
+                                }
+                            }
+                        }
+                }
+            };
+
+            return enhancedAirBookRQ;
+        }
+
 
         private async Task<EnhancedAirBookRS> PricePNR(EnhancedAirBookRQ request, string token, Pcc pcc, string ticketingpcc)
         {
