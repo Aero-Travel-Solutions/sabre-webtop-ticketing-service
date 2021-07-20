@@ -1007,7 +1007,7 @@ namespace SabreWebtopTicketingService.Services
                                                         f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
 
                 //Generate the IssueTicketQuoteKey
-                TicketingPCCData platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
+                TicketingPCCData platingpcc = await GetPlateManagementPCCForQuote(quotes.First(), pnr, sessionID, agent);
                 quotes.
                     ForEach(quote =>
                     {
@@ -1165,7 +1165,7 @@ namespace SabreWebtopTicketingService.Services
                                                         f.Fee + (f.FeeGST ?? 0.00M) - f.Commission);
 
                 //Generate the IssueTicketQuoteKey
-                TicketingPCCData platingpcc = await GetPlateManagementPCC(quotes.First(), pnr, sessionID, agent);
+                TicketingPCCData platingpcc = await GetPlateManagementPCCForQuote(quotes.First(), pnr, sessionID, agent);
                 quotes.
                     ForEach(quote =>
                     {
@@ -2015,6 +2015,25 @@ namespace SabreWebtopTicketingService.Services
 
                 //Populate request collections
                 ReconstructRequestFromKeys(request);
+
+                //re-run the palte rule base PCC extraction because of manual build
+                CancellationToken ct = new CancellationToken();
+                ParallelOptions options = new ParallelOptions { CancellationToken = ct };
+                if (!request.Quotes.IsNullOrEmpty())
+                {
+                    Parallel.ForEach(request.Quotes, options, (quote) =>
+                    {
+                        quote.TicketingPCC = GetPlateManagementPCCForQuote(new Quote()
+                                                                           {
+                                                                                QuoteSectors = quote.QuoteSectors,
+                                                                                PlatingCarrier = quote.PlatingCarrier
+                                                                           },
+                                                                           pnr,
+                                                                           sessionID,
+                                                                           agent).GetAwaiter().GetResult();
+                    });
+                }
+
 
                 string ticketingpcc = agent?.TicketingPcc;
                 if (!request.Quotes.IsNullOrEmpty() && request.Quotes.First().TicketingPCC != null)
@@ -5478,7 +5497,7 @@ namespace SabreWebtopTicketingService.Services
 
             Parallel.ForEach(issuablequotes, options, (quote) =>
             {
-                quote.TicketingPCC = GetPlateManagementPCC(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
+                quote.TicketingPCC = GetPlateManagementPCCForQuote(quote, pnr, sessionID, agent).GetAwaiter().GetResult();
                 quote.Expired = quote.Expired || quote.TicketingPCC == null;
                 quote.IssueTicketQuoteKey = GetTicketingQuoteKey(quote, quote.QuotePassenger.FormOfPayment.BCode, applySupressITFlag);
             });
@@ -5528,20 +5547,23 @@ namespace SabreWebtopTicketingService.Services
         }
 
 
-        private async Task<TicketingPCCData> GetPlateManagementPCC(Quote quote, PNR pnr, string sessionID, Agent agent)
+        private async Task<TicketingPCCData> GetPlateManagementPCCForQuote(Quote quote, PNR pnr, string sessionID, Agent agent)
         {
             List<PNRSector> secs = quote.
                                     QuoteSectors.
                                     Select(s => pnr.
                                                    Sectors.
-                                                   Where(w => w.From != "ARUNK").
-                                                   FirstOrDefault(f => f.From == s.DepartureCityCode &&
+                                                   Where(w => w.From != "ARUNK" && !w.Unconfirmed).
+                                                   FirstOrDefault(f => f.SectorNo == s.PQSectorNo &&
+                                                                       f.From == s.DepartureCityCode &&
                                                                        f.To == s.ArrivalCityCode &&
                                                                        f.DepartureDate == s.DepartureDate)).
                                     Where(w => w != null).
                                     ToList();
 
+            //check if all quote sectors present in the PNR
             if (secs.IsNullOrEmpty()) { return null; }
+            if (secs.Count != quote.QuoteSectors.Count) { return null; }
 
             PlateRuleTicketingPccRequest rq = new PlateRuleTicketingPccRequest()
             {
@@ -5559,7 +5581,7 @@ namespace SabreWebtopTicketingService.Services
                                 Farebasis = quote.QuoteSectors.First(f => f.PQSectorNo == s.SectorNo).FareBasis
                             }).
                             GroupBy(grp => new { grp.Carrier, grp.Farebasis }).
-                            Select(s=> s.First()).
+                            Select(s => s.First()).
                             ToArray()
             };
 
